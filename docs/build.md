@@ -1,8 +1,17 @@
 # Building the firmware
 
-Pinned toolchain: **ESP-IDF v5.5.5 + esp-matter v1.6** — the same combination
-as the CI image. Don't mix other versions; esp-matter is tightly coupled to
-its bundled connectedhomeip submodule and the IDF minor version.
+Pinned toolchain: **ESP-IDF v5.5.5 + esp-matter release/v1.6** — the same
+combination as the CI image. Don't mix other versions; esp-matter is tightly
+coupled to its bundled connectedhomeip submodule and the IDF minor version.
+
+Exact pins (extracted from the `release-v1.6_idf_v5.5.5` image):
+
+| Component | Ref |
+|---|---|
+| esp-matter | `36c2634e99c884830897e2b9501e2d9a6c9d60fd` (head of `release/v1.6`) |
+| connectedhomeip submodule | `d46cc8c2886cbefc338544bdb2e2f8128f3e9970` |
+| ESP-IDF | `v5.5.5` |
+| Docker image | `espressif/esp-matter:release-v1.6_idf_v5.5.5` |
 
 Assumes Linux. Two paths; Docker is the low-friction one.
 
@@ -13,8 +22,10 @@ docker pull espressif/esp-matter:release-v1.6_idf_v5.5.5
 
 # from the repo root
 # (the cd must be inside bash -c: the image's shell init overrides docker's -w
-#  and drops you in $ESP_MATTER_PATH, where idf.py would build esp-matter itself)
+#  and drops you in $ESP_MATTER_PATH, where idf.py would build esp-matter itself.
+#  The named ccache volume makes rebuilds after fullclean fast.)
 docker run --rm -it -v "$PWD":/work \
+  -v homecadia-ccache:/root/.cache/ccache -e IDF_CCACHE_ENABLE=1 \
   espressif/esp-matter:release-v1.6_idf_v5.5.5 \
   bash -c 'cd /work/firmware/sensor-01 && idf.py set-target esp32c6 build'
 ```

@@ -4,8 +4,46 @@ XIAO ESP32-C6 on Seeed ePaper Driver Board for XIAO V2. This is the single
 source of truth; `firmware/sensor-01/main/app_config.h` mirrors it and must be
 changed together with this file.
 
-Status: **derived from the Seeed wiki and veltoc, not yet verified on
-hardware.** Every row is open in [bringup.md](bringup.md) until checked.
+Status: header usage derived from the Seeed wiki and veltoc; board-internal
+facts below are **verified against the official schematic**
+([XIAO-ESP32-C6_v1.0_SCH_PDF_24028.pdf](https://files.seeedstudio.com/wiki/SeeedStudio-XIAO-ESP32C6/XIAO-ESP32-C6_v1.0_SCH_PDF_24028.pdf),
+sheet numbers cited). Rows still open on hardware are in
+[bringup.md](bringup.md).
+
+## Schematic-verified board facts
+
+- **No battery divider is populated on the board.** The only 200k on sheet
+  3/5 is the charger's current-set resistor (`ICharge = 24000/200K = 120mA`
+  on SGM40567's IREF); A0 routes straight from the header to GPIO0. The
+  Seeed wiki's `analogReadMilliVolts(A0)` battery snippet is shared XIAO
+  boilerplate and does not apply — any divider is user-added.
+- **Underside pads exist for GPIO4–7**: TP4=MTMS/GPIO4, TP5=MTDI/GPIO5,
+  TP6=MTCK/GPIO6, TP7=MTDO/GPIO7, plus BOOT(GPIO9), EN, 3V3, GND (sheet 3/5).
+- **RF switch must be enabled by firmware** (sheet 4/5): FM8625H powered via
+  P-FET Q3 whose gate (GPIO3) has a 10k pull-up — the switch is OFF at
+  reset. Drive GPIO3 low to power it; GPIO14 (VCTL) low selects the onboard
+  ceramic antenna (ANT1 KH5220-A36), high the U.FL (ANT2). Neither pin is on
+  the header. Handled in `app_main.cpp:board_rf_switch_init()`.
+- **Onboard yellow LED on GPIO15, active low** (R25 1.5k to 3V3, sheet 4/5).
+  GPIO15 is a C6 strapping pin — leave it high-Z (LED off) and never hold it
+  low into sleep.
+- Sheet 4/5 carries Seeed's own note: **"Avoid using GPIO4, 5, 8, 9, 15"**
+  (C6 strapping/JTAG set). Also: MTCK doubles as LP_I2C_SDA, MTDO as
+  LP_I2C_SCL.
+- **No UART bridge**: USB D+/D− wire directly to the C6's native USB
+  (sheet 3/5). Console is USB Serial/JTAG
+  (`CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y`); it drops in deep sleep — normal.
+
+### Strapping caveat on the battery-sense pin
+
+GPIO5 (MTDI) is in Seeed's avoid list. A permanently-connected 2×1M divider
+holds it at ~Vbat/2 ≈ 1.9V, inside the undefined logic band at strap
+sampling. veltoc ships exactly this and reports working boots, but the exact
+GPIO5 strap function on the C6 is **unverified** (check the ESP32-C6
+datasheet §strapping before final assembly). Mitigations if it bites:
+high-side-gate the divider (node rests at GND through the lower 1M at
+reset), or move battery sense to A0/A1/A2 — possible only if the display
+wiring frees one (the Seeed ePaper driver board takes all three).
 
 | Function | XIAO pin | GPIO | Fixed by | Notes |
 |---|---|---|---|---|

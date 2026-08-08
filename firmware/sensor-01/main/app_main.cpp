@@ -5,6 +5,7 @@
  * (sensor_loop.cpp). Structure follows the esp-matter icd_app example (v1.6).
  */
 
+#include <driver/gpio.h>
 #include <esp_err.h>
 #include <esp_log.h>
 #include <nvs_flash.h>
@@ -144,8 +145,25 @@ static esp_err_t app_attribute_update_cb(attribute::callback_type_t type, uint16
     return ESP_OK;
 }
 
+/* XIAO ESP32-C6 RF path (schematic sheet 4/5): the FM8625H antenna switch is
+ * unpowered at reset (Q3 gate pulled high). Power it and select the ceramic
+ * antenna before any radio starts, or BLE commissioning and Thread run with
+ * no antenna. */
+static void board_rf_switch_init(void)
+{
+    gpio_config_t io = {
+        .pin_bit_mask = (1ULL << RF_SWITCH_POWER_GPIO) | (1ULL << RF_ANT_SELECT_GPIO),
+        .mode = GPIO_MODE_OUTPUT,
+    };
+    gpio_config(&io);
+    gpio_set_level((gpio_num_t)RF_SWITCH_POWER_GPIO, 0); /* active low: switch on */
+    gpio_set_level((gpio_num_t)RF_ANT_SELECT_GPIO, 0);   /* ceramic antenna */
+}
+
 extern "C" void app_main()
 {
+    board_rf_switch_init();
+
     esp_err_t err = nvs_flash_init();
     if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
         ESP_ERROR_CHECK(nvs_flash_erase());

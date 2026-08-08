@@ -25,9 +25,21 @@
 // LED (commissioning state + low battery only)
 #define LED_PIN            16   // D6
 
-// Battery divider 2x1M + 100nF on MTDI underside pad (NOT A0 — see docs/pinmap.md)
+// Battery divider 2x1M + 100nF on MTDI underside pad (NOT A0 — see docs/pinmap.md;
+// schematic-verified: no divider is populated on the board). GPIO5 is in Seeed's
+// "avoid" list (strapping/JTAG) — see the strapping caveat in docs/pinmap.md.
 #define VBAT_ADC_GPIO      5    // MTDI, ADC1_CH5
 #define VBAT_ADC_SETTLE_MS 5    // high-impedance source: delay after ADC config before read
+
+// XIAO ESP32-C6 board-internal pins (schematic XIAO-ESP32-C6_v1.0_SCH_PDF_24028,
+// sheet 4/5). Not on the header. The FM8625H RF switch is powered through
+// P-FET Q3 (gate = GPIO3, 10k pull-up => OFF at reset): firmware MUST drive
+// GPIO3 low or the radios have no antenna. GPIO14 = VCTL: low selects the
+// onboard ceramic antenna (ANT1), high the U.FL (ANT2).
+#define RF_SWITCH_POWER_GPIO 3   // drive low to power the RF switch
+#define RF_ANT_SELECT_GPIO   14  // low = ceramic antenna
+#define ONBOARD_LED_GPIO     15  // yellow LED via 1.5k to 3V3, ACTIVE LOW; C6 strapping
+                                 // pin — leave high-Z (LED off), never hold low into sleep
 
 // Measurement / reporting policy (defaults; user-configurable from milestone 4)
 #define SENSOR_POLL_INTERVAL_S 120

@@ -5,6 +5,11 @@
 CONFIG_IDF_TARGET="esp32c6"
 CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
 
+# XIAO ESP32-C6 has no UART bridge (schematic sheet 3/5: USB D+/D- wired
+# straight to the C6's native USB). Console must use USB Serial/JTAG or
+# logs land on the unconnected UART0 pads (D6/D7).
+CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
+
 # BLE (commissioning transport)
 CONFIG_BT_ENABLED=y
 CONFIG_BT_NIMBLE_ENABLED=y
