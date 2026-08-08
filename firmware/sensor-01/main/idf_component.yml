@@ -4,3 +4,5 @@
 dependencies:
   espressif/button:
     version: "^4"
+  espressif/qrcode:
+    version: "^0.1.0"

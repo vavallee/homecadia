@@ -32,3 +32,9 @@ Attribution:
   (https://github.com/charles-waite/TinyENV_Sensor-Thread).
 - firmware/sensor-01 build scaffolding derived from the icd_app example in
   espressif/esp-matter (Apache-2.0 / Public Domain example code).
+- firmware/components/monogfx/font5x7.c is the classic 5x7 bitmap font from
+  Adafruit-GFX (glcdfont.c), BSD license, Copyright (c) 2012 Adafruit
+  Industries.
+- firmware/components/ssd1680 command sequences cross-checked against
+  Adafruit_EPD (MIT, Copyright (c) 2018 Adafruit Industries) and the
+  Solomon Systech SSD1680 datasheet.

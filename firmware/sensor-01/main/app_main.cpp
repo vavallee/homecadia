@@ -17,7 +17,12 @@
 
 #include <common_macros.h>
 #include <app_config.h>
+#include <display.h>
 #include <sensor_loop.h>
+
+#include <setup_payload/OnboardingCodesUtil.h>
+#include <setup_payload/QRCodeSetupPayloadGenerator.h>
+#include <setup_payload/SetupPayload.h>
 #if CHIP_DEVICE_CONFIG_ENABLE_THREAD
 #include <esp_openthread_types.h>
 #include <platform/ESP32/OpenthreadLauncher.h>
@@ -51,12 +56,36 @@ constexpr auto k_commissioning_window_timeout = chip::System::Clock::Seconds16(3
     }
 #endif
 
+/* Renders the commissioning QR + manual code on the e-ink (they also go to
+ * the serial console via the stack's own PrintOnboardingCodes). */
+static void show_commissioning_screen(void)
+{
+    char qr[chip::QRCodeBasicSetupPayloadGenerator::kMaxQRCodeBase38RepresentationLength + 1];
+    char manual[chip::kManualSetupLongCodeCharLength + 1];
+    chip::MutableCharSpan qr_span(qr);
+    chip::MutableCharSpan manual_span(manual);
+    if (GetQRCode(qr_span, chip::RendezvousInformationFlags(chip::RendezvousInformationFlag::kBLE)) != CHIP_NO_ERROR ||
+        GetManualPairingCode(manual_span, chip::RendezvousInformationFlags(chip::RendezvousInformationFlag::kBLE)) !=
+            CHIP_NO_ERROR) {
+        ESP_LOGE(TAG, "Failed to get onboarding codes");
+        return;
+    }
+    qr[qr_span.size()] = '\0';
+    manual[manual_span.size()] = '\0';
+    display_show_commissioning(qr, manual);
+}
+
 static void app_event_cb(const ChipDeviceEvent *event, intptr_t arg)
 {
     switch (event->Type) {
-    case chip::DeviceLayer::DeviceEventType::kCommissioningComplete:
+    case chip::DeviceLayer::DeviceEventType::kCommissioningComplete: {
         ESP_LOGI(TAG, "Commissioning complete");
+        sensor_readings_t r = sensor_loop_get_readings();
+        if (r.valid) {
+            display_show_readings(&r);
+        }
         break;
+    }
 
     case chip::DeviceLayer::DeviceEventType::kFailSafeTimerExpired:
         ESP_LOGI(TAG, "Commissioning failed, fail safe timer expired");
@@ -173,8 +202,18 @@ extern "C" void app_main()
     set_openthread_platform_config(&config);
 #endif
 
+    err = display_init();
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Display init failed: %s — continuing headless", esp_err_to_name(err));
+    }
+
     err = esp_matter::start(app_event_cb);
     ABORT_APP_ON_FAILURE(err == ESP_OK, ESP_LOGE(TAG, "Failed to start Matter, err:%d", err));
+
+    /* Not paired to any controller yet: put the onboarding QR on the screen. */
+    if (chip::Server::GetInstance().GetFabricTable().FabricCount() == 0) {
+        show_commissioning_screen();
+    }
 
     sensor_loop_endpoints_t eps = {
         .temperature_endpoint_id = endpoint::get_id(temp_ep),

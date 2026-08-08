@@ -34,5 +34,10 @@
 #define REPORT_DELTA_TEMP_C    0.2f
 #define REPORT_DELTA_RH_PCT    1.0f
 #define FORCE_REPORT_EVERY_N_POLLS 10  // report even without delta every N polls (staleness guard)
+
+// Display refresh policy (every refresh costs battery; see docs/power-budget.md)
+#define DISPLAY_FULL_REFRESH_EVERY_N 10  // full refresh every N-th refresh to clear ghosting
+#define DISPLAY_FLIP_LONG_AXIS  0        // HW-VERIFY: set so the image is upright in the case
+#define DISPLAY_FLIP_SHORT_AXIS 0        // HW-VERIFY
 #define DISPLAY_IDLE_TIMEOUT_S 30
 #define FACTORY_RESET_HOLD_S   10

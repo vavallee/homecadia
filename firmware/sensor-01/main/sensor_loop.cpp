@@ -12,6 +12,7 @@
 
 #include "app_config.h"
 #include "battery.h"
+#include "display.h"
 #include "sht40.h"
 
 static const char *TAG = "sensor_loop";
@@ -85,6 +86,8 @@ static void poll_cb(void *arg)
 
     if (delta_hit || force) {
         report_matter(temp_c, rh, bat_mv, bat_pct);
+        /* display refresh rides on the same delta gate as the radio report */
+        display_show_readings(&s_readings);
         s_reported_temp_c = temp_c;
         s_reported_rh = rh;
         s_reported_bat_pct = bat_pct;
