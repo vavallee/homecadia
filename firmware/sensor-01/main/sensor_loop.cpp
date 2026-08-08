@@ -13,6 +13,7 @@
 #include "app_config.h"
 #include "battery.h"
 #include "display.h"
+#include "led.h"
 #include "settings.h"
 #include "sht40.h"
 
@@ -77,6 +78,7 @@ static void poll_cb(void *arg)
     }
 
     s_readings = {temp_c, rh, bat_mv, bat_pct, true};
+    led_set_low_battery(bat_pct < LOW_BATTERY_PCT);
 
     s_polls_since_report++;
     bool delta_hit = isnan(s_reported_temp_c) ||

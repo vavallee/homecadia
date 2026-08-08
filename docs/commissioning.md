@@ -33,8 +33,9 @@ also accepts the device.
 
 ## Factory reset
 
-Hold the encoder button for 10 seconds (from milestone 6). Until then:
-`idf.py erase-flash` and reflash.
+Hold the encoder button for 10 seconds. The device wipes its fabrics and
+settings, reboots, and shows the commissioning QR again.
+(`idf.py erase-flash` + reflash also works over USB.)
 
 ## Troubleshooting (to be filled during milestone 2 bringup)
 

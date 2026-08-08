@@ -18,6 +18,7 @@
 #include <common_macros.h>
 #include <app_config.h>
 #include <display.h>
+#include <led.h>
 #include <sensor_loop.h>
 #include <settings.h>
 #include <ui.h>
@@ -82,12 +83,21 @@ static void app_event_cb(const ChipDeviceEvent *event, intptr_t arg)
     switch (event->Type) {
     case chip::DeviceLayer::DeviceEventType::kCommissioningComplete: {
         ESP_LOGI(TAG, "Commissioning complete");
+        led_set_commissioning(false);
         sensor_readings_t r = sensor_loop_get_readings();
         if (r.valid) {
             display_show_readings(&r);
         }
         break;
     }
+
+    case chip::DeviceLayer::DeviceEventType::kCommissioningWindowOpened:
+        led_set_commissioning(true);
+        break;
+
+    case chip::DeviceLayer::DeviceEventType::kCommissioningWindowClosed:
+        led_set_commissioning(false);
+        break;
 
     case chip::DeviceLayer::DeviceEventType::kFailSafeTimerExpired:
         ESP_LOGI(TAG, "Commissioning failed, fail safe timer expired");
@@ -207,6 +217,11 @@ extern "C" void app_main()
     err = settings_init();
     if (err != ESP_OK) {
         ESP_LOGW(TAG, "Settings load failed (%s), using defaults", esp_err_to_name(err));
+    }
+
+    err = led_init();
+    if (err != ESP_OK) {
+        ESP_LOGW(TAG, "LED init failed: %s", esp_err_to_name(err));
     }
 
     err = display_init();

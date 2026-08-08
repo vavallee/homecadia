@@ -107,6 +107,9 @@ static void render_readings(const sensor_readings_t *r)
     monogfx_draw_text(&s_gfx, 10, 110, buf, 2);
     snprintf(buf, sizeof(buf), "%.2fV", r->battery_mv / 1000.0f);
     monogfx_draw_text(&s_gfx, 120, 110, buf, 2);
+    if (r->battery_pct < LOW_BATTERY_PCT) {
+        monogfx_draw_text(&s_gfx, 200, 110, "LOW BAT!", 2);
+    }
 }
 
 /* espressif/qrcode component hands the finished QR to a callback with no

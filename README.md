@@ -33,8 +33,8 @@ Connect ZBT-2). Build instructions: [docs/build.md](docs/build.md).
 | 2 | Matter temp/humidity over Thread, commissions to HA (TinyENV parity) | code complete; commissioning test awaits hardware |
 | 3 | Display driver, view 1 rendering readings, measured refresh cost | code complete; refresh cost measurement awaits hardware |
 | 4 | Encoder, views, settings, wake behavior | code complete; encoder direction + wake await hardware |
-| 5 | ICD tuning, battery reporting, power budget with measured numbers | — |
-| 6 | Factory reset, low-battery behavior, assembly guide final, v1.0.0 | — |
+| 5 | ICD tuning, battery reporting, power budget with measured numbers | LIT ICD configured; tuning + measurements await hardware |
+| 6 | Factory reset, low-battery behavior, assembly guide final, v1.0.0 | factory reset + LED + low-bat display done; rest awaits hardware |
 
 Hardware-dependent code written before parts arrive is marked `HW-VERIFY` in
 source and tracked in [docs/bringup.md](docs/bringup.md).

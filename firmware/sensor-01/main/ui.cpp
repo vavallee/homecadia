@@ -3,6 +3,7 @@
 #include "button_gpio.h"
 #include "esp_app_desc.h"
 #include "esp_log.h"
+#include "esp_matter.h"
 #include "esp_openthread.h"
 #include "esp_openthread_lock.h"
 #include "esp_timer.h"
@@ -152,6 +153,12 @@ static void on_push(void *button_handle, void *usr_data)
     render_current();
 }
 
+static void on_factory_reset(void *button_handle, void *usr_data)
+{
+    ESP_LOGW(TAG, "Encoder held %ds: factory reset", FACTORY_RESET_HOLD_S);
+    esp_matter::factory_reset(); /* wipes fabrics + NVS, reboots into commissioning */
+}
+
 esp_err_t ui_init(void)
 {
     const esp_timer_create_args_t targs = {
@@ -182,7 +189,10 @@ esp_err_t ui_init(void)
         return err;
     }
     iot_button_register_cb(btn, BUTTON_SINGLE_CLICK, nullptr, on_push, nullptr);
-    /* BUTTON_LONG_PRESS (factory reset, 10s) lands in milestone 6 */
+
+    button_event_args_t reset_args = {};
+    reset_args.long_press.press_time = FACTORY_RESET_HOLD_S * 1000;
+    iot_button_register_cb(btn, BUTTON_LONG_PRESS_START, &reset_args, on_factory_reset, nullptr);
 
     return ESP_OK;
 }
