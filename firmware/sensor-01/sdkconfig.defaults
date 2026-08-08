@@ -10,6 +10,12 @@ CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
 # logs land on the unconnected UART0 pads (D6/D7).
 CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
 
+# Light sleep powers down the USB Serial/JTAG peripheral, killing the USB
+# port seconds after boot (host sees descriptor read errors). This option
+# holds an ESP_PM_NO_LIGHT_SLEEP lock while USB is connected; on battery
+# (no USB) the device sleeps normally, so it costs nothing in deployment.
+CONFIG_USJ_NO_AUTO_LS_ON_CONNECTION=y
+
 # BLE (commissioning transport)
 CONFIG_BT_ENABLED=y
 CONFIG_BT_NIMBLE_ENABLED=y
