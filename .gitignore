@@ -12,3 +12,7 @@ __pycache__/
 # Editors
 .vscode/
 .idea/
+
+# Local agent/tooling scratch
+.gastown-ignore
+.claude/
