@@ -19,10 +19,13 @@ static const char *TAG = "display";
 #define FRAME_BYTES (LAND_W * LAND_H / 8)
 
 typedef struct {
-    enum { MSG_READINGS, MSG_COMMISSIONING } type;
+    enum { MSG_READINGS, MSG_COMMISSIONING, MSG_DIAG, MSG_SETTINGS } type;
     sensor_readings_t readings;
     char qr[128];
     char manual[24];
+    display_diag_t diag;
+    char fw[32];
+    display_settings_view_t settings;
 } display_msg_t;
 
 static ssd1680_handle_t s_panel;
@@ -80,11 +83,14 @@ static void render_readings(const sensor_readings_t *r)
 {
     monogfx_clear(&s_gfx);
 
+    app_settings_t cfg = settings_get();
+    float temp = cfg.use_fahrenheit ? r->temp_c * 9.0f / 5.0f + 32.0f : r->temp_c;
+
     char buf[16];
     /* temperature, big, left */
-    snprintf(buf, sizeof(buf), "%.1f", r->temp_c);
+    snprintf(buf, sizeof(buf), "%.1f", temp);
     int end = draw_seg_string(buf, 10, 18, 34, 64, 8);
-    monogfx_draw_text(&s_gfx, end + 2, 18, "C", 3); /* HW-VERIFY: degree glyph 0xF8 renders as ° */
+    monogfx_draw_text(&s_gfx, end + 2, 18, cfg.use_fahrenheit ? "F" : "C", 3);
 
     /* humidity, right */
     snprintf(buf, sizeof(buf), "%.0f", r->rh);
@@ -138,6 +144,56 @@ static void render_commissioning(const char *qr_payload, const char *manual_code
     monogfx_draw_text(&s_gfx, 140, 76, manual_code, 2);
 }
 
+static void render_diag(const display_diag_t *d, const char *fw)
+{
+    monogfx_clear(&s_gfx);
+    monogfx_draw_text(&s_gfx, 10, 8, "DIAGNOSTICS", 2);
+    monogfx_fill_rect(&s_gfx, 0, 26, LAND_W, 1, true);
+
+    char buf[40];
+    if (d->rssi_valid) {
+        snprintf(buf, sizeof(buf), "Thread RSSI %ddBm", d->rssi_dbm);
+    } else {
+        snprintf(buf, sizeof(buf), "Thread: no parent");
+    }
+    monogfx_draw_text(&s_gfx, 10, 34, buf, 2);
+
+    snprintf(buf, sizeof(buf), "Bat %u%% %.2fV", d->battery_pct, d->battery_mv / 1000.0f);
+    monogfx_draw_text(&s_gfx, 10, 56, buf, 2);
+
+    uint32_t days = d->uptime_s / 86400;
+    snprintf(buf, sizeof(buf), "Up %lud %02lu:%02lu", (unsigned long)days,
+             (unsigned long)(d->uptime_s % 86400) / 3600, (unsigned long)(d->uptime_s % 3600) / 60);
+    monogfx_draw_text(&s_gfx, 10, 78, buf, 2);
+
+    snprintf(buf, sizeof(buf), "FW %s", fw);
+    monogfx_draw_text(&s_gfx, 10, 104, buf, 1);
+}
+
+static void render_settings(const display_settings_view_t *v)
+{
+    monogfx_clear(&s_gfx);
+    monogfx_draw_text(&s_gfx, 10, 8, "SETTINGS", 2);
+    monogfx_fill_rect(&s_gfx, 0, 26, LAND_W, 1, true);
+
+    char buf[32];
+    const int rows_y[DISPLAY_SETTINGS_ITEMS] = {40, 66};
+
+    snprintf(buf, sizeof(buf), "Poll     %s%us%s", v->editing && v->selected == 0 ? "[" : " ",
+             v->values.poll_interval_s, v->editing && v->selected == 0 ? "]" : " ");
+    monogfx_draw_text(&s_gfx, 30, rows_y[0], buf, 2);
+
+    snprintf(buf, sizeof(buf), "Units    %s%s%s", v->editing && v->selected == 1 ? "[" : " ",
+             v->values.use_fahrenheit ? "F" : "C", v->editing && v->selected == 1 ? "]" : " ");
+    monogfx_draw_text(&s_gfx, 30, rows_y[1], buf, 2);
+
+    if (v->highlight_menu) {
+        monogfx_draw_text(&s_gfx, 10, rows_y[v->selected], ">", 2);
+    }
+
+    monogfx_draw_text(&s_gfx, 10, 108, v->highlight_menu ? "push: edit/confirm  turn: select" : "push to change settings", 1);
+}
+
 static void display_task(void *arg)
 {
     display_msg_t msg;
@@ -145,11 +201,20 @@ static void display_task(void *arg)
         if (xQueueReceive(s_queue, &msg, portMAX_DELAY) != pdTRUE) {
             continue;
         }
-        if (msg.type == display_msg_t::MSG_READINGS) {
+        switch (msg.type) {
+        case display_msg_t::MSG_READINGS:
             render_readings(&msg.readings);
-        } else {
+            break;
+        case display_msg_t::MSG_DIAG:
+            render_diag(&msg.diag, msg.fw);
+            break;
+        case display_msg_t::MSG_SETTINGS:
+            render_settings(&msg.settings);
+            break;
+        case display_msg_t::MSG_COMMISSIONING:
             render_commissioning(msg.qr, msg.manual);
             s_partials_since_full = DISPLAY_FULL_REFRESH_EVERY_N; /* force full: big change */
+            break;
         }
         push_frame();
     }
@@ -204,5 +269,28 @@ void display_show_commissioning(const char *qr_payload, const char *manual_code)
     msg.type = display_msg_t::MSG_COMMISSIONING;
     strlcpy(msg.qr, qr_payload, sizeof(msg.qr));
     strlcpy(msg.manual, manual_code, sizeof(msg.manual));
+    xQueueSend(s_queue, &msg, 0);
+}
+
+void display_show_diagnostics(const display_diag_t *d)
+{
+    if (!s_queue) {
+        return;
+    }
+    display_msg_t msg = {};
+    msg.type = display_msg_t::MSG_DIAG;
+    msg.diag = *d;
+    strlcpy(msg.fw, d->fw_version ? d->fw_version : "?", sizeof(msg.fw));
+    xQueueSend(s_queue, &msg, 0);
+}
+
+void display_show_settings(const display_settings_view_t *v)
+{
+    if (!s_queue) {
+        return;
+    }
+    display_msg_t msg = {};
+    msg.type = display_msg_t::MSG_SETTINGS;
+    msg.settings = *v;
     xQueueSend(s_queue, &msg, 0);
 }

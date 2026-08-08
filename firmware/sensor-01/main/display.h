@@ -5,6 +5,25 @@
 
 #include "esp_err.h"
 #include "sensor_loop.h"
+#include "settings.h"
+
+typedef struct {
+    bool rssi_valid;
+    int8_t rssi_dbm;
+    uint32_t uptime_s;
+    uint8_t battery_pct;
+    uint32_t battery_mv;
+    const char *fw_version; /* copied on enqueue */
+} display_diag_t;
+
+#define DISPLAY_SETTINGS_ITEMS 2 /* 0: poll interval, 1: units */
+
+typedef struct {
+    app_settings_t values;
+    uint8_t selected;
+    bool highlight_menu; /* selection marker visible (MENU/EDIT modes) */
+    bool editing;        /* selected value being edited */
+} display_settings_view_t;
 
 esp_err_t display_init(void);
 
@@ -15,3 +34,9 @@ void display_show_readings(const sensor_readings_t *r);
 
 /* First-boot / decommissioned screen: commissioning QR + manual pairing code. */
 void display_show_commissioning(const char *qr_payload, const char *manual_code);
+
+/* View 2: Thread RSSI, uptime, battery, firmware version. */
+void display_show_diagnostics(const display_diag_t *d);
+
+/* View 3: settings menu. */
+void display_show_settings(const display_settings_view_t *v);

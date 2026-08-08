@@ -19,6 +19,8 @@
 #include <app_config.h>
 #include <display.h>
 #include <sensor_loop.h>
+#include <settings.h>
+#include <ui.h>
 
 #include <setup_payload/OnboardingCodesUtil.h>
 #include <setup_payload/QRCodeSetupPayloadGenerator.h>
@@ -202,9 +204,19 @@ extern "C" void app_main()
     set_openthread_platform_config(&config);
 #endif
 
+    err = settings_init();
+    if (err != ESP_OK) {
+        ESP_LOGW(TAG, "Settings load failed (%s), using defaults", esp_err_to_name(err));
+    }
+
     err = display_init();
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Display init failed: %s — continuing headless", esp_err_to_name(err));
+    }
+
+    err = ui_init();
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "UI init failed: %s — continuing without input", esp_err_to_name(err));
     }
 
     err = esp_matter::start(app_event_cb);

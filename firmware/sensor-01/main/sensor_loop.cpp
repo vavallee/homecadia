@@ -13,6 +13,7 @@
 #include "app_config.h"
 #include "battery.h"
 #include "display.h"
+#include "settings.h"
 #include "sht40.h"
 
 static const char *TAG = "sensor_loop";
@@ -126,7 +127,17 @@ esp_err_t sensor_loop_start(const sensor_loop_endpoints_t *endpoints)
     }
 
     poll_cb(nullptr); /* first reading immediately */
-    return esp_timer_start_periodic(s_timer, (uint64_t)SENSOR_POLL_INTERVAL_S * 1000000ULL);
+    return esp_timer_start_periodic(s_timer, (uint64_t)settings_get().poll_interval_s * 1000000ULL);
+}
+
+esp_err_t sensor_loop_set_poll_interval(uint16_t seconds)
+{
+    if (!s_timer) {
+        return ESP_ERR_INVALID_STATE;
+    }
+    esp_timer_stop(s_timer);
+    ESP_LOGI(TAG, "poll interval -> %us", seconds);
+    return esp_timer_start_periodic(s_timer, (uint64_t)seconds * 1000000ULL);
 }
 
 sensor_readings_t sensor_loop_get_readings(void)

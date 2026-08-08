@@ -11,9 +11,12 @@ typedef struct {
     uint16_t power_source_endpoint_id;
 } sensor_loop_endpoints_t;
 
-/* Starts the poll timer (SENSOR_POLL_INTERVAL_S) and takes an immediate
+/* Starts the poll timer (interval from settings) and takes an immediate
  * first reading. Call after esp_matter::start(). */
 esp_err_t sensor_loop_start(const sensor_loop_endpoints_t *endpoints);
+
+/* Applies a new poll cadence immediately (settings UI). */
+esp_err_t sensor_loop_set_poll_interval(uint16_t seconds);
 
 /* Last readings, for the display (milestone 3). */
 typedef struct {
