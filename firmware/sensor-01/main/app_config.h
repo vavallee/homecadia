@@ -33,5 +33,6 @@
 #define SENSOR_POLL_INTERVAL_S 120
 #define REPORT_DELTA_TEMP_C    0.2f
 #define REPORT_DELTA_RH_PCT    1.0f
+#define FORCE_REPORT_EVERY_N_POLLS 10  // report even without delta every N polls (staleness guard)
 #define DISPLAY_IDLE_TIMEOUT_S 30
 #define FACTORY_RESET_HOLD_S   10

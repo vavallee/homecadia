@@ -1,8 +1,8 @@
-/* homecadia sensor-01 — milestone 1 skeleton.
+/* homecadia sensor-01 — Matter-over-Thread temperature/humidity sensor.
  *
- * Boots the Matter stack with Thread enabled and prints onboarding codes.
- * No application endpoints yet: temperature/humidity/power-source arrive in
- * milestone 2. Structure follows the esp-matter icd_app example (v1.6).
+ * Endpoints: temperature sensor, humidity sensor, power source (battery).
+ * SHT40 polled every SENSOR_POLL_INTERVAL_S; attributes update on delta
+ * (sensor_loop.cpp). Structure follows the esp-matter icd_app example (v1.6).
  */
 
 #include <esp_err.h>
@@ -17,6 +17,7 @@
 
 #include <common_macros.h>
 #include <app_config.h>
+#include <sensor_loop.h>
 #if CHIP_DEVICE_CONFIG_ENABLE_THREAD
 #include <esp_openthread_types.h>
 #include <platform/ESP32/OpenthreadLauncher.h>
@@ -123,11 +124,45 @@ extern "C" void app_main()
     ABORT_APP_ON_FAILURE(err == ESP_OK, ESP_LOGE(TAG, "Failed to configure power management, err:%d", err));
 #endif
 
-    /* Matter node with the mandatory root endpoint. Application endpoints
-     * (temperature, humidity, power source) are added here in milestone 2. */
     node::config_t node_config;
     node_t *node = node::create(&node_config, app_attribute_update_cb, app_identification_cb);
     ABORT_APP_ON_FAILURE(node != nullptr, ESP_LOGE(TAG, "Failed to create Matter node"));
+
+    /* Temperature sensor endpoint (MeasuredValue in 0.01°C; SHT40 range) */
+    endpoint::temperature_sensor::config_t temp_cfg;
+    temp_cfg.temperature_measurement.min_measured_value = nullable<int16_t>(-4000);
+    temp_cfg.temperature_measurement.max_measured_value = nullable<int16_t>(12500);
+    endpoint_t *temp_ep = endpoint::temperature_sensor::create(node, &temp_cfg, ENDPOINT_FLAG_NONE, nullptr);
+    ABORT_APP_ON_FAILURE(temp_ep != nullptr, ESP_LOGE(TAG, "Failed to create temperature endpoint"));
+
+    /* Humidity sensor endpoint (MeasuredValue in 0.01 %RH) */
+    endpoint::humidity_sensor::config_t hum_cfg;
+    hum_cfg.relative_humidity_measurement.min_measured_value = nullable<uint16_t>(0);
+    hum_cfg.relative_humidity_measurement.max_measured_value = nullable<uint16_t>(10000);
+    endpoint_t *hum_ep = endpoint::humidity_sensor::create(node, &hum_cfg, ENDPOINT_FLAG_NONE, nullptr);
+    ABORT_APP_ON_FAILURE(hum_ep != nullptr, ESP_LOGE(TAG, "Failed to create humidity endpoint"));
+
+    /* Power source endpoint, battery feature. BatPercentRemaining and
+     * BatVoltage are optional attributes, created explicitly below. */
+    endpoint::power_source::config_t ps_cfg;
+    ps_cfg.power_source.status =
+        chip::to_underlying(chip::app::Clusters::PowerSource::PowerSourceStatusEnum::kActive);
+    ps_cfg.power_source.order = 0;
+    snprintf(ps_cfg.power_source.description, sizeof(ps_cfg.power_source.description), "2000mAh LiPo");
+    ps_cfg.power_source.feature_flags = cluster::power_source::feature::battery::get_id();
+    ps_cfg.power_source.features.battery.bat_charge_level =
+        chip::to_underlying(chip::app::Clusters::PowerSource::BatChargeLevelEnum::kOk);
+    ps_cfg.power_source.features.battery.bat_replaceability =
+        chip::to_underlying(chip::app::Clusters::PowerSource::BatReplaceabilityEnum::kUserReplaceable);
+    endpoint_t *ps_ep = endpoint::power_source::create(node, &ps_cfg, ENDPOINT_FLAG_NONE, nullptr);
+    ABORT_APP_ON_FAILURE(ps_ep != nullptr, ESP_LOGE(TAG, "Failed to create power source endpoint"));
+
+    cluster_t *ps_cluster = cluster::get(ps_ep, chip::app::Clusters::PowerSource::Id);
+    ABORT_APP_ON_FAILURE(ps_cluster != nullptr, ESP_LOGE(TAG, "Failed to get power source cluster"));
+    cluster::power_source::attribute::create_bat_percent_remaining(
+        ps_cluster, nullable<uint8_t>(), nullable<uint8_t>(0), nullable<uint8_t>(200));
+    cluster::power_source::attribute::create_bat_voltage(
+        ps_cluster, nullable<uint32_t>(), nullable<uint32_t>(0), nullable<uint32_t>(4500));
 
 #if CHIP_DEVICE_CONFIG_ENABLE_THREAD
     esp_openthread_platform_config_t config = {
@@ -141,5 +176,17 @@ extern "C" void app_main()
     err = esp_matter::start(app_event_cb);
     ABORT_APP_ON_FAILURE(err == ESP_OK, ESP_LOGE(TAG, "Failed to start Matter, err:%d", err));
 
-    ESP_LOGI(TAG, "homecadia sensor-01 up (milestone 1 skeleton, poll target %ds)", SENSOR_POLL_INTERVAL_S);
+    sensor_loop_endpoints_t eps = {
+        .temperature_endpoint_id = endpoint::get_id(temp_ep),
+        .humidity_endpoint_id = endpoint::get_id(hum_ep),
+        .power_source_endpoint_id = endpoint::get_id(ps_ep),
+    };
+    err = sensor_loop_start(&eps);
+    if (err != ESP_OK) {
+        /* Keep the node up for commissioning/bench tests without the sensor wired. */
+        ESP_LOGE(TAG, "Sensor loop not running (%s)", esp_err_to_name(err));
+    }
+
+    ESP_LOGI(TAG, "homecadia sensor-01 up (poll %ds, report on ≥%.1f°C / ≥%.0f%%RH delta)",
+             SENSOR_POLL_INTERVAL_S, REPORT_DELTA_TEMP_C, REPORT_DELTA_RH_PCT);
 }

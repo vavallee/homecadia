@@ -30,7 +30,7 @@ Connect ZBT-2). Build instructions: [docs/build.md](docs/build.md).
 | # | Deliverable | Status |
 |---|---|---|
 | 1 | Repo scaffold, docs, CI compiling an esp-matter skeleton for esp32c6 | done |
-| 2 | Matter temp/humidity over Thread, commissions to HA (TinyENV parity) | — |
+| 2 | Matter temp/humidity over Thread, commissions to HA (TinyENV parity) | code complete; commissioning test awaits hardware |
 | 3 | Display driver, view 1 rendering readings, measured refresh cost | — |
 | 4 | Encoder, views, settings, wake behavior | — |
 | 5 | ICD tuning, battery reporting, power budget with measured numbers | — |
