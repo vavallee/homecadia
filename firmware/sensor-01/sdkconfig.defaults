@@ -1,0 +1,82 @@
+# sensor-01: esp32c6, Matter over Thread, sleepy end device.
+# Base: esp-matter v1.6 icd_app example defaults, adapted.
+# LIT ICD tuning happens in milestone 5 against measured current.
+
+CONFIG_IDF_TARGET="esp32c6"
+CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
+
+# BLE (commissioning transport)
+CONFIG_BT_ENABLED=y
+CONFIG_BT_NIMBLE_ENABLED=y
+CONFIG_BT_NIMBLE_ENABLE_CONN_REATTEMPT=n
+
+# Disable lwip ipv6 autoconfig
+CONFIG_LWIP_IPV6_AUTOCONFIG=n
+
+# Custom partition table
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_FILENAME="partitions.csv"
+CONFIG_PARTITION_TABLE_OFFSET=0xC000
+
+# Wi-Fi off entirely: Thread-only device
+CONFIG_ESP_WIFI_SOFTAP_SUPPORT=n
+CONFIG_ENABLE_WIFI_AP=n
+CONFIG_ENABLE_WIFI_STATION=n
+
+# Enable HKDF in mbedtls
+CONFIG_MBEDTLS_HKDF_C=y
+
+# Endpoints: temperature, humidity (+ headroom for power source diagnostics)
+CONFIG_ESP_MATTER_MAX_DYNAMIC_ENDPOINT_COUNT=4
+
+# OpenThread, MTD (sleepy end device)
+CONFIG_OPENTHREAD_ENABLED=y
+CONFIG_OPENTHREAD_MTD=y
+CONFIG_OPENTHREAD_SRP_CLIENT=y
+CONFIG_OPENTHREAD_LOG_LEVEL_DYNAMIC=n
+CONFIG_OPENTHREAD_LOG_LEVEL_NOTE=y
+CONFIG_OPENTHREAD_CLI=n
+
+# LwIP config for OpenThread
+CONFIG_LWIP_IPV6_NUM_ADDRESSES=8
+CONFIG_LWIP_MULTICAST_PING=y
+CONFIG_LWIP_ND6=n
+CONFIG_LWIP_IPV4=n
+CONFIG_DISABLE_IPV4=y
+
+# MDNS platform
+CONFIG_USE_MINIMAL_MDNS=n
+
+# Matter OTA requestor: on because the partition layout supports it; HA-side
+# provider support is weak, so nothing in the app depends on it (see README).
+CONFIG_ENABLE_OTA_REQUESTOR=y
+
+# BLE modem sleep
+CONFIG_BT_LE_SLEEP_ENABLE=y
+CONFIG_BT_LE_LP_CLK_SRC_MAIN_XTAL=y
+CONFIG_RTC_CLK_SRC_EXT_CRYS=n
+
+# Power management: light sleep with DFS
+CONFIG_PM_ENABLE=y
+CONFIG_PM_DFS_INIT_AUTO=y
+CONFIG_PM_POWER_DOWN_PERIPHERAL_IN_LIGHT_SLEEP=y
+CONFIG_ESP_SLEEP_POWER_DOWN_FLASH=y
+CONFIG_ESP_PHY_MAC_BB_PD=y
+CONFIG_FREERTOS_HZ=1000
+CONFIG_FREERTOS_USE_TICKLESS_IDLE=y
+
+# IEEE 802.15.4 radio sleep
+CONFIG_IEEE802154_SLEEP_ENABLE=y
+
+# mbedTLS
+CONFIG_MBEDTLS_SSL_PROTO_DTLS=y
+
+# Matter ICD server (intervals are milestone-5 tuning targets)
+CONFIG_ENABLE_ICD_SERVER=y
+CONFIG_ICD_FAST_POLL_INTERVAL_MS=500
+CONFIG_ICD_IDLE_MODE_INTERVAL_SEC=60
+CONFIG_ICD_ACTIVE_MODE_INTERVAL_MS=1000
+CONFIG_ICD_ACTIVE_MODE_THRESHOLD_MS=1000
+
+# disable groupcast cluster until verified (upstream icd_app default)
+CONFIG_SUPPORT_GROUPCAST_CLUSTER=n

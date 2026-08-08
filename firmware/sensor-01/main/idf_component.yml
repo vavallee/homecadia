@@ -1,0 +1,6 @@
+# espressif/button is required by esp-matter's examples/common/app_reset,
+# which rides in via EXTRA_COMPONENT_DIRS. Milestone 4 uses it directly for
+# the encoder push (factory reset hold).
+dependencies:
+  espressif/button:
+    version: "^4"

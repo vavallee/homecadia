@@ -1,0 +1,41 @@
+name: build-sensor-01
+
+on:
+  push:
+    paths:
+      - "firmware/**"
+      - ".github/workflows/build-sensor-01.yml"
+  pull_request:
+    paths:
+      - "firmware/**"
+      - ".github/workflows/build-sensor-01.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # Same image as docs/build.md — keep the two pinned together when upgrading.
+    container:
+      image: espressif/esp-matter:release-v1.6_idf_v5.5.5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build (esp32c6)
+        shell: bash
+        run: |
+          source "$IDF_PATH/export.sh"
+          cd firmware/sensor-01
+          idf.py set-target esp32c6 build
+
+      - name: Collect flash images
+        shell: bash
+        run: |
+          mkdir -p out
+          cp firmware/sensor-01/build/*.bin out/
+          cp firmware/sensor-01/build/bootloader/bootloader.bin out/
+          cp firmware/sensor-01/build/partition_table/partition-table.bin out/
+          cp firmware/sensor-01/build/flasher_args.json out/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sensor-01-esp32c6
+          path: out/
