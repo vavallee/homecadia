@@ -75,6 +75,39 @@ idf.py -p /dev/ttyACM0 flash monitor
 Expect the first esp-matter build to take a long time (it compiles
 connectedhomeip) and the native clone step to download several GB.
 
+## Flashing from WSL2
+
+USB devices reach WSL through usbipd-win. Field-tested sequence (unit 1):
+
+```sh
+# Windows, admin PowerShell, once per board+port:
+usbipd bind --busid <BUSID>          # find BUSID with: usbipd list  (XIAO = 303a:1001)
+
+# WSL, per plug-in:
+usbipd.exe attach --wsl --busid <BUSID>
+# board appears as /dev/ttyACM0; flash via the docker command above with
+# --device=/dev/ttyACM0 and `idf.py -p /dev/ttyACM0 flash`
+```
+
+Gotchas, all hit in practice:
+
+- **A board running firmware without `CONFIG_USJ_NO_AUTO_LS_ON_CONNECTION`
+  cannot be flashed normally** — light sleep kills the USB port within ~2s of
+  boot (host log: `device descriptor read/8, error -32`) and the
+  replug-and-race approach loses to usbipd's attach latency. Recovery: hold
+  the **B** button (tiny switch beside the USB-C), plug in while holding,
+  release after ~2s — ROM download mode never sleeps. Current firmware pins
+  the port awake whenever USB is connected, so this is only needed for
+  boards with old/foreign firmware.
+- **`usbipd attach` does not survive the device re-enumerating** (e.g. after
+  `esptool` exits download mode). `usbipd attach --wsl --busid <BUSID>
+  --auto-attach` re-attaches automatically, with ~2–7s latency.
+- **Don't script raw reads of `/dev/ttyACM0` for boot logs.** Opening the tty
+  pulses the USB-Serial-JTAG control-line latch and can hard-reset the chip —
+  sometimes into download mode. Use `idf.py -p /dev/ttyACM0 monitor` in an
+  interactive terminal (it owns the reset/reconnect dance); expect the boot
+  banner only from its own reset, and expect the port to drop in deep sleep.
+
 ## CI
 
 `.github/workflows/build-sensor-01.yml` builds on every push touching

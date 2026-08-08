@@ -4,6 +4,18 @@ Every `HW-VERIFY` marker in source or docs gets a row here. Nothing ships
 (milestone 6) with open rows. Parts are still in transit; this list grows as
 pre-hardware code is written.
 
+## Flash & console (verified on unit 1, 2026-08-08)
+
+- [x] Flashes over native USB from WSL2 (usbipd path; see
+      [build.md](build.md) for the gotchas). Chip: ESP32-C6FH4 (QFN32) v0.2.
+- [x] USB console stays enumerated with the app running —
+      `CONFIG_USJ_NO_AUTO_LS_ON_CONNECTION=y` verified: port alive
+      indefinitely; without it, dead in <2s (light sleep powers down USB-SJ).
+- [x] Firmware boots on hardware (bare board: no SHT40/panel attached;
+      sensor loop correctly refuses to start, node stays up).
+- [ ] Onboarding codes verified from a live console (`idf.py monitor`,
+      interactive) against the compiled-in test defaults (34970112332).
+
 ## Pins & wiring
 
 - [ ] XIAO ESP32-C6 D-pin → GPIO mapping matches [pinmap.md](pinmap.md)
