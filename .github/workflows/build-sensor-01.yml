@@ -13,21 +13,27 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # Same image as docs/build.md — keep the two pinned together when upgrading.
-    container:
-      image: espressif/esp-matter:release-v1.6_idf_v5.5.5
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build (esp32c6)
-        shell: bash
+      # The esp-matter image unpacks to more than the runner's free space
+      # (~14GB); a job-level `container:` pulls before any step can clean up,
+      # so the build runs via `docker run` instead. Same image as
+      # docs/build.md — keep the two pinned together when upgrading.
+      - name: Free runner disk space
         run: |
-          source "$IDF_PATH/export.sh"
-          cd firmware/sensor-01
-          idf.py set-target esp32c6 build
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc \
+                      /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force
+          df -h /
+
+      - name: Build (esp32c6)
+        run: |
+          docker run --rm -v "$PWD":/work \
+            espressif/esp-matter:release-v1.6_idf_v5.5.5 \
+            bash -c 'cd /work/firmware/sensor-01 && idf.py set-target esp32c6 build'
 
       - name: Collect flash images
-        shell: bash
         run: |
           mkdir -p out
           cp firmware/sensor-01/build/*.bin out/
