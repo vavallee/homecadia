@@ -1,0 +1,76 @@
+# Network infrastructure
+
+HA-side hardware the homecadia fleet depends on. Separate from any single
+device — the sensor-01 parts list is [bom.md](bom.md); pairing procedure is
+[commissioning.md](commissioning.md).
+
+## Home Assistant Connect ZBT-2 (Nabu Casa NC-ZBT-9741)
+
+- Silicon Labs MG24 (Zigbee 3.0 / Thread radio) + ESP32-S3 as USB-serial
+  bridge
+- USB-C, 5V DC 500mA; 460800 baud (4× the ZBT-1's 115200)
+- 83×83×179mm incl. antenna; antenna 24mm dia × 164mm, 4.16 dBi peak,
+  omnidirectional
+- Transmit power 8 dBm (rest of world) / 10 dBm (Europe)
+- Supports ZHA, Zigbee2MQTT, and OpenThread Border Router
+- **One protocol at a time.** Vendor design decision, not a config
+  limitation: Nabu Casa tested multiprotocol (MultiPAN) on the ZBT-1, found
+  it unstable, and will not implement it. Running Zigbee and Thread networks
+  in parallel needs two units.
+- **Role here: dedicated Thread border router (OTBR)** for the
+  Matter-over-Thread mesh sensor-01 commissions onto.
+- Cannot act as a standalone Thread border router independent of Home
+  Assistant.
+- Experimental repeater firmware exists via the Open Home Foundation toolbox;
+  reflashing to repeater mode removes coordinator capability until stock
+  firmware is restored.
+
+## Home Assistant Voice Preview Edition (Nabu Casa NC-VK-9727)
+
+- ESP32-S3, 16MB flash, 8MB octal PSRAM; XMOS XU316 audio DSP (echo
+  cancellation, noise removal, automatic gain control)
+- Wi-Fi 2.4GHz + BLE 5.0. **Not a Thread device** — it does not join the
+  homecadia Thread mesh.
+- ESPHome preloaded; open firmware for both the ESP32 and the XMOS
+- USB-C 5V 2A; cable and PSU not included
+- Grove port for sensor expansion; 3.5mm out with TI AIC3204 DAC
+
+### STT host requirement
+
+Fully-local speech-to-text wants an **Intel N100 or better**. Weaker HA hosts
+need Speech-to-Phrase (limited to predefined home-control sentences) or an HA
+Cloud subscription.
+
+Our HA host (from the homelab repo, `docs/INVENTORY.md`): HA 2026.5.0 runs as
+a container (`ha2-home-assistant`, hostNetwork) on **k8sn1-master** (x86,
+Debian 13) in the home k3s cluster, and **wyoming-whisper + wyoming-piper are
+already deployed** there — so the fully-local path is the default.
+
+- `TODO/UNVERIFIED`: k8sn1's CPU model is not recorded anywhere (a known
+  inventory gap in the homelab repo). Confirm it is N100-class or better
+  under real Whisper load before relying on local STT latency.
+- HA runs as a container, not HAOS — there is no add-on store. The
+  Speech-to-Phrase fallback would be another cluster workload, not an add-on
+  install.
+
+## Order status — ameriDroid, pending as of 2026-08-11
+
+| Item | Qty | Price (CAD) |
+|---|---|---|
+| Connect ZBT-2 | 1 | 68.40 (after 5OFFEMAIL) |
+| Voice PE | 1 | 81.70 (after 5OFFEMAIL) |
+| Global Post DDP shipping | | 40.00 |
+| **Total** | | **190.10** |
+
+DDP selected deliberately: duties and brokerage included, nothing owed on
+delivery. Transit 6–21 days via Canada Post, not guaranteed. The non-DDP
+Global Post option was $37 but would have added ~$28 HST plus Canada Post
+handling at the door. UPS Standard was rejected — brokerage disbursement
+exposure.
+
+## Open questions
+
+- Cart has 1× ZBT-2; the parallel Zigbee + Thread plan needs 2. Second unit
+  not ordered — a separate later order pays the $40 freight twice.
+- Voice PE stock was unconfirmed at checkout across all NA distributors. If
+  it backorders, does the ZBT-2 ship separately or does the whole order hold?
