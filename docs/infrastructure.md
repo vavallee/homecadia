@@ -73,11 +73,20 @@ exposure.
 The parallel Zigbee + Thread plan is dropped. One unit, dedicated to Thread.
 No second order, no second $40 freight charge.
 
-Nothing is lost today: the homelab runs **Z-Wave** (Zooz stick on k8sn1,
-zwave-js-ui) and has no Zigbee network — `docs/INVENTORY.md` in the homelab
-repo shows zero Zigbee devices, ZHA, or Zigbee2MQTT. If Zigbee is ever
-wanted, it needs a second coordinator; this one cannot do both at once (see
-above), and adding it later means paying freight again.
+Nothing is lost today: HA itself runs **Z-Wave** (Zooz stick on k8sn1,
+zwave-js-ui) with no Zigbee network of its own — `docs/INVENTORY.md` in the
+homelab repo shows no ZHA, Zigbee2MQTT, or Zigbee devices. Zigbee currently
+lives on a **Samsung SmartThings hub**, outside HA.
+
+**Watch item:** the SmartThings hub is slated for decommissioning. Whatever
+Zigbee devices are on it need somewhere to go, and this ZBT-2 cannot take
+them while it is serving Thread — one protocol at a time (see above). The
+options at that point are a second coordinator (freight paid twice, as
+avoided here), replacing those devices with Thread/Matter or Z-Wave
+equivalents, or keeping the SmartThings hub alive as a Zigbee-only bridge.
+
+- `TODO`: inventory the Zigbee devices on SmartThings before decommissioning
+  it, so the migration cost is known rather than discovered.
 
 ## Open questions
 
