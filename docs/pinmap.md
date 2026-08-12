@@ -34,16 +34,35 @@ sheet numbers cited). Rows still open on hardware are in
   (sheet 3/5). Console is USB Serial/JTAG
   (`CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y`); it drops in deep sleep — normal.
 
-### Strapping caveat on the battery-sense pin
+### Strapping on the battery-sense pin — resolved, not a risk
 
-GPIO5 (MTDI) is in Seeed's avoid list. A permanently-connected 2×1M divider
-holds it at ~Vbat/2 ≈ 1.9V, inside the undefined logic band at strap
-sampling. veltoc ships exactly this and reports working boots, but the exact
-GPIO5 strap function on the C6 is **unverified** (check the ESP32-C6
-datasheet §strapping before final assembly). Mitigations if it bites:
-high-side-gate the divider (node rests at GND through the lower 1M at
-reset), or move battery sense to A0/A1/A2 — possible only if the display
-wiring frees one (the Seeed ePaper driver board takes all three).
+GPIO5 (MTDI) is in Seeed's avoid list, and the permanently-connected 2×1M
+divider holds it at ~Vbat/2 ≈ 1.9V — inside the undefined logic band
+(V<sub>IL</sub> ≲ 0.8V, V<sub>IH</sub> ≳ 2.3V) while straps are sampled. So the
+strap latches unpredictably.
+
+**It does not matter.** Per the [ESP32-C6
+datasheet](https://documentation.espressif.com/esp32-c6_datasheet_en.html)
+Table 3-4, MTMS (GPIO4) and MTDI (GPIO5) strap **the SDIO sampling and driving
+clock edge** — nothing else. Both float by default (no internal pulls at
+reset), with a 3ms hold requirement after CHIP_PU rises (Table 3-2).
+**sensor-01 uses no SDIO**: display is SPI, sensor is I2C, console is native
+USB. Whichever way the strap lands, no code path reads the setting. veltoc's
+working boots are explained, not lucky.
+
+Consequence: **no gating MOSFET is needed**, and the divider's 2.1µA bleed
+stays as budgeted (0.7% of the 300µA target — see
+[power-budget.md](power-budget.md)).
+
+Mitigations, retained only in case a future homecadia device on this pin does
+use SDIO: high-side-gate the divider with a P-FET (node then rests at GND
+through the lower 1M at reset, giving a clean logic 0 and near-zero bleed), or
+move battery sense to A0/A1/A2 — possible only if the display wiring frees one
+(the Seeed ePaper driver board takes all three).
+
+One real cost remains: MTDI is JTAG TDI, so external JTAG through the underside
+pads is unusable while the divider is attached. No practical loss — console and
+debug both run over the C6's native USB Serial/JTAG.
 
 | Function | XIAO pin | GPIO | Fixed by | Notes |
 |---|---|---|---|---|
