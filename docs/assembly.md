@@ -26,6 +26,8 @@ Reversed polarity destroys the XIAO's charge circuit instantly.
    pad (GPIO6) and GND.
 3. Solder LED (with series resistor) → D6.
 4. Cut Grove cable, solder SHT40: SDA → D4, SCL → D5, VCC → 3V3, GND → GND.
+   Position the sensor **in the case airflow path, away from MCU heat** —
+   self-heating skews readings.
 5. USB-C panel pigtail → XIAO USB pads or port (mechanical detail TBD with the
    case). **Charging only works with a USB A-to-C cable** — the 2-wire pigtail
    has no CC resistors, so C-to-C supplies won't enable VBUS.
