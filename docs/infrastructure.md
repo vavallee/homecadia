@@ -68,9 +68,18 @@ Global Post option was $37 but would have added ~$28 HST plus Canada Post
 handling at the door. UPS Standard was rejected — brokerage disbursement
 exposure.
 
+## Decided: one ZBT-2, Thread only (2026-08-11)
+
+The parallel Zigbee + Thread plan is dropped. One unit, dedicated to Thread.
+No second order, no second $40 freight charge.
+
+Nothing is lost today: the homelab runs **Z-Wave** (Zooz stick on k8sn1,
+zwave-js-ui) and has no Zigbee network — `docs/INVENTORY.md` in the homelab
+repo shows zero Zigbee devices, ZHA, or Zigbee2MQTT. If Zigbee is ever
+wanted, it needs a second coordinator; this one cannot do both at once (see
+above), and adding it later means paying freight again.
+
 ## Open questions
 
-- Cart has 1× ZBT-2; the parallel Zigbee + Thread plan needs 2. Second unit
-  not ordered — a separate later order pays the $40 freight twice.
 - Voice PE stock was unconfirmed at checkout across all NA distributors. If
   it backorders, does the ZBT-2 ship separately or does the whole order hold?
