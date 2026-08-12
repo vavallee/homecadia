@@ -59,7 +59,13 @@ Seeed XIAO ESP32-C6 + Seeed ePaper Driver Board for XIAO V2 + 2.9" mono e-ink
 (296×128, SSD1680) + Grove SHT40 + EC11 rotary encoder + 2000mAh LiPo, in a
 wall-mount enclosure remixed from [veltoc](https://github.com/danking6/veltoc).
 
-Full bill of materials: [docs/bom.md](docs/bom.md). Pin map: [docs/pinmap.md](docs/pinmap.md).
+![sensor-01 pin map](docs/img/sensor-01-pinout.svg)
+
+Full bill of materials: [docs/bom.md](docs/bom.md). Pin map with the
+schematic-verified board facts behind this diagram:
+[docs/pinmap.md](docs/pinmap.md). The official bare-board pinout is on the
+[Seeed XIAO ESP32-C6 wiki](https://wiki.seeedstudio.com/xiao_esp32c6_getting_started/)
+(not reproduced here — Seeed's wiki content is GPL-3.0, this repo is MIT).
 
 ⚠️ This build involves a bare lithium-polymer cell soldered directly to the
 board. Read the polarity warning at the top of

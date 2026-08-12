@@ -1,0 +1,133 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="660" viewBox="0 0 900 660" font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">
+  <title>sensor-01 pin map — Seeed XIAO ESP32-C6</title>
+  <desc>Wiring map for the homecadia sensor-01 node: ePaper driver board on SPI, SHT40 on I2C, EC11 encoder, LED, and battery divider on the MTDI underside pad.</desc>
+
+  <style>
+    .hdr   { font-size: 19px; font-weight: 700; fill: #1a1a1a; }
+    .sub   { font-size: 12.5px; fill: #555; }
+    .pin   { font-size: 13px; font-weight: 700; fill: #1a1a1a; }
+    .fn    { font-size: 12.5px; }
+    .board { font-size: 15px; font-weight: 700; fill: #e8eaed; }
+    .boardsub { font-size: 11.5px; fill: #a9b0b8; }
+    .note  { font-size: 11.5px; fill: #555; }
+    .lgd   { font-size: 12px; fill: #333; }
+    .epaper { fill: #1f6feb; } .sht { fill: #1a7f37; } .enc { fill: #bc4c00; }
+    .led    { fill: #9a6700; } .bat { fill: #cf222e; } .pwr { fill: #6e7781; }
+  </style>
+
+  <rect width="900" height="660" fill="#ffffff"/>
+
+  <text class="hdr" x="30" y="38">sensor-01 — Seeed XIAO ESP32-C6 pin map</text>
+  <text class="sub" x="30" y="58">D-pin → GPIO numbers per the official pinout; ePaper pins are fixed by the driver board's routing. Full detail: docs/pinmap.md</text>
+
+  <!-- board body -->
+  <rect x="360" y="92" width="180" height="336" rx="10" fill="#22272e" stroke="#444c56" stroke-width="1.5"/>
+  <rect x="405" y="78" width="90" height="22" rx="4" fill="#444c56"/>
+  <text class="boardsub" x="450" y="93" text-anchor="middle">USB-C</text>
+  <text class="board" x="450" y="245" text-anchor="middle">XIAO ESP32-C6</text>
+  <text class="boardsub" x="450" y="264" text-anchor="middle">4MB flash · Thread + BLE</text>
+  <text class="boardsub" x="450" y="282" text-anchor="middle">LiPo charge IC (underside)</text>
+
+  <!-- ============ LEFT PINS ============ -->
+  <!-- D0 -->
+  <rect x="348" y="124" width="14" height="12" fill="#8b949e"/>
+  <line x1="348" y1="130" x2="322" y2="130" stroke="#8b949e" stroke-width="1.5"/>
+  <text class="pin" x="314" y="127" text-anchor="end">D0 / A0 · GPIO0</text>
+  <text class="fn epaper" x="314" y="143" text-anchor="end">ePaper RST</text>
+  <!-- D1 -->
+  <rect x="348" y="169" width="14" height="12" fill="#8b949e"/>
+  <line x1="348" y1="175" x2="322" y2="175" stroke="#8b949e" stroke-width="1.5"/>
+  <text class="pin" x="314" y="172" text-anchor="end">D1 / A1 · GPIO1</text>
+  <text class="fn epaper" x="314" y="188" text-anchor="end">ePaper CS</text>
+  <!-- D2 -->
+  <rect x="348" y="214" width="14" height="12" fill="#8b949e"/>
+  <line x1="348" y1="220" x2="322" y2="220" stroke="#8b949e" stroke-width="1.5"/>
+  <text class="pin" x="314" y="217" text-anchor="end">D2 / A2 · GPIO2</text>
+  <text class="fn epaper" x="314" y="233" text-anchor="end">ePaper BUSY</text>
+  <!-- D3 -->
+  <rect x="348" y="259" width="14" height="12" fill="#8b949e"/>
+  <line x1="348" y1="265" x2="322" y2="265" stroke="#8b949e" stroke-width="1.5"/>
+  <text class="pin" x="314" y="262" text-anchor="end">D3 · GPIO21</text>
+  <text class="fn epaper" x="314" y="278" text-anchor="end">ePaper DC</text>
+  <!-- D4 -->
+  <rect x="348" y="304" width="14" height="12" fill="#8b949e"/>
+  <line x1="348" y1="310" x2="322" y2="310" stroke="#8b949e" stroke-width="1.5"/>
+  <text class="pin" x="314" y="307" text-anchor="end">D4 · GPIO22</text>
+  <text class="fn sht" x="314" y="323" text-anchor="end">SHT40 SDA (0x44)</text>
+  <!-- D5 -->
+  <rect x="348" y="349" width="14" height="12" fill="#8b949e"/>
+  <line x1="348" y1="355" x2="322" y2="355" stroke="#8b949e" stroke-width="1.5"/>
+  <text class="pin" x="314" y="352" text-anchor="end">D5 · GPIO23</text>
+  <text class="fn sht" x="314" y="368" text-anchor="end">SHT40 SCL</text>
+  <!-- D6 -->
+  <rect x="348" y="394" width="14" height="12" fill="#8b949e"/>
+  <line x1="348" y1="400" x2="322" y2="400" stroke="#8b949e" stroke-width="1.5"/>
+  <text class="pin" x="314" y="397" text-anchor="end">D6 · GPIO16</text>
+  <text class="fn led" x="314" y="413" text-anchor="end">status LED (3mm)</text>
+
+  <!-- ============ RIGHT PINS ============ -->
+  <!-- D7 -->
+  <rect x="538" y="124" width="14" height="12" fill="#8b949e"/>
+  <line x1="552" y1="130" x2="578" y2="130" stroke="#8b949e" stroke-width="1.5"/>
+  <text class="pin" x="586" y="127">D7 · GPIO17</text>
+  <text class="fn enc" x="586" y="143">encoder A</text>
+  <!-- D8 -->
+  <rect x="538" y="169" width="14" height="12" fill="#8b949e"/>
+  <line x1="552" y1="175" x2="578" y2="175" stroke="#8b949e" stroke-width="1.5"/>
+  <text class="pin" x="586" y="172">D8 · GPIO19</text>
+  <text class="fn epaper" x="586" y="188">ePaper SCK</text>
+  <!-- D9 -->
+  <rect x="538" y="214" width="14" height="12" fill="#8b949e"/>
+  <line x1="552" y1="220" x2="578" y2="220" stroke="#8b949e" stroke-width="1.5"/>
+  <text class="pin" x="586" y="217">D9 · GPIO20</text>
+  <text class="fn enc" x="586" y="233">encoder B</text>
+  <!-- D10 -->
+  <rect x="538" y="259" width="14" height="12" fill="#8b949e"/>
+  <line x1="552" y1="265" x2="578" y2="265" stroke="#8b949e" stroke-width="1.5"/>
+  <text class="pin" x="586" y="262">D10 · GPIO18</text>
+  <text class="fn epaper" x="586" y="278">ePaper MOSI</text>
+  <!-- 3V3 -->
+  <rect x="538" y="304" width="14" height="12" fill="#8b949e"/>
+  <line x1="552" y1="310" x2="578" y2="310" stroke="#8b949e" stroke-width="1.5"/>
+  <text class="pin" x="586" y="307">3V3</text>
+  <text class="fn pwr" x="586" y="323">SHT40 VCC</text>
+  <!-- GND -->
+  <rect x="538" y="349" width="14" height="12" fill="#8b949e"/>
+  <line x1="552" y1="355" x2="578" y2="355" stroke="#8b949e" stroke-width="1.5"/>
+  <text class="pin" x="586" y="352">GND</text>
+  <text class="fn pwr" x="586" y="368">common return</text>
+  <!-- 5V -->
+  <rect x="538" y="394" width="14" height="12" fill="#8b949e"/>
+  <line x1="552" y1="400" x2="578" y2="400" stroke="#8b949e" stroke-width="1.5"/>
+  <text class="pin" x="586" y="397">5V</text>
+  <text class="fn pwr" x="586" y="413">unused</text>
+
+  <!-- ============ UNDERSIDE PADS ============ -->
+  <rect x="180" y="462" width="540" height="118" rx="8" fill="#fafbfc" stroke="#8b949e" stroke-width="1.2" stroke-dasharray="5 4"/>
+  <text class="pin" x="200" y="484">Underside pads (solder side)</text>
+
+  <circle cx="212" cy="512" r="5" fill="#bc4c00"/>
+  <text class="pin" x="228" y="509">MTCK · GPIO6</text>
+  <text class="fn enc" x="228" y="525">encoder push — LP pad, deep-sleep wake source</text>
+
+  <circle cx="212" cy="551" r="5" fill="#cf222e"/>
+  <text class="pin" x="228" y="548">MTDI · GPIO5</text>
+  <text class="fn bat" x="228" y="564">battery divider 2×1MΩ + 100nF → ADC1_CH5</text>
+
+  <circle cx="530" cy="512" r="5" fill="#cf222e"/>
+  <text class="pin" x="546" y="509">BAT+ / BAT−</text>
+  <text class="fn bat" x="546" y="525">LiPo — check polarity first</text>
+
+  <!-- ============ NOTES + LEGEND ============ -->
+  <text class="note" x="30" y="612">A0 = D0 = GPIO0 — the same pin. The driver board claims it for panel reset, so battery sense moved to the MTDI pad.</text>
+  <text class="note" x="30" y="630">GPIO5 straps only the SDIO clock edge (unused here), so the permanently-attached divider is harmless — no gating MOSFET needed.</text>
+
+  <g transform="translate(30,646)">
+    <rect x="0" y="-8" width="10" height="10" fill="#1f6feb"/><text class="lgd" x="15" y="1">ePaper (fixed)</text>
+    <rect x="112" y="-8" width="10" height="10" fill="#1a7f37"/><text class="lgd" x="127" y="1">SHT40</text>
+    <rect x="192" y="-8" width="10" height="10" fill="#bc4c00"/><text class="lgd" x="207" y="1">encoder</text>
+    <rect x="278" y="-8" width="10" height="10" fill="#9a6700"/><text class="lgd" x="293" y="1">LED</text>
+    <rect x="338" y="-8" width="10" height="10" fill="#cf222e"/><text class="lgd" x="353" y="1">battery</text>
+    <rect x="416" y="-8" width="10" height="10" fill="#6e7781"/><text class="lgd" x="431" y="1">power</text>
+  </g>
+</svg>
