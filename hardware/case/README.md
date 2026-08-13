@@ -1,4 +1,4 @@
-# Wall-mount case (veltoc remix, rev 2)
+# Wall-mount case (veltoc remix, rev 4)
 
 Remix of [veltoc](https://github.com/danking6/veltoc) 3D models (MIT,
 © 2026 Dan King). `case-back-wallmount.stl` and `case-front.stl` are both
@@ -18,23 +18,24 @@ modified; `insert-tray.stl` and `encoder-knob.stl` print as-is from upstream.
 
 ![assembled render](render-assembled.png)
 
-Assembled view, rev 3. Rendered directly from the STL geometry in this
+Assembled view, rev 4. Rendered directly from the STL geometry in this
 directory — real part shapes and real relative positions, so the proportions,
-the wordmark placement and the aperture framing are accurate. Surface finish
-and the screen contents are illustrative. `preview.png` is the older rev 1
-image and no longer matches the models.
+the wordmark placement and the aperture framing are accurate. The wordmark is
+composited at its true size and position, representing the laser engraving.
+Surface finish and screen contents are illustrative. `preview.png` is the older
+rev 1 image and no longer matches the models.
 
-**Colour intent (not yet confirmed against vendor stock):** teal / petrol blue
-front, black or charcoal back, mid-grey dial, tray any colour since it is never
-seen. Whether the shop can mix colours across parts without a real cost penalty
-is an open question in the quote request; if not, everything goes in one colour.
+**Colours (PLA, matched to EurekaTec stock):** teal front, light grey dial,
+black or dark grey back (PLA availability to confirm), tray any colour since it
+is never seen. EurekaTec's ABS stock is black / dark grey / red only, which is
+part of why the build moved to PLA.
 
 ## Files (`stl/`)
 
 | File | Status | Outer size (mm) | Notes |
 |---|---|---|---|
 | case-back-wallmount.stl | remixed + rev 2 stretch | 116.28 × 59.28 × 23.00 | wall-mount rails, side USB-C, rear port plugged |
-| case-front.stl | rev 2 stretch + rev 3 logo | 110.60 × 53.60 × 8.80 | EC11 mount (Ø6.8 shaft hole, Ø9.8/Ø14 recess), 3mm LED hole, display aperture, embossed "Homecadia" |
+| case-front.stl | rev 2 stretch | 110.60 × 53.60 × 8.20 | EC11 mount (Ø6.8 shaft hole, Ø9.8/Ø14 recess), 3mm LED hole, display aperture; flat face, wordmark laser-engraved after printing |
 | insert-tray.stl | rev 2 thickened | 48.50 × 45.50 × 6.60 | XIAO mount: plate thickened 1.0 → **1.6mm**, four Ø2.4mm pegs on a 17.0 × 21.0mm pattern. **Not** a battery cradle — the cell sits loose beside it |
 | encoder-knob.stl | upstream | 13.50 × 13.50 × 9.50 | fits 20mm flatted D-shaft |
 
@@ -59,21 +60,33 @@ open questions for the test fit.
 - Orientation on the wall: slatted side **down** (air inlet), rear vent band
   at the top (outlet).
 
-## rev 3 — embossed "Homecadia" on the front face
+## rev 4 — wordmark is laser-engraved, not printed
 
-Wordmark raised **0.6mm** off the outer face, Ubuntu Bold, **5.0mm cap height**,
-36.72 × 5.64mm overall, sitting at X 52.14–88.86 / Y 66.28–71.92 — centred on
-the display aperture (X 36.40–104.60) in the solid strip between the aperture's
-bottom edge (Y 74.92) and the panel edge (Y 63.21). Clears the vents, the
-encoder and the LED hole.
+**The rev 3 embossed wordmark was reverted.** Raised lettering is incompatible
+with the only good print orientation for this part. The outer face is flat and
+the interior bosses rise 8.2mm, so the panel must print outer-face-down: face on
+the bed, bosses building upward, no supports. Add 0.6mm of raised lettering to
+that face and only **85.6 mm² of letter tops touch the bed** — the entire panel
+then starts 0.6mm up over air and needs support across the whole cosmetic
+surface. Flipping it over is worse: the plate ends up 8.2mm in the air on boss
+pillars. EurekaTec caught this in quoting; the geometry confirms it.
 
-Generated as prism geometry sunk 0.4mm into the face so a slicer unions it with
-the panel; adds 2,496 triangles. Letter edges are quantised to 0.12mm, well
-under a 0.4mm nozzle's resolution.
+`case-front.stl` is therefore back to flat (2,600 triangles, 110.60 × 53.60 ×
+8.20mm, 6.16 cm³, watertight) and the wordmark is applied **after printing, by
+laser engraving** — which also reads crisper at 5mm cap height than extruded
+plastic ever would. This requires PLA; ABS lasers poorly.
 
-**Print the front face-down** so the wordmark forms against the bed — it comes
-out crisp as a first layer, and the interior bosses print upward without
-supports.
+Artwork lives in [`artwork/`](artwork/):
+
+| File | Purpose |
+|---|---|
+| `wordmark-homecadia-1200dpi.png` | black-on-white, sized to exactly 36.72 × 5.64mm at 1200 dpi |
+| `wordmark-placement.png` | dimensioned drawing, datum = lower-left corner of the outer face |
+
+Placement: 54.09mm from the left edge, 3.07mm up from the bottom edge, 36.72 ×
+5.64mm, Ubuntu Bold, 5.00mm cap height, engraved 0.3–0.5mm deep. That sits in
+the solid strip between the aperture's bottom edge and the panel edge, clear of
+the vents, encoder and LED hole.
 
 ## Wall thickness / DFM
 
@@ -81,14 +94,14 @@ Measured off the meshes, so these are the numbers to answer a vendor DFM flag wi
 
 | Feature | Thickness | Verdict |
 |---|---|---|
-| `case-back-wallmount` shell walls | **1.44mm** | 3–4 perimeters at a 0.4mm nozzle — normal enclosure wall in PETG |
+| `case-back-wallmount` shell walls | **1.44mm** | 3–4 perimeters at a 0.4mm nozzle — normal enclosure wall |
 | `case-front` shell walls | **~1.3mm** | same |
 | `insert-tray` plate | **1.60mm** (rev 2; was 1.00) | thickened specifically to clear the flag |
-| `insert-tray` pegs | Ø2.4mm shank, Ø4.0mm base, 5mm tall | pins, not walls; printable in PETG |
+| `insert-tray` pegs | Ø2.4mm shank, Ø4.0mm base, 5mm tall | pins, not walls; printable in PLA |
 
 JLC3DP's FDM guidance is a 1.2mm minimum with 2mm ideal, so the shells sit
-between the two and trigger "thin walls detected". **Accept it** — 1.4mm PETG
-is a sound enclosure wall, and thickening the shells would mean a true surface
+between the two and trigger "thin walls detected". **Accept it** — a 1.4mm wall
+is sound in PLA or ABS, and thickening the shells would mean a true surface
 offset in CAD, not the cut-and-shift edits used here.
 
 Sub-millimetre readings do appear in an automated scan (down to 0.13mm) at the
@@ -96,14 +109,21 @@ corner bosses and the mating lip. Those are **tangency slivers** where a
 cylindrical boss meets a filleted wall, not standalone walls; slicers merge
 them into the adjacent perimeter. Verified by cross-section at z=10.
 
-**Material: FDM ABS at [EurekaTec.ca](https://eurekatec.ca)** (Canadian, quotes
-by email — no online quoting system), with **JLC3DP MJF Nylon PA12** as the
-fallback. ABS keeps all four parts in one process at FDM prices; JLC3DP's own
-FDM cannot be used at all (see the minimum-size table below), and its MJF
-process can, but costs more.
+**Material: FDM PLA at [EurekaTec.ca](https://eurekatec.ca)** (Canadian, quotes
+by email). ABS was the original choice for heat margin around the LiPo, but
+EurekaTec stocks ABS only in black, dark grey and red, and ABS cannot be laser
+engraved cleanly. PLA gets the intended colours *and* the engraved wordmark.
 
-For an ABS quote the shop needs the wall thicknesses and the fit-critical
-dimensions spelled out — both are tabulated in this file.
+The heat argument turned out to be over-cautious: this is an indoor wall sensor
+that must already be sited away from sun, radiators and exterior doors or its
+readings are meaningless ([bringup.md](../../docs/bringup.md) placement notes),
+so the conditions that soften PLA are ones the device cannot be used in. PETG
+would still be the ideal middle ground — asked, pending an answer.
+
+All four parts in one material: mixing PLA and ABS across two shells that mate
+over 116mm introduces a shrinkage mismatch on an already-tight fit.
+**JLC3DP MJF Nylon PA12** remains the fallback; JLC3DP's own FDM cannot be used
+at all (see the minimum-size table below).
 
 ### Why not FDM
 
