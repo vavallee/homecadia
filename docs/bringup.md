@@ -60,6 +60,14 @@ pre-hardware code is written.
       pigtail bezel, #6 screw head in keyhole slot
       ([hardware/case](../hardware/case/README.md) tolerances are derived
       from published dims, not test-fitted).
+- [ ] **rev 2 stretch verified in the flesh**: the 56mm LP103454 cell and the
+      48.5mm insert-tray both sit in the 106.64mm interior with the lid closing
+      (2.1mm modelled clearance — confirm nothing else eats it).
+- [ ] Front and back still mate after the stretch: corner screws line up, seam
+      closes, display aperture centres on the panel.
+- [ ] Wall screws drilled at **92mm** centres, not the rev 1 85mm.
+- [ ] Battery and SHT40 retention decided — the cavity has no cradle and no
+      sensor mount; today both are foam tape / zip tie by default.
 
 ## Radio / Matter
 

@@ -14,7 +14,7 @@ are in [bringup.md](bringup.md).
 | Seeed 2.9" mono ePaper 296×128 | SKU 104990853; SSD1680-class; partial refresh + panel deep sleep | 1 | Seeed | ordered 2026-08-08 | |
 | Grove SHT40 | SKU 101021032; temp/RH, I2C addr 0x44; Grove cable cut and soldered | 1 | Seeed | ordered 2026-08-08 | |
 | JST pigtails | SKU 321050009 | 1 set | Seeed | ordered 2026-08-08 | |
-| EEMB 2000mAh 3.7V LiPo | 103454-class; ⚠️ polarity — see warnings below | 1 | Amazon.ca | ordered 2026-08-08 | |
+| EEMB 2000mAh 3.7V LiPo | LP103454; finished size **56 × 34.5 × 10.6mm** — needs the rev 2 case ([hardware/case](../hardware/case/README.md)); ⚠️ polarity — see warnings below | 1 | Amazon.ca | ordered 2026-08-08 | |
 
 Per-line prices unknown; order totals: Seeed ~$125–155, batteries ~$50–60.
 
