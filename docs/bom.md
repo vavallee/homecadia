@@ -31,7 +31,7 @@ order (price not captured). The earlier CAD 125–155 estimate for Seeed was hig
 
 | Part | Spec / SKU | Qty per unit | Vendor | Order status | Price paid (CAD) |
 |---|---|---|---|---|---|
-| Enclosure set | 4 parts, 30.12 cm³/set. **FDM ABS at EurekaTec.ca** (email quote, no online system) — preferred over JLC3DP MJF nylon on cost and because it keeps all four parts in one process. JLC3DP MJF stays the fallback: its 5×5×5mm minimum accepts every part, unlike JLC3DP FDM ([hardware/case](../hardware/case/README.md)). **Order ONE test set first** | 1 set | EurekaTec.ca / Azata.ca | **quote requests sent to both 2026-08-13** (STLs + assembled render attached); awaiting price, lead time, ABS colours, and whether ABS is printed in an enclosed chamber | |
+| Enclosure set | 4 parts, 30.12 cm³/set. **FDM PLA** — teal front, light grey knob, black/dark grey back. Wordmark **laser-engraved after printing**, not printed ([hardware/case](../hardware/case/README.md)). JLC3DP MJF nylon is the fallback; JLC3DP FDM is ruled out by its 30×30×10mm minimum. **Order ONE test set first** | 1 set | EurekaTec.ca / Azata.ca | quotes requested 2026-08-13; EurekaTec replied — moved ABS→PLA to enable engraving, revised STLs + artwork sent 2026-08-13. Awaiting price, lead time, PLA colour for the back, and whether they stock PETG | |
 | #6 pan-head screws + drywall anchors | keyhole wall mounts, **92mm centres** (rev 2), head ≤ Ø8.5×2.4mm | 2 | local | not ordered | |
 | Command Small strips | rail landings on case back | 2 | local | not ordered | |
 | Hookup wire | 26–28AWG silicone stranded | — | local / Amazon.ca | not ordered | |

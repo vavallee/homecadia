@@ -57,7 +57,14 @@ Firmware capabilities, all implemented in this repo unless noted:
 
 Seeed XIAO ESP32-C6 + Seeed ePaper Driver Board for XIAO V2 + 2.9" mono e-ink
 (296×128, SSD1680) + Grove SHT40 + EC11 rotary encoder + 2000mAh LiPo, in a
-wall-mount enclosure remixed from [veltoc](https://github.com/danking6/veltoc).
+wall-mount enclosure remixed from [veltoc](https://github.com/danking6/veltoc)
+([hardware/case](hardware/case/README.md) — rev 4, FDM PLA, laser-engraved
+wordmark).
+
+![assembled render](hardware/case/render-assembled.png)
+
+*Assembled view rendered from the enclosure STLs. Colours and finish are
+indicative; no unit has been built yet.*
 
 ![sensor-01 pin map](docs/img/sensor-01-pinout.svg)
 
@@ -98,6 +105,7 @@ will show an uncertified-device warning. Per-device factory partitions
 | [docs/bringup.md](docs/bringup.md) | Hardware verification checklist — every `HW-VERIFY` marker has a row |
 | [docs/infrastructure.md](docs/infrastructure.md) | Network-side hardware: ZBT-2 border router, Voice PE, order status |
 | [docs/source-reliability.md](docs/source-reliability.md) | Documented traps in vendor docs and third-party sources |
+| [hardware/case/README.md](hardware/case/README.md) | Enclosure: revision history, measured wall thicknesses, print vendor and material, engraving artwork |
 
 ## Milestones
 
