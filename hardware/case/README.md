@@ -20,9 +20,14 @@ modified; `insert-tray.stl` and `encoder-knob.stl` print as-is from upstream.
 
 Assembled view, rev 3. Rendered directly from the STL geometry in this
 directory — real part shapes and real relative positions, so the proportions,
-the wordmark placement and the aperture framing are accurate. Surface finish,
-colour and the screen contents are illustrative. `preview.png` is the older
-rev 1 image and no longer matches the models.
+the wordmark placement and the aperture framing are accurate. Surface finish
+and the screen contents are illustrative. `preview.png` is the older rev 1
+image and no longer matches the models.
+
+**Colour intent (not yet confirmed against vendor stock):** teal / petrol blue
+front, black or charcoal back, mid-grey dial, tray any colour since it is never
+seen. Whether the shop can mix colours across parts without a real cost penalty
+is an open question in the quote request; if not, everything goes in one colour.
 
 ## Files (`stl/`)
 
