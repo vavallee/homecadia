@@ -106,6 +106,7 @@ will show an uncertified-device warning. Per-device factory partitions
 | [docs/infrastructure.md](docs/infrastructure.md) | Network-side hardware: ZBT-2 border router, Voice PE, order status |
 | [docs/source-reliability.md](docs/source-reliability.md) | Documented traps in vendor docs and third-party sources |
 | [hardware/case/README.md](hardware/case/README.md) | Enclosure: revision history, measured wall thicknesses, print vendor and material, engraving artwork |
+| [circuit-board-maker/](circuit-board-maker/README.md) | Custom-PCB evaluation and two paper board designs. **Concluded: not worth it for three units.** Never fabricated — see the conflicts list before reviving it |
 
 ## Milestones
 
@@ -122,7 +123,8 @@ will show an uncertified-device warning. Per-device factory partitions
 
 ```
 docs/               BOM, pin map, assembly, commissioning, power budget, build
-hardware/case/      wall-mount enclosure (veltoc remix, MIT)
+hardware/case/      wall-mount enclosure (veltoc remix, MIT) + engraving artwork
+circuit-board-maker/ custom-PCB evaluation + two unfabricated KiCad designs
 firmware/
   components/       drivers shared across future homecadia devices
   sensor-01/        esp-matter application
