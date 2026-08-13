@@ -23,7 +23,7 @@ modified; `insert-tray.stl` and `encoder-knob.stl` print as-is from upstream.
 | File | Status | Outer size (mm) | Notes |
 |---|---|---|---|
 | case-back-wallmount.stl | remixed + rev 2 stretch | 116.28 × 59.28 × 23.00 | wall-mount rails, side USB-C, rear port plugged |
-| case-front.stl | rev 2 stretch | 110.60 × 53.60 × 8.20 | EC11 mount (Ø6.8 shaft hole, Ø9.8/Ø14 recess), 3mm LED hole, display aperture |
+| case-front.stl | rev 2 stretch + rev 3 logo | 110.60 × 53.60 × 8.80 | EC11 mount (Ø6.8 shaft hole, Ø9.8/Ø14 recess), 3mm LED hole, display aperture, embossed "Homecadia" |
 | insert-tray.stl | rev 2 thickened | 48.50 × 45.50 × 6.60 | XIAO mount: plate thickened 1.0 → **1.6mm**, four Ø2.4mm pegs on a 17.0 × 21.0mm pattern. **Not** a battery cradle — the cell sits loose beside it |
 | encoder-knob.stl | upstream | 13.50 × 13.50 × 9.50 | fits 20mm flatted D-shaft |
 
@@ -47,6 +47,22 @@ open questions for the test fit.
   up, so the case drops onto them.
 - Orientation on the wall: slatted side **down** (air inlet), rear vent band
   at the top (outlet).
+
+## rev 3 — embossed "Homecadia" on the front face
+
+Wordmark raised **0.6mm** off the outer face, Ubuntu Bold, **5.0mm cap height**,
+36.72 × 5.64mm overall, sitting at X 52.14–88.86 / Y 66.28–71.92 — centred on
+the display aperture (X 36.40–104.60) in the solid strip between the aperture's
+bottom edge (Y 74.92) and the panel edge (Y 63.21). Clears the vents, the
+encoder and the LED hole.
+
+Generated as prism geometry sunk 0.4mm into the face so a slicer unions it with
+the panel; adds 2,496 triangles. Letter edges are quantised to 0.12mm, well
+under a 0.4mm nozzle's resolution.
+
+**Print the front face-down** so the wordmark forms against the bed — it comes
+out crisp as a first layer, and the interior bosses print upward without
+supports.
 
 ## Wall thickness / DFM
 
