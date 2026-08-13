@@ -9,7 +9,7 @@ are in [bringup.md](bringup.md).
 
 | Part | Spec / SKU | Qty per unit | Vendor | Order status | Price paid |
 |---|---|---|---|---|---|
-| Seeed XIAO ESP32-C6 | MCU, Thread radio, LiPo charge IC on underside pads | 1 | — | in hand (pre-existing) — **confirm 3 on hand** | — |
+| Seeed XIAO ESP32-C6 | MCU, Thread radio, LiPo charge IC on underside pads | 1 | — | **3 in hand, confirmed 2026-08-13** | — |
 | Seeed ePaper Driver Board for XIAO V2 | SKU 114993558; 24-pin FPC, SPI; battery JST + power switch (JST **not** used — see notes) | 1 | Seeed | shipped 3/3; at port of destination 2026-08-13 | US$5.90 ea / 17.70 |
 | Seeed 2.9" mono ePaper 296×128 | SKU 104990853; SSD1680-class; partial refresh + panel deep sleep | 1 | Seeed | shipped 3/3 | US$9.95 ea / 29.85 |
 | Grove SHT40 | SKU 101021032; ±0.2 °C, ±1.8 %RH typ (max ±3.5 %); I2C 0x44; Grove cable cut and soldered | 1 | Seeed | shipped 3/3 | US$5.50 ea / 16.50 |
@@ -31,7 +31,8 @@ order (price not captured). The earlier CAD 125–155 estimate for Seeed was hig
 
 | Part | Spec / SKU | Qty per unit | Vendor | Order status | Price paid (CAD) |
 |---|---|---|---|---|---|
-| Enclosure set | **FDM PETG** (not resin), veltoc wall-mount remix rev 2 ([hardware/case](../hardware/case/README.md)); **order ONE test set first** | 1 set | JLC3DP | quoting | |
+| Enclosure set | **FDM ABS** — JLC3DP has no PETG; see [hardware/case](../hardware/case/README.md). Their 30×30×10mm FDM minimum rejects the knob and may reject the front and tray. **Order ONE test set first** | 1 set | JLC3DP | quoting — blocked on minimum-size rule | |
+| EC11 knob, 6mm D-shaft | commodity part; replaces `encoder-knob.stl`, which is too small for JLC3DP FDM | 1 | Amazon.ca / AliExpress | not ordered | |
 | #6 pan-head screws + drywall anchors | keyhole wall mounts, **92mm centres** (rev 2), head ≤ Ø8.5×2.4mm | 2 | local | not ordered | |
 | Command Small strips | rail landings on case back | 2 | local | not ordered | |
 | Hookup wire | 26–28AWG silicone stranded | — | local / Amazon.ca | not ordered | |
