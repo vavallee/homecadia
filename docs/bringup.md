@@ -68,6 +68,12 @@ pre-hardware code is written.
 - [ ] Wall screws drilled at **92mm** centres, not the rev 1 85mm.
 - [ ] Battery and SHT40 retention decided — the cavity has no cradle and no
       sensor mount; today both are foam tape / zip tie by default.
+- [ ] Laser-engraved wordmark on the test set: depth legible, no scorching,
+      placement matches `hardware/case/artwork/wordmark-placement.png`
+      (54.09mm from the left edge, 3.07mm up).
+- [ ] USB-C pigtail seats: the Gebildet connector wants a Ø12mm hole and the
+      case has Ø12.8mm, so the M11 nut clamps with ~0.8mm slop — confirm it
+      holds square and doesn't rotate in use.
 
 ## Radio / Matter
 
