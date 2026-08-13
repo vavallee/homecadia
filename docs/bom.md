@@ -5,37 +5,43 @@ known, fill as paid. Network-side hardware (ZBT-2 border router, Voice PE) is
 in [infrastructure.md](infrastructure.md); hardware checks that gate assembly
 are in [bringup.md](bringup.md).
 
-## Ordered 2026-08-08
+## Ordered and confirmed (reconciled against vendor order pages, 2026-08-13)
+
+| Part | Spec / SKU | Qty per unit | Vendor | Order status | Price paid |
+|---|---|---|---|---|---|
+| Seeed XIAO ESP32-C6 | MCU, Thread radio, LiPo charge IC on underside pads | 1 | — | in hand (pre-existing) — **confirm 3 on hand** | — |
+| Seeed ePaper Driver Board for XIAO V2 | SKU 114993558; 24-pin FPC, SPI; battery JST + power switch (JST **not** used — see notes) | 1 | Seeed | shipped 3/3; at port of destination 2026-08-13 | US$5.90 ea / 17.70 |
+| Seeed 2.9" mono ePaper 296×128 | SKU 104990853; SSD1680-class; partial refresh + panel deep sleep | 1 | Seeed | shipped 3/3 | US$9.95 ea / 29.85 |
+| Grove SHT40 | SKU 101021032; ±0.2 °C, ±1.8 %RH typ (max ±3.5 %); I2C 0x44; Grove cable cut and soldered | 1 | Seeed | shipped 3/3 | US$5.50 ea / 16.50 |
+| JST 2-pin power connector | SKU 321050009 | 1 | Seeed | shipped 20/20 | US$0.05 ea / 1.00 |
+| EEMB 2000mAh 3.7V LiPo | LP103454; finished size **56 × 34.5 × 10.6mm** — drove the rev 2 case stretch ([hardware/case](../hardware/case/README.md)); JST 2.0mm lead, cut it off; ⚠️ polarity | 1 | Amazon.ca | **delivered 2026-08-12**, qty 3 | |
+| Perfboard | Chanzon 34pcs double-sided FR4, 5 sizes | 1 | Amazon.ca | arriving 19–28 Aug | 22.79 (kit) |
+| Capacitor 100nF | Chanzon 50pcs, 104M disc ceramic, 1000V, through-hole. Voltage rating is overkill but harmless; ±20% is fine for an ADC hold cap | 1 | Amazon.ca | **delivered 2026-08-11** | 29.05 (kit, with resistors) |
+| Resistor 1MΩ | ALLECIN 1/4W 1% metal film, 25 values 1Ω–1MΩ — 1MΩ is the top value | 2 | Amazon.ca | **delivered 2026-08-11** | (same order as above) |
+| USB-C female panel-mount pigtail | Gebildet 10pcs, 2-pin 24AWG, 3A, waterproof. **M11×2.3 nut, needs a Ø12mm hole — case hole is Ø12.8mm, so it fits** with ~0.8mm slop. Charging via USB **A-to-C only** (no CC resistors) | 1 | Amazon.ca | arriving 2026-08-13 | 14.99 (10pcs) |
+| 3mm LED | Chanzon 60pcs assortment, diffused, 3V 20mA; needs a series resistor from the kit above | 1 | Amazon.ca | arriving 19–28 Aug | 9.11 (kit) |
+| M2 self-tapping screw kit | 800pcs stainless, cross-drive pan head | ~4 | Amazon.ca | **delivered 2026-08-12** | 23.44 (kit) |
+
+Seeed line total **US$65.05** (4 lines above, shipping not shown on the order
+page). Amazon.ca lines visible above total **CAD 99.38**, plus the battery
+order (price not captured). The earlier CAD 125–155 estimate for Seeed was high.
+
+## Still to order
 
 | Part | Spec / SKU | Qty per unit | Vendor | Order status | Price paid (CAD) |
 |---|---|---|---|---|---|
-| Seeed XIAO ESP32-C6 | MCU, Thread radio, LiPo charge IC on underside pads | 1 | — | in hand (pre-existing) | |
-| Seeed ePaper Driver Board for XIAO V2 | SKU 114993558; 24-pin FPC, SPI; battery JST + power switch (JST **not** used — see notes) | 1 | Seeed | ordered 2026-08-08 | |
-| Seeed 2.9" mono ePaper 296×128 | SKU 104990853; SSD1680-class; partial refresh + panel deep sleep | 1 | Seeed | ordered 2026-08-08 | |
-| Grove SHT40 | SKU 101021032; temp/RH, I2C addr 0x44; Grove cable cut and soldered | 1 | Seeed | ordered 2026-08-08 | |
-| JST pigtails | SKU 321050009 | 1 set | Seeed | ordered 2026-08-08 | |
-| EEMB 2000mAh 3.7V LiPo | LP103454; finished size **56 × 34.5 × 10.6mm** — needs the rev 2 case ([hardware/case](../hardware/case/README.md)); ⚠️ polarity — see warnings below | 1 | Amazon.ca | ordered 2026-08-08 | |
-
-Per-line prices unknown; order totals: Seeed ~$125–155, batteries ~$50–60.
-
-## Not yet ordered
-
-| Part | Spec / SKU | Qty per unit | Vendor | Order status | Price paid (CAD) |
-|---|---|---|---|---|---|
-| Bourns PEC11R-4220F-S0024 | EC11 rotary encoder, 20mm flatted D-shaft, push switch, 24 detents | 1 | Digi-Key CA | not ordered | |
-| 3mm LED | commissioning + low-battery indication only | 1 | Digi-Key CA | not ordered | |
-| Resistor 1MΩ | battery divider (2× 1M, not 100k — see notes) | 2 | Digi-Key CA | not ordered | |
-| Capacitor 100nF | divider ADC hold cap; **through-hole** — 0805 SMD is not usable for a perfboard hand-build | 1 | Digi-Key CA | not ordered | |
-| USB-C female panel-mount pigtail | 2-wire chassis type; bezel must fit Ø12.8 hole; charging via USB **A-to-C only** (no CC resistors, C-to-C won't handshake) | 1 | Amazon.ca | not ordered | |
-| M2 self-tapping screw kit | case assembly, ~4/unit | 1 kit total | Amazon.ca | not ordered | |
-| Enclosure set | FDM PETG, veltoc wall-mount remix ([hardware/case](../hardware/case/README.md)); **order ONE test set first** | 1 set | JLC3DP | not ordered | |
-| #6 pan-head screws + drywall anchors | keyhole wall mounts (head ≤ Ø8.5×2.4mm) | 2 | local | not ordered | |
+| **Bourns PEC11R-4220F-S0024** | EC11 rotary encoder, 20mm flatted D-shaft, push switch, 24 detents | 1 | Digi-Key CA | **NOT ORDERED — blocks assembly** | |
+| Enclosure set | **FDM PETG** (not resin), veltoc wall-mount remix rev 2 ([hardware/case](../hardware/case/README.md)); **order ONE test set first** | 1 set | JLC3DP | quoting | |
+| #6 pan-head screws + drywall anchors | keyhole wall mounts, **92mm centres** (rev 2), head ≤ Ø8.5×2.4mm | 2 | local | not ordered | |
 | Command Small strips | rail landings on case back | 2 | local | not ordered | |
-| Perfboard | divider carrier build | 1 | TBD | not ordered | |
-| Hookup wire | 26–28AWG silicone stranded | — | TBD | not ordered | |
-| Heat shrink | assorted; fallback if the divider carrier doesn't work out | — | TBD | not ordered | |
+| Hookup wire | 26–28AWG silicone stranded | — | local / Amazon.ca | not ordered | |
+| Heat shrink | assorted; fallback if the perfboard divider carrier doesn't work out | — | local / Amazon.ca | not ordered | |
 
-Digi-Key line (encoders + LEDs + resistors together): ~$21 landed for the run.
+The LEDs and resistors were bought from Amazon.ca rather than Digi-Key, which
+leaves the encoder as the only Digi-Key line — and it is the one part in this
+build with a specific manufacturer part number, so a generic substitute needs
+its shaft (6mm flatted D, 20mm) and detent count checked against
+`encoder-knob.stl` and the front panel's Ø6.8 shaft hole.
 
 ## ⚠️ Assembly warnings (repeated in [assembly.md](assembly.md))
 

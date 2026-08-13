@@ -90,5 +90,9 @@ equivalents, or keeping the SmartThings hub alive as a Zigbee-only bridge.
 
 ## Open questions
 
-- Voice PE stock was unconfirmed at checkout across all NA distributors. If
-  it backorders, does the ZBT-2 ship separately or does the whole order hold?
+- **Voice PE is confirmed a pre-order item** on the ameriDroid order (flagged
+  as such in the order summary, 2026-08-13) — the backorder risk is real, not
+  hypothetical. Still unknown whether the ZBT-2 ships separately or the whole
+  order holds behind it. Since the ZBT-2 is the border router every sensor node
+  commissions through, a hold blocks the Thread side of the build; ask
+  ameriDroid to split the shipment if the sensor hardware lands first.
