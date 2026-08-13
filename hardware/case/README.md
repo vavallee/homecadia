@@ -69,7 +69,14 @@ corner bosses and the mating lip. Those are **tangency slivers** where a
 cylindrical boss meets a filleted wall, not standalone walls; slicers merge
 them into the adjacent perimeter. Verified by cross-section at z=10.
 
-**Material: MJF Nylon PA12** at JLC3DP. Not FDM, not resin — see below.
+**Material: FDM ABS at [EurekaTec.ca](https://eurekatec.ca)** (Canadian, quotes
+by email — no online quoting system), with **JLC3DP MJF Nylon PA12** as the
+fallback. ABS keeps all four parts in one process at FDM prices; JLC3DP's own
+FDM cannot be used at all (see the minimum-size table below), and its MJF
+process can, but costs more.
+
+For an ABS quote the shop needs the wall thicknesses and the fit-critical
+dimensions spelled out — both are tabulated in this file.
 
 ### Why not FDM
 
