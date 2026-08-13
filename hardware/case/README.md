@@ -109,23 +109,34 @@ corner bosses and the mating lip. Those are **tangency slivers** where a
 cylindrical boss meets a filleted wall, not standalone walls; slicers merge
 them into the adjacent perimeter. Verified by cross-section at z=10.
 
-**Material: FDM PLA at [EurekaTec.ca](https://eurekatec.ca)** (Canadian, quotes
-by email). ABS was the original choice for heat margin around the LiPo, but
-EurekaTec stocks ABS only in black, dark grey and red, and ABS cannot be laser
-engraved cleanly. PLA gets the intended colours *and* the engraved wordmark.
+## Material and vendor (current decision)
 
-The heat argument turned out to be over-cautious: this is an indoor wall sensor
+**FDM PLA, all four parts, at [EurekaTec.ca](https://eurekatec.ca)** — Canadian,
+quotes by email, no online quoting system. Quote requested 2026-08-13; a second
+request went to Azata.ca the same day.
+
+ABS was the original choice, for heat margin around the LiPo. Two things changed
+it: EurekaTec stocks ABS only in black, dark grey and red, and ABS does not
+laser engrave cleanly — and the wordmark has to be engraved (see rev 4 above).
+PLA gets both the intended colours and the engraving.
+
+The heat argument turned out to be over-cautious. This is an indoor wall sensor
 that must already be sited away from sun, radiators and exterior doors or its
 readings are meaningless ([bringup.md](../../docs/bringup.md) placement notes),
-so the conditions that soften PLA are ones the device cannot be used in. PETG
-would still be the ideal middle ground — asked, pending an answer.
+so the conditions that would soften PLA are ones the device cannot be used in.
+PETG remains the ideal middle ground — asked, answer pending.
 
-All four parts in one material: mixing PLA and ABS across two shells that mate
-over 116mm introduces a shrinkage mismatch on an already-tight fit.
-**JLC3DP MJF Nylon PA12** remains the fallback; JLC3DP's own FDM cannot be used
-at all (see the minimum-size table below).
+**One material for all four parts.** Mixing PLA and ABS across two shells that
+mate over 116mm introduces a shrinkage mismatch on a fit that already has only
+2.1mm of battery clearance.
 
-### Why not FDM
+Avoid SLA resin: brittle, UV-degrading, and it would shear the Ø2.4mm tray pegs
+and the M2 self-tapper bosses. If resin is ever forced, use a toughened grade
+(8228 or 9000HE), never 9600.
+
+### Vendor evaluation: JLC3DP — rejected for FDM, viable as MJF fallback
+
+Recorded because the constraints are non-obvious and cost a quoting round.
 
 **JLC3DP does not offer PETG** (their FDM lineup is ABS, ASA, PA12-CF, TPU,
 PEBA, PEEK, ABS-ESD, PLA-P), and more decisively their FDM process enforces a
@@ -143,26 +154,20 @@ Splitting across processes was rejected: FDM holds ±0.3mm per 100mm and SLA
 ~±0.1mm, and the front and back must mate over a 116mm span with aligned corner
 screws. Mixed shrinkage on mating parts trades a size rule for a fit problem.
 
-### Why MJF nylon
+If JLC3DP is ever needed, **MJF Nylon PA12** is the process that works there:
+its 5×5×5mm minimum accepts every part, 0.8mm minimum wall clears our 1.30mm
+thinnest, and 0.8mm minimum feature clears the Ø2.4mm tray pegs. PA12 is also a
+genuinely good enclosure material — tough, no supports, no scars in the display
+aperture. It costs more than FDM, which is why EurekaTec won on price.
 
-PA12 nylon is a better enclosure material than the ABS originally planned:
-tough and slightly flexible rather than brittle, holds self-tapping screws
-well, and needs no supports so there are no support scars in the display
-aperture or the vent slots. Every constraint clears with margin — 0.8mm
-minimum wall against our 1.30mm thinnest (case-front), 0.8mm minimum feature
-against the Ø2.4mm tray pegs, 5×5×5mm minimum part against the 13.5mm knob.
-
-It also means **the knob prints after all** — no need to buy a 6mm D-shaft
-knob, though a commodity aluminium one remains a fine substitute if the printed
-bore proves too tight to ream.
-
-Avoid SLA resin for this build: brittle, UV-degrading, and it would shear the
-Ø2.4mm tray pegs and the M2 self-tapper bosses. If resin is ever forced, use a
-toughened grade (8228 or 9000HE), never 9600.
+The knob prints on any of these routes; a commodity aluminium 6mm D-shaft knob
+remains a fine substitute if the printed bore proves too tight to ream.
 
 ## Print notes
 
-- 3 units → print each file ×3. PETG or PLA, ~0.2mm layers.
+- 3 units → print each file ×3. PLA, ~0.2mm layers.
+- **case-front prints outer-face-down**, no supports — see rev 4 above for why
+  this only works with a flat face.
 - Back prints rear-face down (rails on bed); keyhole head-pockets bridge
   ~8.8mm — fine with standard supports/bridging.
 - Tolerances derived from published dims, **not test-fitted**. Print ONE unit
@@ -170,8 +175,8 @@ toughened grade (8228 or 9000HE), never 9600.
   screw head before committing all three.
 - `case-back-wallmount.stl` carries **33 non-manifold edges** — present in the
   upstream mesh, not introduced by the rev 2 stretch (verified against git
-  HEAD). Slicers and JLC3DP auto-repair this class of defect; no action needed
-  unless a slicer complains.
+  HEAD). Slicers and print services auto-repair this class of defect; no action
+  needed unless one complains.
 - `preview.png` shows the rev 1 geometry and is superseded by
   `render-assembled.png`; replace both with a photo once a unit is built.
 
