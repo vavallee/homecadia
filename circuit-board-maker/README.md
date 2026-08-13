@@ -12,6 +12,46 @@ and the board designs that came out of it.
 three units, and measure the assembled device before letting any power argument
 justify a board spin. Full reasoning in [pcb-evaluation.md](pcb-evaluation.md).
 
+## Conflicts with the shipped build — read before reviving hb-01
+
+Audited 2026-08-13 against the main docs. None of these are fatal to the
+evaluation's conclusion, but every one must be resolved before `hb-01` is
+ordered.
+
+1. **Two nets land on pins the XIAO header does not have.** `hb-01/NETLIST.md:54`
+   routes `VDIV` to J2.13 and `:44` routes `ENC_SW` to J2.14 on a 14-pin "XIAO
+   field". Per [../docs/pinmap.md](../docs/pinmap.md), the battery divider is on
+   **GPIO5/MTDI** and the encoder push on **GPIO6/MTCK** — both **underside
+   pads**, not header pins. Either those two positions are meant as
+   flying-wire landings (undocumented), or the design assumes access that does
+   not exist. Until it is resolved, `pcb-evaluation.md:179` ("Zero firmware
+   changes") is unproven.
+2. **Board-mount USB-C contradicts the case and the bought part.**
+   `hb-01/NETLIST.md:10` places a receptacle needing a rectangular cutout;
+   case rev 4 has a **Ø12.8mm round hole** and the Gebildet 2-wire pigtail that
+   fits it is **already delivered** ([../docs/bom.md](../docs/bom.md)). No case
+   revision exists for this. `component-selection.md:133` concedes the point.
+3. **It does not fit the cavity as designed.** The 48 × 40mm board has to live
+   in a 106.64 × 47.9mm cavity that already holds a 48.5mm tray plus a 56mm
+   cell — **2.1mm of slack**
+   ([../hardware/case/README.md](../hardware/case/README.md)). Its four M2 holes
+   on a 41 × 33mm pattern also cannot mount on the tray's four Ø2.4mm pegs on a
+   17.0 × 21.0mm pattern, and the case has no other board mounts. Stack height
+   inside 18.6mm is unbudgeted. `README.md` already admits the board "was never
+   checked against the STLs".
+4. **Board-mounting the LED and encoder fights the front panel.** `case-front.stl`
+   carries the EC11 mount and the 3mm LED hole; `hb-01/NETLIST.md:18-19` puts
+   both on the board at fixed coordinates, making board position mechanically
+   load-bearing against a panel it was never fitted to.
+   `component-selection.md:42` independently recommends keeping the LED on
+   flying leads.
+5. **sb-01 replaces a part already in hand.** The Grove SHT40 (SKU 101021032)
+   shipped 3/3; `sb-01` substitutes a bare DFN-4 SHT40-AD1B needing reflow.
+6. **Internal staleness.** Both netlists still say "Never opened in KiCad"
+   (`hb-01/NETLIST.md:4`, `sb-01/NETLIST.md:4`), contradicting the validated
+   status above. Satellite size is quoted as ~10 × 10mm in
+   `pcb-evaluation.md:56` and `component-selection.md:49` but built at 14 × 16mm.
+
 ## Documents
 
 | Doc | Contents |
