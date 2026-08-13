@@ -25,8 +25,8 @@ HB = dict(
         ("C1", "100nF", "Capacitor_SMD:C_0805_2012Metric", "Device", "C", "", "ADC hold cap"),
         ("R5", "1k", "Resistor_SMD:R_0805_2012Metric", "Device", "R", "", "LED series"),
         ("D2", "LED 3mm", "LED_THT:LED_D3.0mm", "Device", "LED", "", "or 2-pin header to panel LED"),
-        ("SW1", "PEC11R-4220F-S0024", "Rotary_Encoder:RotaryEncoder_Alps_EC11E-Switch_Vertical_H20mm",
-         "Device", "Rotary_Encoder_Switch", "", "VERIFY footprint against Bourns PEC11R drawing"),
+        ("SW1", "PEC11R-4220F-S0024", "Rotary_Encoder:RotaryEncoder_Bourns_Vertical_PEC12R-3x17F-Sxxxx",
+         "Device", "Rotary_Encoder_Switch", "", "PEC12R fp: terminals verified vs PEC11R datasheet; boss holes 3.1mm oval, unverified"),
         ("J2", "XIAO field 2x7", "Connector_PinHeader_2.54mm:PinHeader_2x07_P2.54mm_Vertical",
          "Connector_Generic", "Conn_02x07_Odd_Even", "", "labelled field to XIAO / driver-board breakout"),
         ("J3", "BAT JST-PH", "Connector_JST:JST_PH_B2B-PH-K_1x02_P2.00mm_Vertical",
@@ -35,6 +35,8 @@ HB = dict(
          "Connector_Generic", "Conn_01x04", "", "to sb-01 satellite"),
         ("J5", "5V out", "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical",
          "Connector_Generic", "Conn_01x02", "", "VBUS/GND to XIAO 5V pin"),
+        ("TP5", "USB_DP", "TestPoint:TestPoint_Pad_D1.5mm", "Connector", "TestPoint", "", "USB D+ break-out"),
+        ("TP6", "USB_DM", "TestPoint:TestPoint_Pad_D1.5mm", "Connector", "TestPoint", "", "USB D- break-out"),
         ("TP1", "VBAT", "TestPoint:TestPoint_Pad_D1.5mm", "Connector", "TestPoint", "", ""),
         ("TP2", "VDIV", "TestPoint:TestPoint_Pad_D1.5mm", "Connector", "TestPoint", "", ""),
         ("TP3", "GND", "TestPoint:TestPoint_Pad_D1.5mm", "Connector", "TestPoint", "", ""),
@@ -44,9 +46,19 @@ HB = dict(
         ("H3", "M2", "MountingHole:MountingHole_2.2mm_M2", "Mechanical", "MountingHole", "", ""),
         ("H4", "M2", "MountingHole:MountingHole_2.2mm_M2", "Mechanical", "MountingHole", "", ""),
     ],
+    place={
+        "J1":(5.0,16.6,90), "R1":(8.7,13.6,0), "R2":(8.7,18.4,0), "D1":(8.7,23.2,0),
+        "J3":(8.9,32.6,0), "R3":(17.3,32.2,0), "R4":(22.7,32.2,0), "C1":(28.1,32.2,0),
+        "R5":(33.5,32.2,0), "SW1":(23.25,13.9,0), "J2":(42.4,12.2,0), "J4":(21.6,3.8,0),
+        "J5":(32.3,3.8,0), "D2":(11.1,4.0,0),
+        "TP1":(15.6,26.6,0), "TP2":(21.0,26.6,0), "TP3":(26.4,26.6,0), "TP4":(31.8,26.6,0), "TP5":(15.6,22.6,0), "TP6":(21.0,22.6,0),
+        "H1":(3.5,3.5,0), "H2":(44.5,3.5,0), "H3":(3.5,36.5,0), "H4":(44.5,36.5,0),
+    },
     nets={
         "VBUS":   [("J1", "A4"), ("J1", "B4"), ("J1", "A9"), ("J1", "B9"), ("D1", "3"), ("J5", "1")],
         "CC1":    [("J1", "A5"), ("R1", "1")],
+        "USB_DP": [("J1", "A6"), ("J1", "B6"), ("D1", "1"), ("TP5", "1")],
+        "USB_DM": [("J1", "A7"), ("J1", "B7"), ("TP6", "1")],
         "CC2":    [("J1", "B5"), ("R2", "1")],
         "VBAT":   [("J3", "1"), ("R3", "1"), ("TP1", "1")],
         "VDIV":   [("R3", "2"), ("R4", "1"), ("C1", "1"), ("J2", "13"), ("TP2", "1")],
@@ -68,17 +80,18 @@ HB = dict(
 SB = dict(
     name="sb-01",
     title="homecadia SHT40 satellite",
-    w=12.0, h=12.0,
-    holes=[(6.0, 2.5)],
+    w=14.0, h=16.0,
+    holes=[(7.0, 2.5)],
     comps=[
         ("U1", "SHT40-AD1B-R2",
-         "Sensor_Humidity:Sensirion_DFN-4-1EP_1.5x1.5mm_P0.8mm_EP0.7x0.9mm",
-         "Sensor_Humidity", "SHT40-AD1B", "C2909890", "DFN-4; needs reflow or hot air"),
+         "Sensor_Humidity:Sensirion_DFN-4_1.5x1.5mm_P0.8mm_SHT4x_NoCentralPad",
+         "Sensor_Humidity", "SHT40-AD1B", "C2909890", "DFN-4 no central pad; needs reflow or hot air"),
         ("C1", "100nF", "Capacitor_SMD:C_0805_2012Metric", "Device", "C", "", "decoupling"),
         ("J1", "JST-SH 4P", "Connector_JST:JST_SH_BM04B-SRSS-TB_1x04-1MP_P1.00mm_Vertical",
          "Connector_Generic", "Conn_01x04", "", "to hb-01 J4"),
         ("H1", "M2", "MountingHole:MountingHole_2.2mm_M2", "Mechanical", "MountingHole", "", ""),
     ],
+    place={"U1":(7.0,6.6,0), "C1":(3.0,6.6,0), "J1":(7.0,12.6,0), "H1":(7.0,2.5,0)},
     nets={
         "+3V3": [("U1", "1"), ("C1", "1"), ("J1", "1")],
         "SCL":  [("U1", "2"), ("J1", "2")],
@@ -95,10 +108,10 @@ def u():
 def kicad_pro(d):
     return json.dumps({
         "board": {"design_settings": {"defaults": {"board_outline_line_width": 0.1},
-                                      "rules": {"min_clearance": 0.2, "min_track_width": 0.25,
+                                      "rules": {"min_clearance": 0.127, "min_track_width": 0.25,
                                                 "min_via_diameter": 0.6, "min_through_hole_diameter": 0.3}}},
         "meta": {"filename": f"{d['name']}.kicad_pro", "version": 1},
-        "net_settings": {"classes": [{"name": "Default", "clearance": 0.2, "track_width": 0.25,
+        "net_settings": {"classes": [{"name": "Default", "clearance": 0.127, "track_width": 0.25,
                                       "via_diameter": 0.8, "via_drill": 0.4},
                                      {"name": "Power", "clearance": 0.25, "track_width": 0.6,
                                       "via_diameter": 0.9, "via_drill": 0.5}]},
@@ -129,7 +142,7 @@ def kicad_pcb(d):
                                   ("F.CrtYd", "user"), ("B.Fab", "user"), ("F.Fab", "user")], start=32):
         L.append(f'    ({n} "{nm}" {ty})')
     L.append('  )')
-    L.append('  (setup (pad_to_mask_clearance 0))')
+    L.append('  (setup (pad_to_mask_clearance 0) (solder_mask_min_width 0.1)\n    (rules (min_clearance 0.127) (min_track_width 0.2) (min_via_diameter 0.6)))')
     L.append('  (net 0 "")')
     for i, n in enumerate(sorted(d["nets"]), start=1):
         L.append(f'  (net {i} "{n}")')
@@ -141,10 +154,14 @@ def kicad_pcb(d):
     for (hx, hy) in d["holes"]:
         L.append(f'  (gr_circle (center {hx} {hy}) (end {hx+1.1} {hy}) '
                  f'(stroke (width 0.05) (type solid)) (fill none) (layer "Edge.Cuts") (tstamp {u()}))')
-    L.append(f'  (gr_text "{d["title"]}" (at {W/2} {H-3}) (layer "F.SilkS") (tstamp {u()})'
-             f' (effects (font (size 1.2 1.2) (thickness 0.2))))')
-    L.append(f'  (gr_text "rev A  {DATE}  UNBUILT" (at {W/2} {H-1.4}) (layer "F.SilkS") (tstamp {u()})'
-             f' (effects (font (size 0.8 0.8) (thickness 0.15))))')
+    if W >= 30:
+        L.append(f'  (gr_text "{d["title"]}" (at {W/2} {H-3}) (layer "F.SilkS") (tstamp {u()})'
+                 f' (effects (font (size 1.2 1.2) (thickness 0.2))))')
+        L.append(f'  (gr_text "rev A  {DATE}  UNBUILT" (at {W/2} {H-1.4}) (layer "F.SilkS") (tstamp {u()})'
+                 f' (effects (font (size 0.8 0.8) (thickness 0.15))))')
+    else:
+        L.append(f'  (gr_text "{d["name"]} revA" (at {W/2} {H-1.5}) (layer "F.SilkS") (tstamp {u()})'
+                 f' (effects (font (size 0.9 0.9) (thickness 0.15))))')
     L.append(')')
     return "\n".join(L) + "\n"
 

@@ -1,0 +1,5 @@
+# KiCad local settings, per-user, not part of the design
+*.kicad_prl
+*-backups/
+fp-info-cache
+__pycache__/

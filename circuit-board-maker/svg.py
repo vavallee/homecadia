@@ -81,20 +81,20 @@ open(f"{OUT}/hb-01-plan.svg", "w").write("".join(p))
 
 # ------------------------------------------------------------------ sb-01 plan
 S2 = 22
-BW2, BH2 = 12 * S2, 12 * S2
+BW2, BH2 = 14 * S2, 16 * S2
 OX2, OY2 = 70, 74
 W2, H2 = int(BW2 + 2 * OX2), int(BH2 + OY2 + 70)
 q = [hdr(W2, H2, "sb-01 SHT40 satellite plan view")]
 q.append(txt(W2 / 2, 30, "sb-01 &#8212; SHT40 satellite", "t hd"))
-q.append(txt(W2 / 2, 50, "12 &#215; 12 mm &#183; keeps the sensor out of MCU heat", "t cap"))
+q.append(txt(W2 / 2, 50, "14 &#215; 16 mm &#183; keeps the sensor out of MCU heat", "t cap"))
 q.append(f'<rect class="brd" x="{OX2}" y="{OY2}" width="{BW2}" height="{BH2}" rx="8"/>')
-q.append(f'<circle class="hole" cx="{OX2+6*S2}" cy="{OY2+2.5*S2}" r="{1.1*S2}"/>')
-q.append(txt(OX2 + 6 * S2, OY2 + 2.5 * S2 + 3, "M2", "t sm"))
-q.append(part(OX2 + 5.2 * S2, OY2 + 5.2 * S2, 1.6 * S2, 1.6 * S2, "U1", "", "cool"))
-q.append(txt(OX2 + 6 * S2, OY2 + 7.6 * S2, "SHT40-AD1B", "t sm"))
-q.append(txt(OX2 + 6 * S2, OY2 + 8.5 * S2, "DFN-4 &#183; reflow only", "t sm"))
-q.append(part(OX2 + 1.2 * S2, OY2 + 5.6 * S2, 2.2 * S2, 1.2 * S2, "C1", "100nF"))
-q.append(part(OX2 + 3.4 * S2, OY2 + 9.6 * S2, 5.2 * S2, 1.8 * S2, "J1", "JST-SH 4P &#8594; hb-01 J4"))
+q.append(f'<circle class="hole" cx="{OX2+7*S2}" cy="{OY2+2.5*S2}" r="{1.1*S2}"/>')
+q.append(txt(OX2 + 7 * S2, OY2 + 2.5 * S2 + 3, "M2", "t sm"))
+q.append(part(OX2 + 6.2 * S2, OY2 + 5.8 * S2, 1.6 * S2, 1.6 * S2, "U1", "", "cool"))
+q.append(txt(OX2 + 7 * S2, OY2 + 8.4 * S2, "SHT40-AD1B", "t sm"))
+q.append(txt(OX2 + 7 * S2, OY2 + 9.5 * S2, "DFN-4 &#183; reflow only", "t sm"))
+q.append(part(OX2 + 1.4 * S2, OY2 + 6.0 * S2, 2.2 * S2, 1.2 * S2, "C1", "100nF"))
+q.append(part(OX2 + 4.0 * S2, OY2 + 11.4 * S2, 5.2 * S2, 1.8 * S2, "J1", "JST-SH 4P &#8594; hb-01 J4"))
 q.append(txt(W2 / 2, OY2 + BH2 + 30, "if reflow isn&#8217;t available, keep the Grove SHT40 module", "t cap"))
 q.append(txt(W2 / 2, OY2 + BH2 + 46, "and give it a mounting bracket instead", "t cap"))
 q.append("</svg>")

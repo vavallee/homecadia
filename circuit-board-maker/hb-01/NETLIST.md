@@ -16,11 +16,13 @@ Generated 2026-08-13. **Never opened in KiCad — see the warning in README.md.*
 | C1 | 100nF | `Capacitor_SMD:C_0805_2012Metric` | — | ADC hold cap |
 | R5 | 1k | `Resistor_SMD:R_0805_2012Metric` | — | LED series |
 | D2 | LED 3mm | `LED_THT:LED_D3.0mm` | — | or 2-pin header to panel LED |
-| SW1 | PEC11R-4220F-S0024 | `Rotary_Encoder:RotaryEncoder_Alps_EC11E-Switch_Vertical_H20mm` | — | VERIFY footprint against Bourns PEC11R drawing |
+| SW1 | PEC11R-4220F-S0024 | `Rotary_Encoder:RotaryEncoder_Bourns_Vertical_PEC12R-3x17F-Sxxxx` | — | PEC12R fp: terminals verified vs PEC11R datasheet; boss holes 3.1mm oval, unverified |
 | J2 | XIAO field 2x7 | `Connector_PinHeader_2.54mm:PinHeader_2x07_P2.54mm_Vertical` | — | labelled field to XIAO / driver-board breakout |
 | J3 | BAT JST-PH | `Connector_JST:JST_PH_B2B-PH-K_1x02_P2.00mm_Vertical` | [C131337](https://www.lcsc.com/product-detail/C131337.html) | polarity is NOT guaranteed by the key |
 | J4 | SHT40 JST-SH | `Connector_JST:JST_SH_BM04B-SRSS-TB_1x04-1MP_P1.00mm_Vertical` | — | to sb-01 satellite |
 | J5 | 5V out | `Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical` | — | VBUS/GND to XIAO 5V pin |
+| TP5 | USB_DP | `TestPoint:TestPoint_Pad_D1.5mm` | — | USB D+ break-out |
+| TP6 | USB_DM | `TestPoint:TestPoint_Pad_D1.5mm` | — | USB D- break-out |
 | TP1 | VBAT | `TestPoint:TestPoint_Pad_D1.5mm` | — |  |
 | TP2 | VDIV | `TestPoint:TestPoint_Pad_D1.5mm` | — |  |
 | TP3 | GND | `TestPoint:TestPoint_Pad_D1.5mm` | — |  |
@@ -45,6 +47,8 @@ Generated 2026-08-13. **Never opened in KiCad — see the warning in README.md.*
 | `LED_K` | R5.2, D2.2 |
 | `SCL` | J2.6, J4.2 |
 | `SDA` | J2.5, J4.3 |
+| `USB_DM` | J1.A7, J1.B7, TP6.1 |
+| `USB_DP` | J1.A6, J1.B6, D1.1, TP5.1 |
 | `VBAT` | J3.1, R3.1, TP1.1 |
 | `VBUS` | J1.A4, J1.B4, J1.A9, J1.B9, D1.3, J5.1 |
 | `VDIV` | R3.2, R4.1, C1.1, J2.13, TP2.1 |
