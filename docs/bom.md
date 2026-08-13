@@ -21,6 +21,7 @@ are in [bringup.md](bringup.md).
 | USB-C female panel-mount pigtail | Gebildet 10pcs, 2-pin 24AWG, 3A, waterproof. **M11×2.3 nut, needs a Ø12mm hole — case hole is Ø12.8mm, so it fits** with ~0.8mm slop. Charging via USB **A-to-C only** (no CC resistors) | 1 | Amazon.ca | arriving 2026-08-13 | 14.99 (10pcs) |
 | 3mm LED | Chanzon 60pcs assortment, diffused, 3V 20mA; needs a series resistor from the kit above | 1 | Amazon.ca | arriving 19–28 Aug | 9.11 (kit) |
 | M2 self-tapping screw kit | 800pcs stainless, cross-drive pan head | ~4 | Amazon.ca | **delivered 2026-08-12** | 23.44 (kit) |
+| Bourns PEC11R-4220F-S0024 | EC11 rotary encoder, 20mm flatted D-shaft, push switch, 24 detents; DK part PEC11R-4220F-S0024-ND | 1 | Digi-Key CA | ordered qty 3, **3 in stock, 0 backordered**; DDP Timberlea NS | 4.27 ea / 12.81 (+15.00 ship +3.89 HST = **31.70**) |
 
 Seeed line total **US$65.05** (4 lines above, shipping not shown on the order
 page). Amazon.ca lines visible above total **CAD 99.38**, plus the battery
@@ -30,18 +31,17 @@ order (price not captured). The earlier CAD 125–155 estimate for Seeed was hig
 
 | Part | Spec / SKU | Qty per unit | Vendor | Order status | Price paid (CAD) |
 |---|---|---|---|---|---|
-| **Bourns PEC11R-4220F-S0024** | EC11 rotary encoder, 20mm flatted D-shaft, push switch, 24 detents | 1 | Digi-Key CA | **NOT ORDERED — blocks assembly** | |
 | Enclosure set | **FDM PETG** (not resin), veltoc wall-mount remix rev 2 ([hardware/case](../hardware/case/README.md)); **order ONE test set first** | 1 set | JLC3DP | quoting | |
 | #6 pan-head screws + drywall anchors | keyhole wall mounts, **92mm centres** (rev 2), head ≤ Ø8.5×2.4mm | 2 | local | not ordered | |
 | Command Small strips | rail landings on case back | 2 | local | not ordered | |
 | Hookup wire | 26–28AWG silicone stranded | — | local / Amazon.ca | not ordered | |
 | Heat shrink | assorted; fallback if the perfboard divider carrier doesn't work out | — | local / Amazon.ca | not ordered | |
 
-The LEDs and resistors were bought from Amazon.ca rather than Digi-Key, which
-leaves the encoder as the only Digi-Key line — and it is the one part in this
-build with a specific manufacturer part number, so a generic substitute needs
-its shaft (6mm flatted D, 20mm) and detent count checked against
-`encoder-knob.stl` and the front panel's Ø6.8 shaft hole.
+The LEDs and resistors were bought from Amazon.ca rather than Digi-Key, so the
+encoder is the sole Digi-Key line and carries the whole $15 freight + HST.
+
+**Every electronic part in this build is now ordered or in hand.** What is left
+is the enclosure order and four local consumables.
 
 ## ⚠️ Assembly warnings (repeated in [assembly.md](assembly.md))
 
