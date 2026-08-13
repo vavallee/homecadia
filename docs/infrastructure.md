@@ -88,11 +88,17 @@ equivalents, or keeping the SmartThings hub alive as a Zigbee-only bridge.
 - `TODO`: inventory the Zigbee devices on SmartThings before decommissioning
   it, so the migration cost is known rather than discovered.
 
-## Open questions
+## Resolved: shipped 2026-08-10, both items together
 
-- **Voice PE is confirmed a pre-order item** on the ameriDroid order (flagged
-  as such in the order summary, 2026-08-13) — the backorder risk is real, not
-  hypothetical. Still unknown whether the ZBT-2 ships separately or the whole
-  order holds behind it. Since the ZBT-2 is the border router every sensor node
-  commissions through, a hold blocks the Thread side of the build; ask
-  ameriDroid to split the shipment if the sensor hardware lands first.
+Order **#A133577**, GlobalPost Flat Rate with duties and taxes included (the
+DDP option chosen at checkout — nothing owed on delivery). Tracking
+**GPGISP0000794412US**. Both the Voice PE and the ZBT-2 are in the one package.
+
+The pre-order flag on the Voice PE did not hold the order, so the split-shipment
+question is moot and the ZBT-2 is not blocked behind it.
+
+Delivery is an estimate, not guaranteed. Expect roughly **2026-08-16 to
+2026-08-31** on the quoted 6–21 day transit. GlobalPost tracking typically shows
+nothing for the first week or so: the package moves to their Los Angeles
+facility before being scanned, so silence early on is normal rather than a sign
+of a problem.
