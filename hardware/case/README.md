@@ -69,34 +69,42 @@ corner bosses and the mating lip. Those are **tangency slivers** where a
 cylindrical boss meets a filleted wall, not standalone walls; slicers merge
 them into the adjacent perimeter. Verified by cross-section at z=10.
 
-**Material: FDM ABS** (ASA if a unit will sit in direct sun — same properties
-plus UV stability). **JLC3DP does not offer PETG**: their FDM lineup is ABS,
-ASA, PA12-CF, TPU, PEBA, PEEK, ABS-ESD and PLA-P. ABS is the closest match —
-98 °C heat deflection, tough, and safe around a LiPo in a way PLA (softens
-~60 °C) is not. Avoid resin (SLA): brittle, UV-degrading, and it would shear
-the Ø2.4mm tray pegs and the M2 self-tapper bosses.
+**Material: MJF Nylon PA12** at JLC3DP. Not FDM, not resin — see below.
 
-### JLC3DP FDM minimum part size — blocks three of the four parts
+### Why not FDM
 
-Their FDM process enforces a **30 × 30 × 10 mm minimum bounding box**. Measured
-against it:
+**JLC3DP does not offer PETG** (their FDM lineup is ABS, ASA, PA12-CF, TPU,
+PEBA, PEEK, ABS-ESD, PLA-P), and more decisively their FDM process enforces a
+**30 × 30 × 10 mm minimum bounding box**, which this design cannot meet:
 
-| Part | Size (mm) | Passes? |
-|---|---|---|
-| case-back-wallmount | 116.28 × 59.28 × 23.00 | yes |
-| case-front | 110.60 × 53.60 × **8.20** | **no** — 1.8mm under on thickness |
-| insert-tray | 48.50 × 45.50 × **6.60** | **no** — 3.4mm under |
-| encoder-knob | 13.50 × 13.50 × **9.50** | **no** — under on all three |
+| Part | Size (mm) | Volume | FDM 30×30×10 | MJF 5×5×5 |
+|---|---|---|---|---|
+| case-back-wallmount | 116.28 × 59.28 × 23.00 | 19.86 cm³ | passes | passes |
+| case-front | 110.60 × 53.60 × **8.20** | 6.16 cm³ | **rejected** (vendor-confirmed) | passes |
+| insert-tray | 48.50 × 45.50 × **6.60** | 3.09 cm³ | **rejected** | passes |
+| encoder-knob | 13.50 × 13.50 × **9.50** | 1.01 cm³ | **rejected** (vendor-confirmed) | passes |
+| | | **30.12 cm³/set, 90.36 cm³ for 3** | | |
 
-Confirmed by the vendor for `encoder-knob.stl`; the other two are the same rule
-applied to measured dimensions and need confirming in the quoting UI. If the
-front and tray are also rejected, JLC3DP FDM cannot print this case and the
-options are another service (most have no such minimum), their SLA process for
-the flat parts, or a local printer.
+Splitting across processes was rejected: FDM holds ±0.3mm per 100mm and SLA
+~±0.1mm, and the front and back must mate over a 116mm span with aligned corner
+screws. Mixed shrinkage on mating parts trades a size rule for a fit problem.
 
-The knob is not worth solving: a **6mm D-shaft EC11 knob** is a commodity part
-(aluminium ones ~19mm diameter are common). Buy one per unit and drop
-`encoder-knob.stl` from the print order.
+### Why MJF nylon
+
+PA12 nylon is a better enclosure material than the ABS originally planned:
+tough and slightly flexible rather than brittle, holds self-tapping screws
+well, and needs no supports so there are no support scars in the display
+aperture or the vent slots. Every constraint clears with margin — 0.8mm
+minimum wall against our 1.30mm thinnest (case-front), 0.8mm minimum feature
+against the Ø2.4mm tray pegs, 5×5×5mm minimum part against the 13.5mm knob.
+
+It also means **the knob prints after all** — no need to buy a 6mm D-shaft
+knob, though a commodity aluminium one remains a fine substitute if the printed
+bore proves too tight to ream.
+
+Avoid SLA resin for this build: brittle, UV-degrading, and it would shear the
+Ø2.4mm tray pegs and the M2 self-tapper bosses. If resin is ever forced, use a
+toughened grade (8228 or 9000HE), never 9600.
 
 ## Print notes
 

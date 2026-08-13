@@ -31,8 +31,7 @@ order (price not captured). The earlier CAD 125–155 estimate for Seeed was hig
 
 | Part | Spec / SKU | Qty per unit | Vendor | Order status | Price paid (CAD) |
 |---|---|---|---|---|---|
-| Enclosure set | **FDM ABS** — JLC3DP has no PETG; see [hardware/case](../hardware/case/README.md). Their 30×30×10mm FDM minimum rejects the knob and may reject the front and tray. **Order ONE test set first** | 1 set | JLC3DP | quoting — blocked on minimum-size rule | |
-| EC11 knob, 6mm D-shaft | commodity part; replaces `encoder-knob.stl`, which is too small for JLC3DP FDM | 1 | Amazon.ca / AliExpress | not ordered | |
+| Enclosure set | **MJF Nylon PA12**, 4 parts, 30.12 cm³/set — FDM is ruled out by JLC3DP's 30×30×10mm minimum ([hardware/case](../hardware/case/README.md)). **Order ONE test set first** | 1 set | JLC3DP | quoting | |
 | #6 pan-head screws + drywall anchors | keyhole wall mounts, **92mm centres** (rev 2), head ≤ Ø8.5×2.4mm | 2 | local | not ordered | |
 | Command Small strips | rail landings on case back | 2 | local | not ordered | |
 | Hookup wire | 26–28AWG silicone stranded | — | local / Amazon.ca | not ordered | |
