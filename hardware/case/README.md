@@ -24,7 +24,7 @@ modified; `insert-tray.stl` and `encoder-knob.stl` print as-is from upstream.
 |---|---|---|---|
 | case-back-wallmount.stl | remixed + rev 2 stretch | 116.28 × 59.28 × 23.00 | wall-mount rails, side USB-C, rear port plugged |
 | case-front.stl | rev 2 stretch | 110.60 × 53.60 × 8.20 | EC11 mount (Ø6.8 shaft hole, Ø9.8/Ø14 recess), 3mm LED hole, display aperture |
-| insert-tray.stl | upstream | 48.50 × 45.50 × 6.00 | XIAO mount: 1.0mm plate, four Ø2.4mm pegs on a 17.0 × 21.0mm pattern. **Not** a battery cradle — the cell sits loose beside it |
+| insert-tray.stl | rev 2 thickened | 48.50 × 45.50 × 6.60 | XIAO mount: plate thickened 1.0 → **1.6mm**, four Ø2.4mm pegs on a 17.0 × 21.0mm pattern. **Not** a battery cradle — the cell sits loose beside it |
 | encoder-knob.stl | upstream | 13.50 × 13.50 × 9.50 | fits 20mm flatted D-shaft |
 
 Interior of the assembled back: **106.64 × ~47.9 × ~18.6 mm**, one open cavity
@@ -47,6 +47,30 @@ open questions for the test fit.
   up, so the case drops onto them.
 - Orientation on the wall: slatted side **down** (air inlet), rear vent band
   at the top (outlet).
+
+## Wall thickness / DFM
+
+Measured off the meshes, so these are the numbers to answer a vendor DFM flag with:
+
+| Feature | Thickness | Verdict |
+|---|---|---|
+| `case-back-wallmount` shell walls | **1.44mm** | 3–4 perimeters at a 0.4mm nozzle — normal enclosure wall in PETG |
+| `case-front` shell walls | **~1.3mm** | same |
+| `insert-tray` plate | **1.60mm** (rev 2; was 1.00) | thickened specifically to clear the flag |
+| `insert-tray` pegs | Ø2.4mm shank, Ø4.0mm base, 5mm tall | pins, not walls; printable in PETG |
+
+JLC3DP's FDM guidance is a 1.2mm minimum with 2mm ideal, so the shells sit
+between the two and trigger "thin walls detected". **Accept it** — 1.4mm PETG
+is a sound enclosure wall, and thickening the shells would mean a true surface
+offset in CAD, not the cut-and-shift edits used here.
+
+Sub-millimetre readings do appear in an automated scan (down to 0.13mm) at the
+corner bosses and the mating lip. Those are **tangency slivers** where a
+cylindrical boss meets a filleted wall, not standalone walls; slicers merge
+them into the adjacent perimeter. Verified by cross-section at z=10.
+
+**Material: FDM PETG.** Not resin — resin is brittle, degrades under UV, and
+would shear the tray pegs and the M2 self-tapper bosses.
 
 ## Print notes
 
