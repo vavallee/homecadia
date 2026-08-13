@@ -16,7 +16,13 @@ modified; `insert-tray.stl` and `encoder-knob.stl` print as-is from upstream.
 > +7 mm. Interior is now **106.64 mm**, leaving **2.1 mm clearance**. The display
 > aperture is unchanged at 68.00 mm wide; it simply sits 7 mm further along.
 
-![case preview](preview.png)
+![assembled render](render-assembled.png)
+
+Assembled view, rev 3. Rendered directly from the STL geometry in this
+directory — real part shapes and real relative positions, so the proportions,
+the wordmark placement and the aperture framing are accurate. Surface finish,
+colour and the screen contents are illustrative. `preview.png` is the older
+rev 1 image and no longer matches the models.
 
 ## Files (`stl/`)
 
@@ -141,8 +147,8 @@ toughened grade (8228 or 9000HE), never 9600.
   upstream mesh, not introduced by the rev 2 stretch (verified against git
   HEAD). Slicers and JLC3DP auto-repair this class of defect; no action needed
   unless a slicer complains.
-- `preview.png` still shows the rev 1 geometry and is **stale** — regenerate it
-  once a unit is assembled.
+- `preview.png` shows the rev 1 geometry and is superseded by
+  `render-assembled.png`; replace both with a photo once a unit is built.
 
 ## Parts this design needs beyond the sensor BOM
 
