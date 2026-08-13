@@ -68,7 +68,7 @@ justification.
 |---|---|---|
 | 1 | Battery divider has no home in the enclosure | **Real, cheap to fix** |
 | 2 | No fuel gauge, battery % is an ADC guess | Marginal — divider + OCV LUT is adequate for hourly reporting |
-| 3 | USB-C pigtail has no CC resistors, A-to-C only | **Real, 20-cent fix, no PCB needed** |
+| 3 | USB-C pigtail has no CC resistors, A-to-C only | **Real — needs a connector swap or a board-mount receptacle, see correction below** |
 | 4 | Driver-board JST doesn't charge | Already solved |
 | 5 | SHT40 hangs on a pigtail | Not a PCB problem — enclosure work |
 | 6 | ~12 wires per unit × 3 | **Real, moderately fixed by a board** |
@@ -136,12 +136,32 @@ Fixes **1** (divider gets a home with mounting holes), **3**, **6** (encoder,
 LED and divider wiring become zero flying wires; the 8 SPI wires stay, since the
 driver board stays).
 
-### On pain point 3 — do this today, regardless
+### On pain point 3 — the fix is a connector swap, not two resistors
 
-The pigtail has no CC resistors, so C-to-C silently does nothing. **Two 5.1 kΩ
-resistors from CC1 and CC2 to GND at the device end is the entire fix.** It can
-be soldered into the pigtail with heatshrink right now. Putting it on a board is
-tidier, not necessary. This is a 20-cent fix that does not need a PCB project.
+**Correction (2026-08-13, after this document was first pushed):** an earlier
+revision claimed the CC resistors could be soldered into the existing pigtail
+for 20 cents. **That is wrong.** On a 2-wire panel-mount USB-C pigtail, the CC1
+and CC2 pins terminate inside the moulded housing and are not brought out on the
+two wires. There is nothing external to attach a resistor to.
+
+The electrical fix is unchanged — 5.1 kΩ from **both** CC1 and CC2 to GND, both
+sides so the cable works either way up — but it has to happen at a connector you
+control. Three routes:
+
+| Route | Cost | Case impact |
+|---|---|---|
+| Accept A-to-C only | 0 | none |
+| Replace with a panel-mount part that has CC resistors built in, or exposes CC | ~CAD 10–20 | none if the thread and Ø match |
+| Put a board-mount USB-C receptacle on the harness board | ~$0.08 + layout | **rectangular cutout replaces the Ø12.8 mm hole** |
+
+**Check the Gebildet part before buying anything.** Some 2-wire pigtails do
+include internal 5.1 kΩ resistors. [docs/bom.md](../docs/bom.md) asserts this one
+does not, but that appears to be an assumption rather than a measurement. Probe
+CC1→GND and CC2→GND on the connector face with a multimeter; 5.1 kΩ on both
+means there is no problem to fix.
+
+This is the one place where the harness board earns more than convenience — it
+is the only route that fixes C-to-C without buying a different pigtail.
 
 ### Parts
 
@@ -451,8 +471,10 @@ stated as the goal, because the cost/benefit does not close on labour.
 
 ### Order of work
 
-1. **Fix the CC resistors now.** Two 5.1 kΩ to GND in the pigtail, heatshrink.
-   Pain point 3, gone, for 20 cents. Do not wait for a board.
+1. **Measure the pigtail's CC pins.** 5.1 kΩ on both CC1→GND and CC2→GND means
+   pain point 3 does not exist. If it does exist, decide between accepting
+   A-to-C, swapping the pigtail, or putting USB-C on the harness board — see the
+   correction under Option 0 above.
 2. **Hand-wire unit 1** when the parts land. Already committed — hardware is in
    transit and firmware is written.
 3. **Design Option 0** in parallel. One evening, ~CAD 40. A good first KiCad
