@@ -31,7 +31,7 @@ order (price not captured). The earlier CAD 125–155 estimate for Seeed was hig
 
 | Part | Spec / SKU | Qty per unit | Vendor | Order status | Price paid (CAD) |
 |---|---|---|---|---|---|
-| Enclosure set | 4 parts, 30.12 cm³/set. **FDM ABS at EurekaTec.ca** (email quote, no online system) — preferred over JLC3DP MJF nylon on cost and because it keeps all four parts in one process. JLC3DP MJF stays the fallback: its 5×5×5mm minimum accepts every part, unlike JLC3DP FDM ([hardware/case](../hardware/case/README.md)). **Order ONE test set first** | 1 set | EurekaTec.ca | **quote request sent 2026-08-13** (STLs + assembled render attached); awaiting price, lead time, ABS colours, and whether they print ABS in an enclosed chamber | |
+| Enclosure set | 4 parts, 30.12 cm³/set. **FDM ABS at EurekaTec.ca** (email quote, no online system) — preferred over JLC3DP MJF nylon on cost and because it keeps all four parts in one process. JLC3DP MJF stays the fallback: its 5×5×5mm minimum accepts every part, unlike JLC3DP FDM ([hardware/case](../hardware/case/README.md)). **Order ONE test set first** | 1 set | EurekaTec.ca / Azata.ca | **quote requests sent to both 2026-08-13** (STLs + assembled render attached); awaiting price, lead time, ABS colours, and whether ABS is printed in an enclosed chamber | |
 | #6 pan-head screws + drywall anchors | keyhole wall mounts, **92mm centres** (rev 2), head ≤ Ø8.5×2.4mm | 2 | local | not ordered | |
 | Command Small strips | rail landings on case back | 2 | local | not ordered | |
 | Hookup wire | 26–28AWG silicone stranded | — | local / Amazon.ca | not ordered | |
