@@ -18,7 +18,7 @@ are in [bringup.md](bringup.md).
 | Perfboard | Chanzon 34pcs double-sided FR4, 5 sizes | 1 | Amazon.ca | arriving 19–28 Aug | 22.79 (kit) |
 | Capacitor 100nF | Chanzon 50pcs, 104M disc ceramic, 1000V, through-hole. Voltage rating is overkill but harmless; ±20% is fine for an ADC hold cap | 1 | Amazon.ca | **delivered 2026-08-11** | 29.05 (kit, with resistors) |
 | Resistor 1MΩ | ALLECIN 1/4W 1% metal film, 25 values 1Ω–1MΩ — 1MΩ is the top value | 2 | Amazon.ca | **delivered 2026-08-11** | (same order as above) |
-| USB-C female panel-mount pigtail | Gebildet 10pcs, 2-pin 24AWG, 3A, waterproof. **M11×2.3 nut, needs a Ø12mm hole — case hole is Ø12.8mm, so it fits** with ~0.8mm slop. Charging via USB **A-to-C only** (no CC resistors) | 1 | Amazon.ca | arriving 2026-08-13 | 14.99 (10pcs) |
+| USB-C female panel-mount pigtail | Gebildet 10pcs, 2-pin 24AWG, 3A, waterproof. **M11×2.3 nut, needs a Ø12mm hole — case hole is Ø12.8mm, so it fits** with ~0.8mm slop. Charging via USB **A-to-C only** (no CC resistors) | 1 | Amazon.ca | **delivered 2026-08-11**, 10pcs | 14.99 (10pcs) |
 | 3mm LED | Chanzon 60pcs assortment, diffused, 3V 20mA; needs a series resistor from the kit above | 1 | Amazon.ca | arriving 19–28 Aug | 9.11 (kit) |
 | M2 self-tapping screw kit | 800pcs stainless, cross-drive pan head | ~4 | Amazon.ca | **delivered 2026-08-12** | 23.44 (kit) |
 | Bourns PEC11R-4220F-S0024 | EC11 rotary encoder, 20mm flatted D-shaft, push switch, 24 detents; DK part PEC11R-4220F-S0024-ND | 1 | Digi-Key CA | **delivered 2026-08-12**, qty 3; DDP Timberlea NS | 4.27 ea / 12.81 (+15.00 ship +3.89 HST = **31.70**) |
