@@ -21,7 +21,7 @@ are in [bringup.md](bringup.md).
 | USB-C female panel-mount pigtail | Gebildet 10pcs, 2-pin 24AWG, 3A, waterproof. **M11×2.3 nut, needs a Ø12mm hole — case hole is Ø12.8mm, so it fits** with ~0.8mm slop. Charging via USB **A-to-C only** (no CC resistors) | 1 | Amazon.ca | arriving 2026-08-13 | 14.99 (10pcs) |
 | 3mm LED | Chanzon 60pcs assortment, diffused, 3V 20mA; needs a series resistor from the kit above | 1 | Amazon.ca | arriving 19–28 Aug | 9.11 (kit) |
 | M2 self-tapping screw kit | 800pcs stainless, cross-drive pan head | ~4 | Amazon.ca | **delivered 2026-08-12** | 23.44 (kit) |
-| Bourns PEC11R-4220F-S0024 | EC11 rotary encoder, 20mm flatted D-shaft, push switch, 24 detents; DK part PEC11R-4220F-S0024-ND | 1 | Digi-Key CA | ordered qty 3, **3 in stock, 0 backordered**; DDP Timberlea NS | 4.27 ea / 12.81 (+15.00 ship +3.89 HST = **31.70**) |
+| Bourns PEC11R-4220F-S0024 | EC11 rotary encoder, 20mm flatted D-shaft, push switch, 24 detents; DK part PEC11R-4220F-S0024-ND | 1 | Digi-Key CA | **delivered 2026-08-12**, qty 3; DDP Timberlea NS | 4.27 ea / 12.81 (+15.00 ship +3.89 HST = **31.70**) |
 
 Seeed line total **US$65.05** (4 lines above, shipping not shown on the order
 page). Amazon.ca lines visible above total **CAD 99.38**, plus the battery
