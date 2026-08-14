@@ -1,24 +1,57 @@
 # homecadia
 
-Home-built smart home devices for Home Assistant, Matter over Thread.
+**Battery-powered Matter-over-Thread room sensors for Home Assistant, with an
+e-ink display and a rotary dial. Built from scratch on the ESP32-C6.**
 
 [![build-sensor-01](https://github.com/vavallee/homecadia/actions/workflows/build-sensor-01.yml/badge.svg)](https://github.com/vavallee/homecadia/actions/workflows/build-sensor-01.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![ESP-IDF v5.5.5](https://img.shields.io/badge/ESP--IDF-v5.5.5-red)](docs/build.md)
+[![esp-matter v1.6](https://img.shields.io/badge/esp--matter-v1.6-orange)](docs/build.md)
 
-<!-- photo goes here once a unit is assembled: ![sensor-01](docs/img/sensor-01.jpg) -->
+![sensor-01](hardware/case/render-assembled.png)
+
+<!-- photo replaces the render once a unit is assembled: ![sensor-01](docs/img/sensor-01.jpg) -->
+
+A room temperature and humidity sensor that reports to Home Assistant over
+Thread, shows its own readings on a 2.9" e-ink panel, takes input from a rotary
+dial, and is designed to run about eight months on one 2000 mAh cell. No vendor
+cloud, no hub beyond a Thread border router, and no Wi-Fi — the radio is
+compiled out.
+
+Everything is here: firmware, drivers, pin map with schematic-verified board
+facts, power budget, 3D-printable enclosure, bill of materials with real prices,
+and the reasoning behind each decision.
 
 > **Status: pre-assembly.** The firmware builds in CI and has been flashed and
-> booted on a bare XIAO ESP32-C6 (no sensor, no panel, no battery). Nothing in
-> this repo has yet run on a fully assembled unit — commissioning, display
-> output, encoder direction, ADC calibration, and every current figure are
-> unverified. Code written ahead of the hardware is marked `HW-VERIFY` in
-> source and tracked in [docs/bringup.md](docs/bringup.md). Treat this as a
-> build log you can read, not a design you should reproduce unmodified.
+> booted on a bare XIAO ESP32-C6 — no sensor, no panel, no battery. Nothing here
+> has run on a fully assembled unit yet, so commissioning, display output,
+> encoder direction, ADC calibration and every current figure are **unverified**.
+> Code written ahead of hardware is marked `HW-VERIFY` and tracked in
+> [docs/bringup.md](docs/bringup.md). Read this as a build log, not a design to
+> reproduce unmodified.
 
 ## Devices
 
 | Device | Status | Description |
 |---|---|---|
 | [sensor-01](firmware/sensor-01/) | in development | Battery-powered room temp/humidity sensor. 2.9" e-ink display, rotary dial, Matter-over-Thread sleepy end device (LIT ICD). 3 units. |
+
+## What you can lift from here
+
+The drivers are self-contained ESP-IDF components with no dependencies beyond
+the IDF itself. Copy the directory into your own `components/` and it builds.
+MIT licensed.
+
+| Component | Why it might be useful |
+|---|---|
+| [`sht40`](firmware/components/sht40) | Sensirion SHT40 on the ESP-IDF 5.x `i2c_master` API (not the deprecated legacy driver), high-precision single-shot with CRC-8 validation |
+| [`ssd1680`](firmware/components/ssd1680) | 2.9" e-paper with **differential partial refresh**, periodic full refresh to clear ghosting, and panel deep sleep between updates — the parts most sample code leaves out |
+| [`monogfx`](firmware/components/monogfx) | 1-bit framebuffer renderer with a scaled 5×7 font and a seven-segment digit routine. No LVGL, no external graphics library |
+| [`ec11_encoder`](firmware/components/ec11_encoder) | EC11 rotary encoder decoded from a Gray-code transition table in an ISR — bounce-immune without debounce delays, and draws no idle current |
+
+Also reusable regardless of hardware: the
+[power budget](docs/power-budget.md) and the firmware policies it forced, and
+the [documented traps](#traps-that-cost-time) below.
 
 ## Features
 
@@ -108,6 +141,34 @@ will show an uncertified-device warning. Per-device factory partitions
 | [hardware/case/README.md](hardware/case/README.md) | Enclosure: revision history, measured wall thicknesses, print vendor and material, engraving artwork |
 | [circuit-board-maker/](circuit-board-maker/README.md) | Custom-PCB evaluation and two paper board designs. **Concluded: not worth it for three units.** Never fabricated — see the conflicts list before reviving it |
 
+## Traps that cost time
+
+Findings that aren't in any datasheet, written down so the next person doesn't
+pay for them twice. Full list in
+[docs/source-reliability.md](docs/source-reliability.md) and
+[docs/pinmap.md](docs/pinmap.md).
+
+- **A0 and D0 are the same pin on the XIAO ESP32-C6.** If your display uses D0
+  for reset, the obvious ADC pin is gone. Battery sense moved to an underside
+  test pad ([pinmap](docs/pinmap.md)).
+- **The C6's RF switch is off at reset.** GPIO3 has a 10k pull-up and must be
+  driven low in firmware before the antenna works; GPIO14 selects onboard
+  ceramic versus U.FL. Neither pin is on the header. Schematic-verified.
+- **espboards.dev pin tables are wrong for the C6** — they're shared boilerplate
+  across ESP32 variants.
+- **The Seeed wiki's battery-sense snippet doesn't apply.** It assumes an
+  onboard divider the C6 schematic shows isn't populated.
+- **A 100k battery divider costs ~9% of a 300µA budget.** 2×1MΩ + 100nF instead,
+  at the price of a high-impedance ADC source ([power budget](docs/power-budget.md)).
+- **Light sleep kills the USB serial port in ~2 seconds**, which makes a board
+  effectively unflashable without `CONFIG_USJ_NO_AUTO_LS_ON_CONNECTION`
+  ([build](docs/build.md) has the recovery procedure, including the WSL2/usbipd
+  quirks).
+- **Opening `/dev/ttyACM0` with a plain shell read can hard-reset the chip** —
+  it pulses the USB-Serial-JTAG control lines. Use `idf.py monitor`.
+- **Seeed's deep-sleep current figures are optimistic** and regulator-dependent;
+  treated as unverified until measured.
+
 ## Milestones
 
 | # | Deliverable | Status |
@@ -131,13 +192,30 @@ firmware/
 .github/workflows/  CI: firmware build on push, .bin artifacts
 ```
 
+## Building it yourself
+
+1. **Read [docs/bom.md](docs/bom.md)** — real parts, real prices in CAD, real
+   vendors, and which ones have known counterfeits or reversed polarity.
+2. **Print the enclosure** from [hardware/case](hardware/case/README.md), or
+   adapt it. The revision history there explains why each dimension is what it
+   is, which matters if you swap the battery or the display.
+3. **Build the firmware** with [docs/build.md](docs/build.md) — Docker path
+   matches CI exactly and is the low-friction option.
+4. **Wire it** using [docs/pinmap.md](docs/pinmap.md) and
+   [docs/assembly.md](docs/assembly.md). Read the LiPo polarity warning first.
+5. **Commission it** with [docs/commissioning.md](docs/commissioning.md), then
+   work through [docs/bringup.md](docs/bringup.md).
+
+Forking for different hardware? `firmware/sensor-01/main/app_config.h` is the
+single source of pin truth and the place to start.
+
 ## Contributing
 
-This is a personal build, developed against one specific parts list. Issues and
-pull requests are welcome, but the parts list, the pinned toolchain, and the
-locked design decisions in the docs are unlikely to change. If you fork it for
-different hardware, `firmware/sensor-01/main/app_config.h` is the single source
-of pin truth and the place to start.
+This is a personal build against one specific parts list, so the parts list, the
+pinned toolchain and the locked design decisions are unlikely to change. That
+said: **corrections are very welcome**, especially if you've measured something
+this repo only models, or if one of the [traps](#traps-that-cost-time) turns out
+to be wrong on your hardware. Issues and pull requests both fine.
 
 ## License
 
