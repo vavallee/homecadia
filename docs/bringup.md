@@ -17,8 +17,15 @@ pre-hardware code is written.
 - [x] USB console stays enumerated with the app running —
       `CONFIG_USJ_NO_AUTO_LS_ON_CONNECTION=y` verified: port alive
       indefinitely; without it, dead in <2s (light sleep powers down USB-SJ).
-- [x] Firmware boots on hardware (bare board: no SHT40/panel attached;
-      sensor loop correctly refuses to start, node stays up).
+- [x] Firmware boots on hardware — **re-verified 2026-08-17 after fixing a
+      boot loop the 2026-08-08 check missed.** `abort()` fired ~1.3s after
+      `app_main()`: `CONFIG_ICD_ACTIVE_MODE_THRESHOLD_MS=1000` is below the
+      5s LIT ICD minimum enforced by a VerifyOrDie in connectedhomeip
+      `ICDManager.cpp:82`. The chip had accumulated **11,374 reboots** by the
+      time the loop was caught on the bench (NVS reboot-count), so a
+      seconds-long look at a boot banner is not a boot verification — watch
+      the console ≥30s. Now boots to `Server Listening...` with the SHT40
+      attached.
 - [ ] Onboarding codes verified from a live console (`idf.py monitor`,
       interactive) against the compiled-in test defaults (34970112332).
 
