@@ -91,7 +91,12 @@ CONFIG_ICD_FAST_POLL_INTERVAL_MS=500
 CONFIG_ICD_IDLE_MODE_INTERVAL_SEC=120
 CONFIG_ICD_SHORT_IDLE_MODE_DURATION_SEC=60
 CONFIG_ICD_ACTIVE_MODE_INTERVAL_MS=1000
-CONFIG_ICD_ACTIVE_MODE_THRESHOLD_MS=1000
+# 5000 is the spec minimum for a LIT ICD; anything lower trips the
+# VerifyOrDie in connectedhomeip ICDManager.cpp:82 and the device
+# boot-loops (abort ~1.3s after app_main, found on unit 1's first
+# powered bench test). Threshold only extends awake time after user
+# activity, so the power cost vs 1000 is per-interaction, not per-cycle.
+CONFIG_ICD_ACTIVE_MODE_THRESHOLD_MS=5000
 
 # disable groupcast cluster until verified (upstream icd_app default)
 CONFIG_SUPPORT_GROUPCAST_CLUSTER=n
