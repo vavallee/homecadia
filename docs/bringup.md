@@ -33,8 +33,13 @@ pre-hardware code is written.
 
 - [ ] XIAO ESP32-C6 D-pin → GPIO mapping matches [pinmap.md](pinmap.md)
       (check against the official pinout diagram and a continuity test).
-- [ ] ePaper driver board V2 actually uses D0=RST, D1=CS, D2=BUSY, D3=DC,
-      D8=SCK, D10=MOSI (probe if display init fails).
+- [x] ePaper driver board V2 actually uses D0=RST, D1=CS, D2=BUSY, D3=DC,
+      D8=SCK, D10=MOSI — **silkscreen-confirmed 2026-08-17** (back of the
+      board labels the D0–D3/D8/D10 positions RST/CS/BUSY/DC/SCK/MOSI by
+      function). Electrical confirmation comes free when the display first
+      draws; probe only if init fails. Bonus: the board breaks out D4/D5 as
+      labelled through-holes — a candidate solder point for the SHT40 in
+      final assembly instead of the XIAO pins.
 - [ ] BAT+/BAT− underside pad markings confirmed on this XIAO revision.
 - [ ] EEMB battery lead polarity measured with multimeter — **all 3 cells,
       before first connection** ([assembly.md](assembly.md) warning).
