@@ -39,6 +39,32 @@ Reversed polarity destroys the XIAO's charge circuit instantly.
 7. Seat XIAO on driver board, connect 24-pin FPC (contacts down, lock the
    latch), fit into case, M2 self-tappers.
 
+## The driver board carries every pin this build needs
+
+**Confirmed from the board's silkscreen 2026-08-17/18.** The V2 driver board
+is a straight carrier for the XIAO: two 7-pin columns matching the XIAO's 14
+pins one-for-one. It renames only the six display signals and passes the rest
+through under their own names:
+
+| Driver board label | XIAO pin | Used for |
+|---|---|---|
+| RST / CS / BUSY / DC | D0 / D1 / D2 / D3 | ePaper control |
+| MOSI / SCK | D10 / D8 | ePaper SPI |
+| 5V / GND / 3V3 | same | power |
+| **D4 / D5** | D4 / D5 | **SHT40 I2C** |
+| **D6** | D6 | **LED** |
+| **D7 / D9** | D7 / D9 | **encoder A / B** |
+
+So once female headers are fitted, the SHT40, LED and encoder all solder to
+the **driver board's** through-holes rather than to the XIAO — easier joints
+on bigger pads. Only three connections still need the XIAO's underside pads:
+encoder push switch (MTCK/GPIO6), battery divider node (MTDI/GPIO5), and
+BAT+/BAT−.
+
+**Settle before soldering:** which face the XIAO seats on. Dry-fit both ways
+and pick the one that leaves the USB port accessible and clears the FPC
+connector. Unverified from photos; desoldering 14 pins is the job to avoid.
+
 ## ⚠️ The driver board ships with bare holes
 
 **Found on hardware 2026-08-17.** The Seeed ePaper Driver Board V2 arrives
