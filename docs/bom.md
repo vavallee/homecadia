@@ -34,14 +34,18 @@ order (price not captured). The earlier CAD 125–155 estimate for Seeed was hig
 | Enclosure set | 4 parts, 30.12 cm³/set. **FDM PLA** — teal front, light grey knob, black/dark grey back. Wordmark **laser-engraved after printing**, not printed ([hardware/case](../hardware/case/README.md)). JLC3DP MJF nylon is the fallback; JLC3DP FDM is ruled out by its 30×30×10mm minimum. **Order ONE test set first** | 1 set | EurekaTec.ca / Azata.ca | quotes requested 2026-08-13; EurekaTec replied — moved ABS→PLA to enable engraving, revised STLs + artwork sent 2026-08-13. Awaiting price, lead time, PLA colour for the back, and whether they stock PETG | |
 | #6 pan-head screws + drywall anchors | keyhole wall mounts, **92mm centres** (rev 2), head ≤ Ø8.5×2.4mm | 2 | local | not ordered | |
 | Command Small strips | rail landings on case back | 2 | local | not ordered | |
+| **Female header sockets, 2.54mm** | **2×7 per unit (42 positions for 3 units)** — the ePaper driver board ships with **bare through-holes**; the XIAO cannot seat on it until these are soldered in ([assembly.md](assembly.md)). Buy 40-pin strips and cut | 14 pos | local / Amazon.ca | **not ordered — blocks assembly** | |
+| Solder + flux | 63/37 leaded rosin-core 0.6–0.8mm; rosin flux pen. Wick/braid already ordered | — | local / Amazon.ca | wick ordered; solder + flux TBC | |
 | Hookup wire | 26–28AWG silicone stranded | — | local / Amazon.ca | not ordered | |
 | Heat shrink | assorted; fallback if the perfboard divider carrier doesn't work out | — | local / Amazon.ca | not ordered | |
 
 The LEDs and resistors were bought from Amazon.ca rather than Digi-Key, so the
 encoder is the sole Digi-Key line and carries the whole $15 freight + HST.
 
-**Every electronic part in this build is now ordered or in hand.** What is left
-is the enclosure order and four local consumables.
+**Every electronic part in this build is now ordered or in hand** — but the
+**female headers are a hard blocker** discovered on hardware 2026-08-17, not a
+consumable: without them the XIAO cannot seat on the driver board and bench
+bring-up cannot proceed past the display.
 
 ## ⚠️ Assembly warnings (repeated in [assembly.md](assembly.md))
 
