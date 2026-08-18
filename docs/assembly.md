@@ -39,6 +39,28 @@ Reversed polarity destroys the XIAO's charge circuit instantly.
 7. Seat XIAO on driver board, connect 24-pin FPC (contacts down, lock the
    latch), fit into case, M2 self-tappers.
 
+## ⚠️ The driver board ships with bare holes
+
+**Found on hardware 2026-08-17.** The Seeed ePaper Driver Board V2 arrives
+with **unpopulated through-holes** — no female headers fitted. Step 7 above
+was written assuming the XIAO could just seat on it; it can't until 2×7
+female header strips are soldered in.
+
+This cost most of a bench session. A jumper wire pushed into a bare plated
+hole makes contact only by luck, and the resulting intermittent connections
+imitate real faults convincingly: BUSY reading as a floating line (panel
+appears dead), the SHT40 dropping off the I2C bus between consecutive
+resets, and two USB brownouts severe enough that Windows reported
+`Set Address Failed` / `Device Descriptor Request Failed`.
+
+- Solder the headers **before** any further bring-up. Required for the final
+  build regardless.
+- **Confirm which face the XIAO seats on before soldering** — desoldering 14
+  pins is the worst job in this build.
+- Preferred bench topology afterwards is the final-build one: XIAO seated
+  directly in the driver board (no jumpers at all), SHT40 on the board's
+  D4/D5 breakout holes.
+
 ## HW-VERIFY
 
 - Confirm BAT+/BAT− pad markings on this XIAO revision before soldering.
