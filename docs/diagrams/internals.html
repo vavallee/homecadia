@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sensor-01 Internals</title>
+<style>
+  :root {
+    --bg: #f5f3ef;
+    --surface: #fffefb;
+    --ink: #1f2430;
+    --ink-soft: #5c6472;
+    --line: #ddd8cf;
+    --accent: #1d6f6b;
+    --amber: #b4762a;
+    --board: #2a3340;
+    --board-ink: #e9edf2;
+    --pcb-green: #2f5d4a;
+    --glass: #edeae2;
+    --cell: #c9ccd1;
+    --cell-edge: #9aa0a8;
+    --copper: #b8763c;
+    --shadow: rgba(31,36,48,0.10);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #16191f;
+      --surface: #1d2229;
+      --ink: #e9ecf0;
+      --ink-soft: #98a2b0;
+      --line: #333b45;
+      --accent: #3ea9a3;
+      --amber: #d99b4b;
+      --board: #0d1116;
+      --board-ink: #dbe2ea;
+      --pcb-green: #3d7a61;
+      --glass: #3a3f47;
+      --cell: #545b64;
+      --cell-edge: #767e88;
+      --copper: #cf8a4c;
+      --shadow: rgba(0,0,0,0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #16191f;
+    --surface: #1d2229;
+    --ink: #e9ecf0;
+    --ink-soft: #98a2b0;
+    --line: #333b45;
+    --accent: #3ea9a3;
+    --amber: #d99b4b;
+    --board: #0d1116;
+    --board-ink: #dbe2ea;
+    --pcb-green: #3d7a61;
+    --glass: #3a3f47;
+    --cell: #545b64;
+    --cell-edge: #767e88;
+    --copper: #cf8a4c;
+    --shadow: rgba(0,0,0,0.35);
+  }
+  body {
+    background: var(--bg); color: var(--ink); margin: 0;
+    padding: 2.2rem 1rem 4rem;
+    font: 16px/1.6 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  }
+  main { max-width: 64rem; margin: 0 auto; display: grid; gap: 1.5rem; }
+  .sans, h1, h2, .tag, figcaption, table, .note { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .mono, code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  header .eyebrow {
+    font-family: system-ui, sans-serif; text-transform: uppercase;
+    letter-spacing: 0.15em; font-size: 0.7rem; color: var(--accent); font-weight: 650;
+  }
+  h1 { font-size: 2rem; margin: 0.2rem 0 0.45rem; letter-spacing: -0.01em; text-wrap: balance; }
+  header p { margin: 0; color: var(--ink-soft); max-width: 44rem; font-size: 1.02rem; }
+  section {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 12px; padding: 1.2rem 1.4rem;
+    box-shadow: 0 1px 3px var(--shadow);
+  }
+  h2 {
+    font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.13em;
+    color: var(--ink-soft); margin: 0 0 0.9rem; font-weight: 650;
+  }
+  figure { margin: 0; overflow-x: auto; }
+  figure svg { max-width: 100%; height: auto; display: block; margin: 0 auto; min-width: 620px; }
+  figcaption { color: var(--ink-soft); font-size: 0.85rem; margin-top: 0.7rem; max-width: 50rem; }
+  .svg-ink { fill: var(--ink); }
+  .svg-soft { fill: var(--ink-soft); }
+  .lbl { font-family: system-ui, sans-serif; font-size: 11px; }
+  .lbl-b { font-family: system-ui, sans-serif; font-size: 11.5px; font-weight: 650; }
+  .dim { font-family: ui-monospace, Menlo, monospace; font-size: 10px; fill: var(--ink-soft); }
+  .leader { stroke: var(--ink-soft); stroke-width: 0.8; fill: none; }
+  .dimline { stroke: var(--ink-soft); stroke-width: 0.7; fill: none; }
+  .outline { fill: none; stroke: var(--ink-soft); stroke-width: 1.2; stroke-dasharray: 5 4; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+  th, td { text-align: left; padding: 0.5rem 0.9rem 0.5rem 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-soft); font-weight: 650; }
+  tr:last-child td { border-bottom: none; }
+  td.num { font-family: ui-monospace, Menlo, monospace; font-size: 0.82rem; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .tag {
+    display: inline-block; font-size: 0.66rem; text-transform: uppercase;
+    letter-spacing: 0.08em; padding: 0.1rem 0.45rem; border-radius: 3px;
+    border: 1px solid currentColor; font-weight: 650;
+  }
+  .tag.v { color: var(--accent); }
+  .tag.a { color: var(--amber); }
+  .note {
+    font-size: 0.88rem; color: var(--ink-soft);
+    border-left: 3px solid var(--amber); padding: 0.6rem 0 0.6rem 0.85rem;
+  }
+  ul.plain { margin: 0; padding-left: 1.15rem; display: grid; gap: 0.45rem; font-size: 0.95rem; }
+  ul.plain li::marker { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<main>
+<header>
+  <div class="eyebrow">homecadia · sensor-01 · assembly reference</div>
+  <h1>How the Parts Sit</h1>
+  <p>The internal arrangement, with the enclosure drawn only as a dashed
+  outline for reference. Every position here comes from geometry the case was
+  designed around — the same numbers that forced the rev 2 stretch.</p>
+</header>
+
+<section>
+  <h2>Plan view — looking down into the open back</h2>
+  <figure>
+    <svg viewBox="0 0 900 340" role="img"
+         aria-label="Plan view of the sensor internals: the insert tray carrying the XIAO and ePaper driver board occupies the left 48.5mm of the interior, the 56mm battery lies to its right, with 2.1mm clearance. The ePaper panel spans across the front above both. The rotary encoder sits at the right end, the SHT40 in the lower vent airflow, and the USB-C pigtail enters the left wall.">
+      <!-- interior outline -->
+      <rect x="60" y="60" width="720" height="200" rx="4" class="outline"/>
+      <text x="60" y="48" class="lbl svg-soft">case-back interior — 106.64 × 47.9 mm</text>
+
+      <!-- insert tray -->
+      <rect x="72" y="86" width="316" height="150" rx="5" fill="var(--pcb-green)" opacity="0.22" stroke="var(--pcb-green)" stroke-width="1.4"/>
+      <text x="80" y="104" class="lbl-b" fill="var(--pcb-green)">insert-tray</text>
+      <text x="80" y="119" class="dim">48.5 × 45.5 mm · 4 pegs on 17 × 21</text>
+
+      <!-- driver board + XIAO stacked, on the tray -->
+      <rect x="150" y="130" width="150" height="86" rx="4" fill="var(--board)" stroke="var(--board-ink)" stroke-width="0.8"/>
+      <text x="225" y="160" text-anchor="middle" class="lbl-b" fill="var(--board-ink)">XIAO ESP32-C6</text>
+      <text x="225" y="176" text-anchor="middle" class="lbl" fill="var(--board-ink)">seated on driver board</text>
+      <text x="225" y="192" text-anchor="middle" class="dim" fill="var(--board-ink)">21 × 17.5 mm</text>
+      <text x="225" y="208" text-anchor="middle" class="dim" fill="var(--board-ink)">USB port ← left</text>
+
+      <!-- battery -->
+      <rect x="400" y="92" width="330" height="138" rx="7" fill="var(--cell)" stroke="var(--cell-edge)" stroke-width="1.4"/>
+      <text x="565" y="150" text-anchor="middle" class="lbl-b" fill="var(--ink)">EEMB 2000 mAh LiPo</text>
+      <text x="565" y="168" text-anchor="middle" class="dim">56 × 34.5 × 10.6 mm — sits loose</text>
+
+      <!-- clearance -->
+      <line x1="388" y1="250" x2="400" y2="250" class="dimline"/>
+      <text x="394" y="268" text-anchor="middle" class="dim">2.1</text>
+
+      <!-- overall dim line -->
+      <line x1="72" y1="278" x2="730" y2="278" class="dimline"/>
+      <line x1="72" y1="272" x2="72" y2="284" class="dimline"/>
+      <line x1="730" y1="272" x2="730" y2="284" class="dimline"/>
+      <text x="401" y="294" text-anchor="middle" class="dim">104.5 mm of parts in a 106.64 mm box</text>
+
+      <!-- panel footprint over the front -->
+      <rect x="185" y="66" width="470" height="26" fill="var(--glass)" stroke="var(--ink-soft)" stroke-width="1" opacity="0.9"/>
+      <text x="420" y="84" text-anchor="middle" class="lbl">2.9″ ePaper panel — spans the 68 mm aperture, in front of tray AND cell</text>
+
+      <!-- encoder -->
+      <circle cx="762" cy="120" r="17" fill="none" stroke="var(--ink-soft)" stroke-width="1.4"/>
+      <circle cx="762" cy="120" r="5" fill="var(--ink-soft)"/>
+      <text x="788" y="116" class="lbl-b">EC11</text>
+      <text x="788" y="130" class="dim">shaft through front</text>
+
+      <!-- LED -->
+      <circle cx="762" cy="176" r="6" fill="none" stroke="var(--amber)" stroke-width="1.6"/>
+      <text x="788" y="180" class="lbl">3 mm LED</text>
+
+      <!-- SHT40 in airflow -->
+      <rect x="470" y="238" width="52" height="34" rx="3" fill="none" stroke="var(--accent)" stroke-width="1.4"/>
+      <text x="530" y="252" class="lbl-b" fill="var(--accent)">SHT40</text>
+      <text x="530" y="266" class="dim">in the vent path, away from the MCU</text>
+
+      <!-- USB pigtail -->
+      <circle cx="60" cy="160" r="9" fill="none" stroke="var(--copper)" stroke-width="1.8"/>
+      <text x="14" y="150" class="lbl" fill="var(--copper)">USB-C</text>
+      <text x="8" y="186" class="dim">Ø12.8 side wall</text>
+      <line x1="69" y1="160" x2="150" y2="168" class="leader"/>
+    </svg>
+    <figcaption>The long axis is the constraint: the 48.5 mm tray plus the
+    56 mm cell is 104.5 mm of parts, and the rev 1 interior was 99.64 mm —
+    which is exactly why both shells were cut and stretched 7 mm. The cell is
+    not in a cradle; it lies loose beside the tray.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2>Side elevation — how the stack builds up</h2>
+  <figure>
+    <svg viewBox="0 0 900 300" role="img"
+         aria-label="Side elevation: from the front face inward, the ePaper glass sits behind the front panel aperture, its flat cable folds back to the driver board, the XIAO seats on the driver board via female headers, and the tray plate holds the assembly off the case floor. The battery, 10.6mm thick, lies beside this stack in the same 18.6mm cavity.">
+      <!-- case front and back as dashed -->
+      <line x1="70" y1="52" x2="830" y2="52" class="outline"/>
+      <text x="70" y="42" class="lbl svg-soft">case-front inner face</text>
+      <line x1="70" y1="248" x2="830" y2="248" class="outline"/>
+      <text x="70" y="268" class="lbl svg-soft">case-back floor — cavity depth ≈ 18.6 mm</text>
+
+      <!-- ePaper glass -->
+      <rect x="180" y="62" width="330" height="10" fill="var(--glass)" stroke="var(--ink-soft)" stroke-width="1"/>
+      <text x="524" y="71" class="lbl-b">ePaper glass — against the aperture</text>
+
+      <!-- FPC folding back -->
+      <path d="M 200 72 C 176 96, 176 118, 206 126" class="leader" stroke="var(--copper)" stroke-width="3.5"/>
+      <text x="96" y="106" class="lbl" fill="var(--copper)">24-pin FPC</text>
+      <text x="86" y="120" class="dim">folds back, contacts down</text>
+
+      <!-- driver board -->
+      <rect x="206" y="126" width="180" height="9" fill="var(--pcb-green)" stroke="var(--ink-soft)" stroke-width="0.8"/>
+      <text x="398" y="134" class="lbl-b" fill="var(--pcb-green)">ePaper driver board</text>
+
+      <!-- female headers -->
+      <rect x="216" y="135" width="9" height="20" fill="var(--ink-soft)" opacity="0.55"/>
+      <rect x="367" y="135" width="9" height="20" fill="var(--ink-soft)" opacity="0.55"/>
+      <text x="398" y="152" class="lbl">female headers — 2 × 7, must be soldered on</text>
+
+      <!-- XIAO -->
+      <rect x="206" y="155" width="180" height="13" fill="var(--board)" stroke="var(--board-ink)" stroke-width="0.8"/>
+      <text x="296" y="165" text-anchor="middle" class="lbl-b" fill="var(--board-ink)">XIAO ESP32-C6</text>
+      <text x="398" y="166" class="lbl">underside pads face down: BAT± , MTDI, MTCK</text>
+
+      <!-- divider chain hanging under XIAO -->
+      <path d="M 250 168 C 246 186, 262 190, 258 204" class="leader" stroke="var(--accent)" stroke-width="2.4"/>
+      <text x="268" y="200" class="lbl" fill="var(--accent)">divider: 2 × 1 MΩ + 100 nF, inline heat-shrunk</text>
+
+      <!-- tray plate -->
+      <rect x="150" y="212" width="300" height="9" fill="var(--pcb-green)" opacity="0.35" stroke="var(--pcb-green)" stroke-width="1"/>
+      <text x="462" y="220" class="lbl">insert-tray plate 1.6 mm + 5 mm pegs</text>
+
+      <!-- battery beside -->
+      <rect x="560" y="176" width="230" height="60" rx="6" fill="var(--cell)" stroke="var(--cell-edge)" stroke-width="1.4"/>
+      <text x="675" y="204" text-anchor="middle" class="lbl-b">LiPo cell</text>
+      <text x="675" y="220" text-anchor="middle" class="dim">10.6 mm thick</text>
+      <text x="560" y="166" class="lbl svg-soft">beside the stack, not under it</text>
+
+      <!-- depth dim -->
+      <line x1="846" y1="52" x2="846" y2="248" class="dimline"/>
+      <line x1="840" y1="52" x2="852" y2="52" class="dimline"/>
+      <line x1="840" y1="248" x2="852" y2="248" class="dimline"/>
+      <text x="862" y="154" class="dim" transform="rotate(-90 862 154)" text-anchor="middle">≈18.6 mm</text>
+    </svg>
+    <figcaption>Front face at the top, wall at the bottom. The panel lies flat
+    against the aperture; its flat cable makes a gentle U-turn back to the
+    driver board, and the XIAO plugs into the driver board through the female
+    headers. Because the XIAO's underside carries the battery pads, the MTDI
+    divider node and the encoder-switch pad, that face has to stay reachable
+    — which is why the divider is a hanging inline chain rather than a board.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2>Where each number comes from</h2>
+  <div style="overflow-x:auto">
+  <table>
+    <thead><tr><th>Part</th><th>Size (mm)</th><th>Source</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>Interior cavity</td><td class="num">106.64 × ~47.9 × ~18.6</td><td>measured off the rev 2 STL</td><td><span class="tag v">geometry</span></td></tr>
+      <tr><td>insert-tray</td><td class="num">48.5 × 45.5 × 6.6</td><td>STL bounding box</td><td><span class="tag v">geometry</span></td></tr>
+      <tr><td>EEMB LP103454 cell</td><td class="num">56 × 34.5 × 10.6</td><td>bom.md, finished size</td><td><span class="tag v">datasheet</span></td></tr>
+      <tr><td>Display aperture</td><td class="num">68.00 wide, x 29.5–97.5</td><td>case-front STL</td><td><span class="tag v">geometry</span></td></tr>
+      <tr><td>XIAO ESP32-C6</td><td class="num">21 × 17.5</td><td>Seeed standard XIAO footprint</td><td><span class="tag v">vendor</span></td></tr>
+      <tr><td>USB-C pigtail hole</td><td class="num">Ø12.8, side wall at y=25, z=10</td><td>case-back STL</td><td><span class="tag v">geometry</span></td></tr>
+      <tr><td>EC11 encoder mount</td><td class="num">Ø6.8 shaft, Ø9.8/Ø14 recess</td><td>case-front STL</td><td><span class="tag v">geometry</span></td></tr>
+      <tr><td>Driver board outline</td><td class="num">drawn approximate</td><td>not captured in the repo</td><td><span class="tag a">approximate</span></td></tr>
+      <tr><td>ePaper module outline</td><td class="num">drawn approximate</td><td>panel is 296 × 128 px; module outline not recorded</td><td><span class="tag a">approximate</span></td></tr>
+      <tr><td>SHT40 / LED placement</td><td class="num">no mount exists</td><td>assembly.md says "in the airflow path"</td><td><span class="tag a">open</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="note">Two things this drawing deliberately does not pretend to
+  know: the case has <strong>no battery compartment and no sensor mount</strong>
+  — both were left open for the test fit — and the driver board and panel
+  outlines are sketched rather than measured, because those dimensions were
+  never captured in the repo. Everything tagged <em>geometry</em> came out of
+  the STL files.</p>
+</section>
+
+<section>
+  <h2>What the arrangement forces</h2>
+  <ul class="plain">
+    <li><strong>The cell sets the length.</strong> Tray plus cell is 104.5 mm
+      end to end. That single sum is why the shells were cut at x = 24.73 mm
+      and stretched 7 mm, and why only 2.1 mm of slack remains.</li>
+    <li><strong>The panel bridges both zones.</strong> Its 68 mm aperture spans
+      the tray and the cell, so the glass has to sit in front of everything —
+      nothing may stand proud enough to push it off the aperture.</li>
+    <li><strong>The XIAO's underside is working surface.</strong> Battery pads,
+      the MTDI divider node and the encoder-switch pad all live there, so it
+      cannot be face-down against the tray with its wiring trapped.</li>
+    <li><strong>The SHT40 wants distance and air.</strong> Mounted near the MCU
+      or out of the vent path, self-heating skews every reading the device
+      exists to take.</li>
+  </ul>
+</section>
+</main>
+
+</body>
+</html>

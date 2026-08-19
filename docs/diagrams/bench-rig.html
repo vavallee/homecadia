@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sensor-01 Bench Rig</title>
+<style>
+  :root {
+    --bg: #f4f6f8;
+    --surface: #ffffff;
+    --ink: #1b2733;
+    --ink-soft: #55636f;
+    --line: #d5dce2;
+    --accent: #0e7c7b;
+    --accent-soft: #e0efee;
+    --warn-bg: #fdf3e4;
+    --warn-edge: #c77e1f;
+    --ok-bg: #e8f3ec;
+    --ok-edge: #2e7d4f;
+    --board: #e9ecef;
+    --board-edge: #c3cad1;
+    --chip: #2b3440;
+    --chip-ink: #e8edf2;
+    --panel: #f8f8f5;
+    --wire-red: #d33f2e;
+    --wire-black-core: #26282b;
+    --wire-yellow: #e0ac14;
+    --wire-white-core: #f2f1ec;
+    --wire-signal: #4a7fa5;
+    --wire-purple: #8256b0;
+    --wire-green: #3f8f4f;
+    --wire-casing: #98a0a8;
+    --rail-blue: #3d6fb4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14181d;
+      --surface: #1c2229;
+      --ink: #e7ebee;
+      --ink-soft: #9aa6b0;
+      --line: #333c45;
+      --accent: #3aa8a4;
+      --accent-soft: #17332f;
+      --warn-bg: #2c2413;
+      --warn-edge: #d99a3d;
+      --ok-bg: #17301f;
+      --ok-edge: #4f9c6f;
+      --board: #242b33;
+      --board-edge: #39424c;
+      --chip: #0e1216;
+      --chip-ink: #dbe2e8;
+      --panel: #2a2f35;
+      --wire-red: #e05a48;
+      --wire-black-core: #111315;
+      --wire-yellow: #e8bc32;
+      --wire-white-core: #eeede7;
+      --wire-signal: #6ea3c9;
+      --wire-purple: #a887cf;
+      --wire-green: #64ad74;
+      --wire-casing: #6b747d;
+      --rail-blue: #5e8fd0;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14181d;
+    --surface: #1c2229;
+    --ink: #e7ebee;
+    --ink-soft: #9aa6b0;
+    --line: #333c45;
+    --accent: #3aa8a4;
+    --accent-soft: #17332f;
+    --warn-bg: #2c2413;
+    --warn-edge: #d99a3d;
+    --ok-bg: #17301f;
+    --ok-edge: #4f9c6f;
+    --board: #242b33;
+    --board-edge: #39424c;
+    --chip: #0e1216;
+    --chip-ink: #dbe2e8;
+    --panel: #2a2f35;
+    --wire-red: #e05a48;
+    --wire-black-core: #111315;
+    --wire-yellow: #e8bc32;
+    --wire-white-core: #eeede7;
+    --wire-signal: #6ea3c9;
+    --wire-purple: #a887cf;
+    --wire-green: #64ad74;
+    --wire-casing: #6b747d;
+    --rail-blue: #5e8fd0;
+  }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
+    margin: 0;
+    padding: 2rem 1rem 4rem;
+  }
+  .mono, code, td.pin, .psu-val {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  }
+  main { max-width: 62rem; margin: 0 auto; display: grid; gap: 1.4rem; }
+  header .eyebrow {
+    text-transform: uppercase; letter-spacing: 0.14em; font-size: 0.72rem;
+    color: var(--accent); font-weight: 600;
+  }
+  h1 { font-size: 1.7rem; margin: 0.15rem 0 0.3rem; text-wrap: balance; }
+  header p { color: var(--ink-soft); margin: 0; max-width: 46rem; }
+  section {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 1.1rem 1.3rem;
+  }
+  h2 {
+    font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--ink-soft); margin: 0 0 0.7rem;
+  }
+  .done {
+    background: var(--ok-bg); border-left: 3px solid var(--ok-edge);
+    border-radius: 6px; padding: 0.7rem 0.9rem; font-size: 0.92rem;
+  }
+  .psu-strip { display: flex; flex-wrap: wrap; gap: 1rem 2.2rem; align-items: baseline; }
+  .psu-item { display: flex; flex-direction: column; }
+  .psu-val { font-size: 1.35rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .psu-item small { color: var(--ink-soft); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.09em; }
+  .psu-item.hot .psu-val { color: var(--accent); }
+  figure { margin: 0; overflow-x: auto; }
+  figure svg { max-width: 100%; height: auto; min-width: 680px; display: block; margin: 0 auto; }
+  figcaption { color: var(--ink-soft); font-size: 0.85rem; margin-top: 0.6rem; max-width: 52rem; }
+  .svg-ink { fill: var(--ink); }
+  .svg-soft { fill: var(--ink-soft); }
+  .svg-board { fill: var(--board); stroke: var(--board-edge); }
+  .svg-chip { fill: var(--chip); stroke: var(--board-edge); }
+  .svg-chip-ink { fill: var(--chip-ink); }
+  .svg-panel { fill: var(--panel); stroke: var(--board-edge); }
+  .svg-outline { fill: none; stroke: var(--ink-soft); }
+  .pin-dot { fill: var(--surface); stroke: var(--ink-soft); }
+  .pin-dot.used { stroke: var(--accent); stroke-width: 2; }
+  .casing { fill: none; stroke: var(--wire-casing); stroke-width: 5.5; stroke-linejoin: round; }
+  .core { fill: none; stroke-width: 3; stroke-linejoin: round; }
+  .w-red   { stroke: var(--wire-red); }
+  .w-black { stroke: var(--wire-black-core); }
+  .w-yellow{ stroke: var(--wire-yellow); }
+  .w-white { stroke: var(--wire-white-core); }
+  .w-sig   { stroke: var(--wire-signal); }
+  .w-purple{ stroke: var(--wire-purple); }
+  .w-green { stroke: var(--wire-green); }
+  .rail-blue { stroke: var(--rail-blue); stroke-width: 2.5; }
+  .fpc { stroke: var(--wire-casing); stroke-width: 13; }
+  .wire-tag { font-size: 11px; font-family: ui-monospace, Menlo, Consolas, monospace; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+  th, td { text-align: left; padding: 0.45rem 0.9rem 0.45rem 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.09em; color: var(--ink-soft); font-weight: 600; }
+  tr:last-child td { border-bottom: none; }
+  td.pin { white-space: nowrap; font-size: 0.85rem; }
+  .swatch { display: inline-block; width: 0.75em; height: 0.75em; border-radius: 50%; border: 1px solid var(--wire-casing); vertical-align: -0.05em; margin-right: 0.35em; }
+  ol.check { margin: 0; padding-left: 1.2rem; display: grid; gap: 0.5rem; }
+  ol.check li::marker { color: var(--accent); font-weight: 600; }
+  .warn {
+    background: var(--warn-bg); border-left: 3px solid var(--warn-edge);
+    border-radius: 6px; padding: 0.7rem 0.9rem; margin-top: 0.9rem; font-size: 0.92rem;
+  }
+  .foot { color: var(--ink-soft); font-size: 0.8rem; }
+  .foot code { font-size: 0.78rem; }
+  .two-col { display: grid; gap: 1.4rem; grid-template-columns: 1fr 1fr; }
+  @media (max-width: 720px) { .two-col { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<main>
+<header>
+  <div class="eyebrow">homecadia · bench bring-up 2</div>
+  <h1>Sensor-01 Bench Rig</h1>
+  <p>Step 2 adds the display stack. The XIAO stays in the breadboard; eight
+  male-to-male jumpers plug into the ePaper driver board's female sockets —
+  the same sockets the XIAO seats into in the final build — and the panel
+  connects to the driver board by its 24-pin flat cable.</p>
+</header>
+
+<section>
+  <div class="done"><strong>Step 1 is verified working:</strong> firmware boots
+  clean (ICD threshold fix flashed), SHT40 reporting — first live reading
+  <code>23.34°C 64.7%RH</code>. Leave that wiring exactly as it is.</div>
+</section>
+
+<section>
+  <h2>Power — USB-C is the supply for this step</h2>
+  <div class="psu-strip">
+    <div class="psu-item hot"><span class="psu-val">USB-C → PC</span><small>power + console</small></div>
+    <div class="psu-item"><span class="psu-val">3V3 pin</span><small>feeds SHT40 + driver board</small></div>
+    <div class="psu-item"><span class="psu-val">bench PSU</span><small>disconnected</small></div>
+  </div>
+  <div class="warn"><strong>Bench 5 V and USB stay mutually exclusive.</strong>
+  If you switch back to bench power (5.00 V, 0.30 A limit, + → 5V pin, − → GND),
+  unplug USB first. Everything in this step runs from the XIAO's 3V3 output, so
+  USB alone powers the whole stack.</div>
+</section>
+
+<section>
+  <h2>Layout</h2>
+  <figure>
+    <svg viewBox="0 0 980 680" role="img"
+         aria-label="Wiring diagram: XIAO in the breadboard powered over USB-C. Grove SHT40 wired as in step 1: yellow SCL to D5, white SDA to D4, red VCC to 3V3, black GND to the ground rail. Below the breadboard, the ePaper driver board receives eight jumpers into its female sockets: D0 reset, D1 chip select, D2 busy, D3 data/command, D8 clock, D10 MOSI, plus 3V3 and GND. The 2.9 inch ePaper panel connects to the driver board via its 24-pin flat cable, contacts down, latch closed.">
+      <!-- breadboard -->
+      <rect x="260" y="80" width="380" height="280" rx="8" class="svg-board" stroke-width="1.5"/>
+      <line x1="278" y1="338" x2="622" y2="338" class="rail-blue"/>
+      <text x="278" y="356" class="svg-soft mono" font-size="10">− rail (ground)</text>
+      <line x1="262" y1="222" x2="638" y2="222" stroke="var(--board-edge)" stroke-width="1" stroke-dasharray="3 4"/>
+      <text x="450" y="76" text-anchor="middle" class="svg-ink" font-size="12" font-weight="600">breadboard</text>
+
+      <!-- USB cable -->
+      <polyline points="435,60 435,20 300,20" class="casing"/>
+      <polyline points="435,60 435,20 300,20" class="core w-sig"/>
+      <text x="292" y="24" text-anchor="end" class="svg-ink wire-tag">USB-C → PC (power + console)</text>
+
+      <!-- wires -->
+      <g>
+        <!-- ground rail to GND pin -->
+        <polyline points="602,338 602,180 476,180" class="casing"/>
+        <polyline points="602,338 602,180 476,180" class="core w-black"/>
+        <!-- 3V3 to SHT40 VCC -->
+        <polyline points="476,200 690,200 690,220 738,220" class="casing"/>
+        <polyline points="476,200 690,200 690,220 738,220" class="core w-red"/>
+        <!-- SHT40 GND to rail -->
+        <polyline points="738,245 622,245 622,338" class="casing"/>
+        <polyline points="738,245 622,245 622,338" class="core w-black"/>
+        <!-- SDA: D4 -->
+        <polyline points="394,240 340,240 340,392 700,392 700,195 738,195" class="casing"/>
+        <polyline points="394,240 340,240 340,392 700,392 700,195 738,195" class="core w-white"/>
+        <!-- SCL: D5 -->
+        <polyline points="394,260 325,260 325,412 716,412 716,170 738,170" class="casing"/>
+        <polyline points="394,260 325,260 325,412 716,412 716,170 738,170" class="core w-yellow"/>
+
+      </g>
+
+      <!-- XIAO -->
+      <rect x="398" y="146" width="74" height="148" rx="6" class="svg-chip" stroke-width="1"/>
+      <rect x="422" y="140" width="26" height="12" rx="2" class="svg-outline" stroke-width="1.5"/>
+      <text x="435" y="316" text-anchor="middle" class="svg-ink" font-size="12" font-weight="600">XIAO ESP32-C6</text>
+      <g class="svg-chip-ink" font-size="10.5" font-family="ui-monospace, Menlo, Consolas, monospace">
+        <text x="406" y="164" font-weight="700">D0</text><text x="406" y="184" font-weight="700">D1</text>
+        <text x="406" y="204" font-weight="700">D2</text><text x="406" y="224" font-weight="700">D3</text>
+        <text x="406" y="244" font-weight="700">D4</text>
+        <text x="406" y="264" font-weight="700">D5</text>
+        <text x="406" y="284">D6</text>
+      </g>
+      <g class="svg-chip-ink" font-size="10.5" font-family="ui-monospace, Menlo, Consolas, monospace" text-anchor="end">
+        <text x="464" y="164">5V</text>
+        <text x="464" y="184" font-weight="700">GND</text>
+        <text x="464" y="204" font-weight="700">3V3</text>
+        <text x="464" y="224" font-weight="700">D10</text><text x="464" y="244">D9</text>
+        <text x="464" y="264" font-weight="700">D8</text><text x="464" y="284">D7</text>
+      </g>
+      <g>
+        <circle cx="395" cy="160" r="3.2" class="pin-dot used"/><circle cx="395" cy="180" r="3.2" class="pin-dot used"/>
+        <circle cx="395" cy="200" r="3.2" class="pin-dot used"/><circle cx="395" cy="220" r="3.2" class="pin-dot used"/>
+        <circle cx="395" cy="240" r="3.2" class="pin-dot used"/><circle cx="395" cy="260" r="3.2" class="pin-dot used"/>
+        <circle cx="395" cy="280" r="3.2" class="pin-dot"/>
+        <circle cx="475" cy="160" r="3.2" class="pin-dot"/><circle cx="475" cy="180" r="3.2" class="pin-dot used"/>
+        <circle cx="475" cy="200" r="3.2" class="pin-dot used"/><circle cx="475" cy="220" r="3.2" class="pin-dot used"/>
+        <circle cx="475" cy="240" r="3.2" class="pin-dot"/><circle cx="475" cy="260" r="3.2" class="pin-dot used"/>
+        <circle cx="475" cy="280" r="3.2" class="pin-dot"/>
+      </g>
+
+      <!-- SHT40 -->
+      <rect x="738" y="148" width="190" height="122" rx="8" class="svg-board" stroke-width="1.5"/>
+      <text x="833" y="140" text-anchor="middle" class="svg-ink" font-size="12" font-weight="600">Grove SHT40 ✓</text>
+      <text x="833" y="292" text-anchor="middle" class="svg-soft mono" font-size="10">verified: 23.34°C 64.7%RH</text>
+      <g class="svg-ink" font-size="11" font-family="ui-monospace, Menlo, Consolas, monospace">
+        <circle cx="746" cy="170" r="3.2" class="pin-dot used"/><text x="756" y="174">SCL · yellow</text>
+        <circle cx="746" cy="195" r="3.2" class="pin-dot used"/><text x="756" y="199">SDA · white</text>
+        <circle cx="746" cy="220" r="3.2" class="pin-dot used"/><text x="756" y="224">VCC · red</text>
+        <circle cx="746" cy="245" r="3.2" class="pin-dot used"/><text x="756" y="249">GND · black</text>
+      </g>
+
+      <!-- driver board (socket labels = the board's own silkscreen, photo-confirmed 2026-08-17) -->
+      <rect x="340" y="445" width="220" height="175" rx="8" class="svg-board" stroke-width="1.5"/>
+      <text x="450" y="638" text-anchor="middle" class="svg-ink" font-size="12" font-weight="600">ePaper Driver Board for XIAO — V2</text>
+      <text x="450" y="654" text-anchor="middle" class="svg-soft mono" font-size="10">socket names = the board's own silkscreen</text>
+      <!-- JST + switch, unused -->
+      <rect x="346" y="598" width="34" height="16" rx="3" class="svg-outline" stroke-width="1.2"/>
+      <text x="386" y="610" class="svg-soft" font-size="10">BAT JST + switch — unused</text>
+      <!-- socket columns: left = display signals + D4-D6, right = power + SPI -->
+      <g class="svg-ink" font-size="10.5" font-family="ui-monospace, Menlo, Consolas, monospace">
+        <circle cx="398" cy="460" r="3.6" class="pin-dot used"/><text x="408" y="464" font-weight="700">RST</text>
+        <circle cx="398" cy="480" r="3.6" class="pin-dot used"/><text x="408" y="484" font-weight="700">CS</text>
+        <circle cx="398" cy="500" r="3.6" class="pin-dot used"/><text x="408" y="504" font-weight="700">BUSY</text>
+        <circle cx="398" cy="520" r="3.6" class="pin-dot used"/><text x="408" y="524" font-weight="700">DC</text>
+        <circle cx="398" cy="540" r="3.6" class="pin-dot"/><text x="408" y="544">D4</text>
+        <circle cx="398" cy="560" r="3.6" class="pin-dot"/><text x="408" y="564">D5</text>
+        <circle cx="398" cy="580" r="3.6" class="pin-dot"/><text x="408" y="584">D6</text>
+      </g>
+      <g class="svg-ink" font-size="10" font-family="ui-monospace, Menlo, Consolas, monospace">
+        <circle cx="470" cy="460" r="3.6" class="pin-dot"/><text x="482" y="454">5V</text>
+        <circle cx="470" cy="480" r="3.6" class="pin-dot used"/><text x="482" y="474" font-weight="700">GND</text>
+        <circle cx="470" cy="500" r="3.6" class="pin-dot used"/><text x="482" y="494" font-weight="700">3V3</text>
+        <circle cx="470" cy="520" r="3.6" class="pin-dot used"/><text x="482" y="514" font-weight="700">MOSI</text>
+        <circle cx="470" cy="540" r="3.6" class="pin-dot"/><text x="482" y="534">D9</text>
+        <circle cx="470" cy="560" r="3.6" class="pin-dot used"/><text x="482" y="554" font-weight="700">SCK</text>
+        <circle cx="470" cy="580" r="3.6" class="pin-dot"/><text x="482" y="574">D7</text>
+      </g>
+      <!-- jumpers drawn over the board so their socket landings stay visible -->
+      <g>
+        <!-- driver-board jumpers, left group: D0..D3 -->
+        <polyline points="394,160 285,160 285,460 396,460" class="casing"/>
+        <polyline points="394,160 285,160 285,460 396,460" class="core w-sig"/>
+        <polyline points="394,180 296,180 296,480 396,480" class="casing"/>
+        <polyline points="394,180 296,180 296,480 396,480" class="core w-sig"/>
+        <polyline points="394,200 307,200 307,500 396,500" class="casing"/>
+        <polyline points="394,200 307,200 307,500 396,500" class="core w-sig"/>
+        <polyline points="394,220 318,220 318,520 396,520" class="casing"/>
+        <polyline points="394,220 318,220 318,520 396,520" class="core w-sig"/>
+        <!-- right group: 3V3, GND(from rail), D10, D8 -->
+        <polyline points="476,206 648,206 648,500 474,500" class="casing"/>
+        <polyline points="476,206 648,206 648,500 474,500" class="core w-red"/>
+        <polyline points="560,338 560,430 520,430 520,480 474,480" class="casing"/>
+        <polyline points="560,338 560,430 520,430 520,480 474,480" class="core w-black"/>
+        <polyline points="476,220 634,220 634,520 474,520" class="casing"/>
+        <polyline points="476,220 634,220 634,520 474,520" class="core w-purple"/>
+        <polyline points="476,260 620,260 620,560 474,560" class="casing"/>
+        <polyline points="476,260 620,260 620,560 474,560" class="core w-green"/>
+      </g>
+
+      <!-- FPC ribbon -->
+      <line x1="560" y1="525" x2="650" y2="525" class="fpc"/>
+      <text x="605" y="512" text-anchor="middle" class="svg-soft wire-tag">24-pin FPC</text>
+      <text x="605" y="550" text-anchor="middle" class="svg-soft wire-tag">contacts down, latch closed</text>
+
+      <!-- ePaper panel -->
+      <rect x="650" y="440" width="290" height="170" rx="6" class="svg-panel" stroke-width="1.5"/>
+      <rect x="668" y="456" width="254" height="120" rx="2" fill="none" stroke="var(--board-edge)" stroke-width="1"/>
+      <text x="795" y="505" text-anchor="middle" class="svg-soft mono" font-size="12">homecadia</text>
+      <text x="795" y="524" text-anchor="middle" class="svg-soft mono" font-size="10">Add via Matter: [QR]</text>
+      <text x="795" y="596" text-anchor="middle" class="svg-ink" font-size="12" font-weight="600">2.9″ ePaper 296×128, face up</text>
+
+      <!-- wire tags -->
+      <g class="wire-tag svg-soft">
+        <text x="508" y="176">rail → GND</text>
+        <text x="560" y="216">3V3 → VCC</text>
+        <text x="628" y="260" text-anchor="end">GND → − rail</text>
+        <text x="470" y="386">SDA · D4</text>
+        <text x="470" y="428">SCL · D5</text>
+        <text x="281" y="326" text-anchor="end">D0→RST · D1→CS · D2→BUSY · D3→DC ↓ (outermost = D0)</text>
+        <text x="656" y="298" fill="var(--wire-red)">3V3 → 3V3 ↓</text>
+        <text x="656" y="316" fill="var(--wire-purple)">D10 → MOSI ↓</text>
+        <text x="656" y="334" fill="var(--wire-green)">D8 → SCK ↓</text>
+        <text x="565" y="420">rail → GND ↓</text>
+      </g>
+    </svg>
+    <figcaption>Step 1 wiring (top) is untouched. The eight new jumpers run
+    from the breadboard rows the XIAO's pins land in, down into the driver
+    board's female sockets — coloured only so each run can be traced in the drawing (use any
+    jumper colours you have): blue-grey for RST/CS/BUSY/DC in order, purple
+    for D10 → MOSI, green for D8 → SCK, red for 3V3, black for ground. Socket names are the board's own silkscreen
+    (photo-confirmed): plug each jumper by its printed name. Note the
+    silkscreen is printed on the board's <em>back</em>, so it reads mirrored
+    once the board lies sockets-up — track the RST corner while flipping.
+    The panel's flat cable goes into the FPC connector contacts-down and the
+    black latch closes over it. Battery JST and power switch are not used in
+    this build.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2>New connections (step 1 wiring unchanged)</h2>
+  <div style="overflow-x:auto">
+  <table>
+    <thead><tr><th>Wire</th><th>Breadboard row (XIAO pin)</th><th>Driver board socket</th><th>Function</th></tr></thead>
+    <tbody>
+      <tr><td><span class="swatch" style="background:var(--wire-signal)"></span>jumper</td><td class="pin">D0 · GPIO0</td><td class="pin">RST</td><td>panel reset (RST)</td></tr>
+      <tr><td><span class="swatch" style="background:var(--wire-signal)"></span>jumper</td><td class="pin">D1 · GPIO1</td><td class="pin">CS</td><td>chip select (CS)</td></tr>
+      <tr><td><span class="swatch" style="background:var(--wire-signal)"></span>jumper</td><td class="pin">D2 · GPIO2</td><td class="pin">BUSY</td><td>busy flag from panel (BUSY)</td></tr>
+      <tr><td><span class="swatch" style="background:var(--wire-signal)"></span>jumper</td><td class="pin">D3 · GPIO21</td><td class="pin">DC</td><td>data/command select (DC)</td></tr>
+      <tr><td><span class="swatch" style="background:var(--wire-green)"></span>jumper</td><td class="pin">D8 · GPIO19</td><td class="pin">SCK</td><td>SPI clock (SCK)</td></tr>
+      <tr><td><span class="swatch" style="background:var(--wire-purple)"></span>jumper</td><td class="pin">D10 · GPIO18</td><td class="pin">MOSI</td><td>SPI data out (MOSI)</td></tr>
+      <tr><td><span class="swatch" style="background:var(--wire-red)"></span>red</td><td class="pin">3V3</td><td class="pin">3V3</td><td>panel power — same row as the SHT40's VCC wire</td></tr>
+      <tr><td><span class="swatch" style="background:var(--wire-black-core)"></span>black</td><td class="pin">− rail</td><td class="pin">GND</td><td>common ground</td></tr>
+      <tr><td>FPC</td><td class="pin" colspan="2">panel ↔ driver board, 24-pin</td><td>contacts down, flip latch up, insert, latch down</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<div class="two-col">
+<section>
+  <h2>Before power</h2>
+  <ol class="check">
+    <li><strong>USB out while you wire.</strong> Plug it back in last.</li>
+    <li><strong>Wire by the silkscreen name,</strong> not by position counting:
+      RST, CS, BUSY, DC, SCK, MOSI, 3V3, GND. The labels are on the board's
+      back and mirror when it lies sockets-up — a one-off or mirrored shift is
+      the classic mistake with jumpers into a header.</li>
+    <li><strong>FPC before power:</strong> flip the connector latch up, slide
+      the cable in contacts-down until it stops, press the latch closed. Never
+      insert or remove the cable powered.</li>
+    <li><strong>3V3 row is now shared three ways</strong> (XIAO pin, SHT40
+      VCC, driver board) — all in the same 5-hole row.</li>
+    <li>Battery JST and the driver board's power switch stay untouched.</li>
+  </ol>
+</section>
+<section>
+  <h2>What success looks like</h2>
+  <ol class="check">
+    <li><strong>Within a few seconds of boot</strong> the panel flashes
+      black/white (a full refresh) and draws the commissioning screen:
+      "homecadia — Add via Matter" with the QR and manual code.</li>
+    <li><strong>ePaper is not a live screen</strong> — it only changes when
+      the firmware pushes a refresh, and the readings view updates on the
+      same delta gate as the radio report.</li>
+    <li><strong>Nothing at all:</strong> check the 3V3 and GND jumpers, then
+      the FPC latch. If still dead, try the driver board's power switch —
+      whether it gates socket power is unverified.</li>
+    <li><strong>Garbage or partial image:</strong> SCK (D8) / MOSI (D10)
+      seating. <strong>Hangs mid-refresh:</strong> BUSY (D2).</li>
+    <li>The console tells the truth either way — same capture as step 1.</li>
+  </ol>
+</section>
+</div>
+
+<section class="foot">
+  Signal roles D0=RST, D1=CS, D2=BUSY, D3=DC, D8=SCK, D10=MOSI
+  (<code>docs/pinmap.md</code>) are now <strong>silkscreen-confirmed</strong>
+  against the physical V2 board (docs/bringup.md, 2026-08-17) — the board
+  prints the display signals by function in exactly those positions.
+  Electrical confirmation comes free when the display first draws. FPC
+  orientation per <code>docs/assembly.md</code>. Step-1 facts unchanged:
+  SHT40 on D4/D5 per <code>app_config.h:16–17</code>, pull-ups in
+  <code>sht40.c:42</code>.
+</section>
+</main>
+
+</body>
+</html>
