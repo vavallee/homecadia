@@ -4,6 +4,9 @@ Every `HW-VERIFY` marker in source or docs gets a row here. Nothing ships
 (milestone 6) with open rows. Parts are still in transit; this list grows as
 pre-hardware code is written.
 
+Bench wiring diagrams and the no-solder connectivity procedure live in
+[diagrams/](diagrams/).
+
 ## Flash & console (verified on unit 1, 2026-08-08)
 
 - [x] Flashes over native USB from WSL2 (usbipd path; see

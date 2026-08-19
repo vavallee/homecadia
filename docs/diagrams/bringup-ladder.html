@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>No-Solder Bring-Up Ladder</title>
+<style>
+  :root {
+    --bg: #f6f5f2; --surface: #fffefc; --ink: #1e242c; --ink-soft: #5a6472;
+    --line: #dfdad1; --accent: #146b63; --accent-bg: #e4f0ee;
+    --pass: #2c7a4b; --pass-bg: #e6f2ea; --fail: #b0472f; --fail-bg: #fbeae5;
+    --warn: #a8762a; --warn-bg: #fbf1de; --code-bg: #f0eee9; --rule: #cfc8bd;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #15181c; --surface: #1c2128; --ink: #e8ebef; --ink-soft: #9aa4b0;
+      --line: #313941; --accent: #3fa89f; --accent-bg: #14312e;
+      --pass: #56b07a; --pass-bg: #16301f; --fail: #e0765a; --fail-bg: #33201a;
+      --warn: #d3a052; --warn-bg: #2e2513; --code-bg: #171b20; --rule: #3a434d;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #15181c; --surface: #1c2128; --ink: #e8ebef; --ink-soft: #9aa4b0;
+    --line: #313941; --accent: #3fa89f; --accent-bg: #14312e;
+    --pass: #56b07a; --pass-bg: #16301f; --fail: #e0765a; --fail-bg: #33201a;
+    --warn: #d3a052; --warn-bg: #2e2513; --code-bg: #171b20; --rule: #3a434d;
+  }
+  body {
+    background: var(--bg); color: var(--ink); margin: 0; padding: 2rem 1rem 5rem;
+    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  main { max-width: 52rem; margin: 0 auto; }
+  code, .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  code { background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 3px; font-size: 0.88em; }
+  header { margin-bottom: 2rem; }
+  .eyebrow { text-transform: uppercase; letter-spacing: 0.14em; font-size: 0.7rem; color: var(--accent); font-weight: 650; }
+  h1 { font-size: 1.85rem; margin: 0.25rem 0 0.5rem; letter-spacing: -0.015em; text-wrap: balance; }
+  header p { margin: 0; color: var(--ink-soft); max-width: 40rem; }
+  .step {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+    padding: 1.15rem 1.35rem; margin-bottom: 1.1rem;
+  }
+  .step-head { display: flex; align-items: baseline; gap: 0.7rem; margin-bottom: 0.7rem; }
+  .num {
+    flex: none; width: 1.75rem; height: 1.75rem; border-radius: 50%;
+    background: var(--accent-bg); color: var(--accent);
+    display: grid; place-items: center; font-weight: 700; font-size: 0.82rem;
+    font-family: ui-monospace, Menlo, monospace;
+  }
+  .step h2 { font-size: 1.05rem; margin: 0; letter-spacing: -0.01em; }
+  .why { color: var(--ink-soft); font-size: 0.88rem; margin: 0 0 0.8rem 2.45rem; }
+  .body { margin-left: 2.45rem; }
+  .do, .expect { border-radius: 7px; padding: 0.6rem 0.8rem; margin: 0.55rem 0; font-size: 0.93rem; }
+  .do { background: var(--code-bg); }
+  .expect { background: var(--pass-bg); border-left: 3px solid var(--pass); }
+  .expect.bad { background: var(--fail-bg); border-left-color: var(--fail); }
+  .lbl {
+    display: block; text-transform: uppercase; letter-spacing: 0.1em;
+    font-size: 0.63rem; font-weight: 700; margin-bottom: 0.3rem; color: var(--ink-soft);
+  }
+  .expect .lbl { color: var(--pass); }
+  .expect.bad .lbl { color: var(--fail); }
+  ol, ul { margin: 0.4rem 0; padding-left: 1.2rem; }
+  li { margin: 0.3rem 0; }
+  .warn {
+    background: var(--warn-bg); border-left: 3px solid var(--warn);
+    border-radius: 7px; padding: 0.7rem 0.9rem; font-size: 0.9rem; margin: 1rem 0;
+  }
+  .rule { border: none; border-top: 1px solid var(--rule); margin: 2rem 0 1.4rem; }
+  .kicker { font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-soft); font-weight: 650; margin-bottom: 0.8rem; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.88rem; margin: 0.5rem 0; }
+  th, td { text-align: left; padding: 0.4rem 0.8rem 0.4rem 0; border-bottom: 1px solid var(--line); }
+  th { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.09em; color: var(--ink-soft); }
+  tr:last-child td { border-bottom: none; }
+  .say { color: var(--accent); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<main>
+<header>
+  <div class="eyebrow">homecadia · sensor-01 · bench procedure</div>
+  <h1>No-Solder Bring-Up Ladder</h1>
+  <p>Each rung adds one thing and proves it before the next. Everything uses
+  the on-chip connectivity scan, which drives nothing hard — only internal
+  pull resistors and the ADC — so no step can short the board.</p>
+</header>
+
+<div class="warn">
+  <strong>Two rules for the whole ladder.</strong> Change wiring only with USB
+  unplugged. And never bridge two sockets whose identity you haven't confirmed
+  — that's what browned the board out before, and steps 2 and 3 exist to
+  remove the guessing.
+</div>
+
+<div class="step">
+  <div class="step-head"><span class="num">0</span><h2>Baseline — already passing</h2></div>
+  <p class="why">Confirms the tester itself is honest before we trust it on anything else.</p>
+  <div class="body">
+    <div class="do"><span class="lbl">Wiring</span>XIAO alone in the breadboard, nothing else attached.</div>
+    <div class="expect"><span class="lbl">Pass</span>All six lines <code>FLOATING</code>, no bridges. <strong>Confirmed 2026-08-18</strong>, along with D2 reading 3285 mV against the XIAO's own 3V3 — so the pin and the voltmeter are both good.</div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-head"><span class="num">1</span><h2>Prove each jumper wire, off the board</h2></div>
+  <p class="why">A bad jumper or a splayed tinned end looks exactly like a wiring mistake. Eliminate the wires as suspects while they're easy to test.</p>
+  <div class="body">
+    <div class="do"><span class="lbl">Wiring</span>Take one jumper. Put one end in the XIAO's <strong>D0</strong> row, the other in the <strong>D2</strong> row. Nothing else connected.</div>
+    <div class="expect"><span class="lbl">Pass</span><code>BRIDGED: RST (D0) &lt;-&gt; BUSY (D2)</code></div>
+    <div class="expect bad"><span class="lbl">Fail</span>Both still <code>FLOATING</code> — the wire or one of its ends is bad. Set it aside and try another.</div>
+    <p>Repeat for every jumper you plan to use. Say <span class="say">"go"</span> after each and I'll read it out. Tedious once, never again.</p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-head"><span class="num">2</span><h2>Find the driver board's ground net</h2></div>
+  <p class="why">This is the step that finally settles socket identity — measured, not read off a mirrored silkscreen. Ground is the easiest net to find because it's shared across several pins.</p>
+  <div class="body">
+    <div class="do"><span class="lbl">Wiring</span>XIAO <strong>GND</strong> → the socket you believe is <strong>GND</strong>. Then run wires from <strong>D0, D1, D2, D3, D8, D10</strong> to six other sockets, noting which socket each one goes to.</div>
+    <div class="expect"><span class="lbl">Read</span>Any line reporting <code>held LOW</code> is connected to the board's ground net. Everything else reads <code>FLOATING</code>.</div>
+    <p>Tell me which socket each wire went to and I'll map it. If <em>nothing</em> reads low, the socket you called GND isn't ground — move that wire one position and repeat. This is safe to iterate: only pull resistors are involved, about 70 microamps.</p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-head"><span class="num">3</span><h2>Confirm power reaches the board</h2></div>
+  <p class="why">Everything downstream is meaningless if the panel has no supply — and this is the measurement we've never actually taken.</p>
+  <div class="body">
+    <div class="do"><span class="lbl">Build the safe probe</span>Two 1 MΩ resistors in series. One free end to the point being measured, the other free end to <strong>GND</strong>, and the junction between them to <strong>D2</strong>. That halves the voltage, so any point up to about 6.6 V is safe to touch — the 5 V socket included.</div>
+    <div class="do"><span class="lbl">Wiring</span>Power the driver board: XIAO 3V3 and GND to the sockets confirmed in step 2. Board switch <strong>ON</strong>.</div>
+    <div class="expect"><span class="lbl">Read</span>The scan prints both scales. Use the <code>via 1M/1M divider</code> column:
+      <table>
+        <tr><th>Reading</th><th>Means</th></tr>
+        <tr><td class="mono">~3300 mV</td><td>3.3 V rail — panel has power</td></tr>
+        <tr><td class="mono">~5000 mV</td><td>the 5 V rail — that socket is 5V, not 3V3</td></tr>
+        <tr><td class="mono">~0 mV</td><td>ground</td></tr>
+        <tr><td class="mono">drifting 400–1400</td><td>floating — nothing there</td></tr>
+      </table>
+    </div>
+    <p>Probe each socket in turn. By the end you'll have the board mapped by measurement, and the mirror question is dead for good.</p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-head"><span class="num">4</span><h2>Prove each signal path end to end</h2></div>
+  <p class="why">Now that power and ground sockets are known by measurement, bridging two <em>signal</em> sockets is safe, and it tests both jumpers at once.</p>
+  <div class="body">
+    <div class="do"><span class="lbl">Wiring</span>With the six signal jumpers in place, add one short wire between two sockets you've confirmed are <strong>not</strong> power or ground — say RST and CS.</div>
+    <div class="expect"><span class="lbl">Pass</span><code>BRIDGED: RST (D0) &lt;-&gt; CS (D1)</code> — both jumpers and both socket contacts are good.</div>
+    <div class="expect bad"><span class="lbl">Fail</span>No bridge reported — at least one of the two paths is open. Since step 1 cleared the wires, that points at the loose header pin in the hole.</div>
+    <p>Walk the bridge wire along the pairs until all six are proven. This is where unsoldered pins will most likely bite, and now you'll see exactly which one.</p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-head"><span class="num">5</span><h2>Connect the panel</h2></div>
+  <p class="why">The single check that says the display is really there.</p>
+  <div class="body">
+    <div class="do"><span class="lbl">Wiring</span>Remove the bridge wire from step 4. FPC into the connector, contacts down, latch closed. Power on.</div>
+    <div class="expect"><span class="lbl">Pass</span>BUSY no longer floats — it reports <code>held LOW</code> or <code>held HIGH</code>, because a live panel drives that line. Then the display firmware gets its turn.</div>
+    <div class="expect bad"><span class="lbl">Fail</span>BUSY still <code>FLOATING</code> with power confirmed in step 3 and paths confirmed in step 4 → the fault is the FPC seating or its orientation. Flip the ribbon and retry.</div>
+  </div>
+</div>
+
+<hr class="rule">
+
+<div class="kicker">Honest expectation</div>
+<p style="color: var(--ink-soft); font-size: 0.95rem; max-width: 40rem;">
+Steps 0–3 should hold steady. Step 4 is where loose pins in unsoldered holes
+tend to fail, and they may pass once and fail the next time you nudge the
+bench — that's the nature of the contact, not a mistake on your part. The
+ladder's real value is that it tells you <em>which</em> connection is open
+instead of leaving you to infer it from a blank screen. When the iron arrives,
+soldering those headers converts every intermittent rung into a permanent one.
+</p>
+</main>
+
+</body>
+</html>
