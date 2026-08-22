@@ -51,7 +51,7 @@
 
 // Display refresh policy (every refresh costs battery; see docs/power-budget.md)
 #define DISPLAY_FULL_REFRESH_EVERY_N 10  // full refresh every N-th refresh to clear ghosting
-#define DISPLAY_FLIP_LONG_AXIS  0        // HW-VERIFY: set so the image is upright in the case
-#define DISPLAY_FLIP_SHORT_AXIS 0        // HW-VERIFY
+#define DISPLAY_FLIP_LONG_AXIS  1        // verified on hardware: upright with the FPC at the bottom
+#define DISPLAY_FLIP_SHORT_AXIS 0        // verified on hardware
 #define DISPLAY_IDLE_TIMEOUT_S 30
 #define FACTORY_RESET_HOLD_S   10
