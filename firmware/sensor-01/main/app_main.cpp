@@ -85,6 +85,7 @@ static void app_event_cb(const ChipDeviceEvent *event, intptr_t arg)
     case chip::DeviceLayer::DeviceEventType::kCommissioningComplete: {
         ESP_LOGI(TAG, "Commissioning complete");
         led_set_commissioning(false);
+        display_commissioning_done(); /* release the onboarding-screen latch */
         sensor_readings_t r = sensor_loop_get_readings();
         if (r.valid) {
             display_show_readings(&r);
@@ -121,6 +122,9 @@ static void app_event_cb(const ChipDeviceEvent *event, intptr_t arg)
                     ESP_LOGE(TAG, "Failed to open commissioning window, err:%" CHIP_ERROR_FORMAT, err.Format());
                 }
             }
+            /* Put the codes back on the panel: the window is open again and
+             * they are the only way to re-adopt the device. */
+            show_commissioning_screen();
         }
         break;
     }

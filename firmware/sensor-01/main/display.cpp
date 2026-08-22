@@ -19,7 +19,7 @@ static const char *TAG = "display";
 #define FRAME_BYTES (LAND_W * LAND_H / 8)
 
 typedef struct {
-    enum { MSG_READINGS, MSG_COMMISSIONING, MSG_DIAG, MSG_SETTINGS } type;
+    enum { MSG_READINGS, MSG_COMMISSIONING, MSG_COMMISSIONED, MSG_DIAG, MSG_SETTINGS } type;
     sensor_readings_t readings;
     char qr[128];
     char manual[24];
@@ -34,6 +34,15 @@ static uint8_t s_land[FRAME_BYTES];
 static uint8_t s_native[FRAME_BYTES];
 static QueueHandle_t s_queue;
 static unsigned s_partials_since_full;
+
+/* Onboarding-screen latch. Until a fabric exists the device cannot be paired
+ * without the QR on screen, so periodic readings must not paint over it: while
+ * s_awaiting_commissioning is set, a readings message re-renders the onboarding
+ * codes instead. Only display_task touches these, so the queue serializes them. */
+static bool s_awaiting_commissioning;
+static char s_qr[128];
+static char s_manual[24];
+static int s_screen = -1; /* display_msg_t::type currently on the panel */
 
 /* Landscape (296x128, bit=black) -> native (296 gate rows x 16 source bytes,
  * bit=white). HW-VERIFY: flip flags until the image is upright in the case. */
@@ -206,8 +215,20 @@ static void display_task(void *arg)
         }
         switch (msg.type) {
         case display_msg_t::MSG_READINGS:
+            if (s_awaiting_commissioning) {
+                if (s_screen == display_msg_t::MSG_COMMISSIONING) {
+                    continue; /* codes already on the panel; e-ink holds them */
+                }
+                msg.type = display_msg_t::MSG_COMMISSIONING;
+                render_commissioning(s_qr, s_manual);
+                s_partials_since_full = DISPLAY_FULL_REFRESH_EVERY_N;
+                break;
+            }
             render_readings(&msg.readings);
             break;
+        case display_msg_t::MSG_COMMISSIONED:
+            s_awaiting_commissioning = false;
+            continue; /* state change only; the next readings message draws */
         case display_msg_t::MSG_DIAG:
             render_diag(&msg.diag, msg.fw);
             break;
@@ -215,11 +236,15 @@ static void display_task(void *arg)
             render_settings(&msg.settings);
             break;
         case display_msg_t::MSG_COMMISSIONING:
-            render_commissioning(msg.qr, msg.manual);
+            strlcpy(s_qr, msg.qr, sizeof(s_qr));
+            strlcpy(s_manual, msg.manual, sizeof(s_manual));
+            s_awaiting_commissioning = true;
+            render_commissioning(s_qr, s_manual);
             s_partials_since_full = DISPLAY_FULL_REFRESH_EVERY_N; /* force full: big change */
             break;
         }
         push_frame();
+        s_screen = msg.type;
     }
 }
 
@@ -272,6 +297,16 @@ void display_show_commissioning(const char *qr_payload, const char *manual_code)
     msg.type = display_msg_t::MSG_COMMISSIONING;
     strlcpy(msg.qr, qr_payload, sizeof(msg.qr));
     strlcpy(msg.manual, manual_code, sizeof(msg.manual));
+    xQueueSend(s_queue, &msg, 0);
+}
+
+void display_commissioning_done(void)
+{
+    if (!s_queue) {
+        return;
+    }
+    display_msg_t msg = {};
+    msg.type = display_msg_t::MSG_COMMISSIONED;
     xQueueSend(s_queue, &msg, 0);
 }
 
