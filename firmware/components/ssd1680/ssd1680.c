@@ -33,6 +33,7 @@ static const char *TAG = "ssd1680";
 #define BORDER_PARTIAL 0x80 /* VCOM border: no border flicker on partial */
 
 #define BUSY_TIMEOUT_MS 6000
+#define ACTIVATE_RISE_TIMEOUT_MS 200 /* BUSY goes high within a few ms of a real update */
 
 struct ssd1680 {
     ssd1680_config_t cfg;
@@ -74,6 +75,26 @@ static esp_err_t busy_wait(struct ssd1680 *h)
     }
     ESP_LOGE(TAG, "BUSY stuck high >%dms", BUSY_TIMEOUT_MS);
     return ESP_ERR_TIMEOUT;
+}
+
+/* Wait out a display update started by MASTER_ACTIVATE.
+ *
+ * busy_wait() alone is not enough here: it returns ESP_OK the moment it sees
+ * BUSY low, which is also the state of a panel that never received the command
+ * stream at all, so a disconnected display and a successful update look
+ * identical. A real update raises BUSY first -- about 1.8s for a full refresh
+ * and 0.5s for a partial one -- so require the rise before waiting for the fall. */
+static esp_err_t busy_wait_update(struct ssd1680 *h)
+{
+    for (int waited = 0; gpio_get_level(h->cfg.busy_gpio) == 0; waited += 5) {
+        if (waited >= ACTIVATE_RISE_TIMEOUT_MS) {
+            ESP_LOGE(TAG, "BUSY never rose within %dms of MASTER_ACTIVATE: the panel "
+                          "did not accept the command stream", ACTIVATE_RISE_TIMEOUT_MS);
+            return ESP_ERR_INVALID_RESPONSE;
+        }
+        vTaskDelay(pdMS_TO_TICKS(5));
+    }
+    return busy_wait(h);
 }
 
 /* Wake from deep sleep and (re)initialize registers. */
@@ -157,7 +178,7 @@ static esp_err_t refresh(struct ssd1680 *h, const uint8_t *frame, bool partial)
 
     cmd1(h, CMD_DISP_CTRL2, partial ? UPDATE_PARTIAL : UPDATE_FULL);
     cmd(h, CMD_MASTER_ACTIVATE);
-    err = busy_wait(h);
+    err = busy_wait_update(h);
 
     if (err == ESP_OK) {
         if (!h->prev) {
