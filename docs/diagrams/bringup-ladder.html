@@ -157,9 +157,9 @@
   <div class="step-head"><span class="num">5</span><h2>Connect the panel</h2></div>
   <p class="why">The single check that says the display is really there.</p>
   <div class="body">
-    <div class="do"><span class="lbl">Wiring</span>Remove the bridge wire from step 4. FPC into the connector, contacts down, latch closed. Power on.</div>
-    <div class="expect"><span class="lbl">Pass</span>BUSY no longer floats — it reports <code>held LOW</code> or <code>held HIGH</code>, because a live panel drives that line. Then the display firmware gets its turn.</div>
-    <div class="expect bad"><span class="lbl">Fail</span>BUSY still <code>FLOATING</code> with power confirmed in step 3 and paths confirmed in step 4 → the fault is the FPC seating or its orientation. Flip the ribbon and retry.</div>
+    <div class="do"><span class="lbl">Wiring</span>Remove the bridge wire from step 4. Flip the latch up and slide the FPC in — <strong>the right orientation goes in with light finger pressure; the reversed one needs force.</strong> Push until the <strong>stiffener is inside the housing</strong>, then close the latch. Power on.</div>
+    <div class="expect"><span class="lbl">Pass</span>BUSY no longer floats — it reports <code>held LOW</code> or <code>held HIGH</code>, because a live panel drives that line. The real proof comes one step later: on a refresh, BUSY must go <em>high</em> for roughly 1.8s (full) or 0.5s (partial). The driver enforces that; a panel that received nothing logs <code>BUSY never rose</code>.</div>
+    <div class="expect bad"><span class="lbl">Fail</span>BUSY still <code>FLOATING</code> with power confirmed in step 3 and paths confirmed in step 4 → the fault is the FPC seating or its orientation. <strong>Power off first</strong>, then reseat or flip the ribbon. Reversed, tab <em>n</em> meets panel pin 25−<em>n</em>: VDDIO lands on RST and VCI on BUSY, so driving RST low shorts a supply rail and browns out the board. That killed two panels during bring-up.</div>
   </div>
 </div>
 

@@ -201,7 +201,7 @@
   <h2>Layout</h2>
   <figure>
     <svg viewBox="0 0 980 680" role="img"
-         aria-label="Wiring diagram: XIAO in the breadboard powered over USB-C. Grove SHT40 wired as in step 1: yellow SCL to D5, white SDA to D4, red VCC to 3V3, black GND to the ground rail. Below the breadboard, the ePaper driver board receives eight jumpers into its female sockets: D0 reset, D1 chip select, D2 busy, D3 data/command, D8 clock, D10 MOSI, plus 3V3 and GND. The 2.9 inch ePaper panel connects to the driver board via its 24-pin flat cable, contacts down, latch closed.">
+         aria-label="Wiring diagram: XIAO in the breadboard powered over USB-C. Grove SHT40 wired as in step 1: yellow SCL to D5, white SDA to D4, red VCC to 3V3, black GND to the ground rail. Below the breadboard, the ePaper driver board receives eight jumpers into its female sockets: D0 reset, D1 chip select, D2 busy, D3 data/command, D8 clock, D10 MOSI, plus 3V3 and GND. The 2.9 inch ePaper panel connects to the driver board via its 24-pin flat cable, inserted in the orientation that slides in without force, pushed in until the stiffener is inside the housing, latch closed.">
       <!-- breadboard -->
       <rect x="260" y="80" width="380" height="280" rx="8" class="svg-board" stroke-width="1.5"/>
       <line x1="278" y1="338" x2="622" y2="338" class="rail-blue"/>
@@ -325,7 +325,7 @@
       <!-- FPC ribbon -->
       <line x1="560" y1="525" x2="650" y2="525" class="fpc"/>
       <text x="605" y="512" text-anchor="middle" class="svg-soft wire-tag">24-pin FPC</text>
-      <text x="605" y="550" text-anchor="middle" class="svg-soft wire-tag">contacts down, latch closed</text>
+      <text x="605" y="550" text-anchor="middle" class="svg-soft wire-tag">easy-slide side up, seated to the stiffener</text>
 
       <!-- ePaper panel -->
       <rect x="650" y="440" width="290" height="170" rx="6" class="svg-panel" stroke-width="1.5"/>
@@ -356,9 +356,11 @@
     (photo-confirmed): plug each jumper by its printed name. Note the
     silkscreen is printed on the board's <em>back</em>, so it reads mirrored
     once the board lies sockets-up — track the RST corner while flipping.
-    The panel's flat cable goes into the FPC connector contacts-down and the
-    black latch closes over it. Battery JST and power switch are not used in
-    this build.</figcaption>
+    The panel's flat cable goes into the FPC connector in whichever orientation
+    <em>slides in without force</em> &mdash; the reversed one has to be pushed,
+    and it mirrors the pin order onto the panel's supply rails. Push until the
+    stiffener is inside the housing, then close the black latch over it.
+    Battery JST and power switch are not used in this build.</figcaption>
   </figure>
 </section>
 
@@ -376,7 +378,7 @@
       <tr><td><span class="swatch" style="background:var(--wire-purple)"></span>jumper</td><td class="pin">D10 · GPIO18</td><td class="pin">MOSI</td><td>SPI data out (MOSI)</td></tr>
       <tr><td><span class="swatch" style="background:var(--wire-red)"></span>red</td><td class="pin">3V3</td><td class="pin">3V3</td><td>panel power — same row as the SHT40's VCC wire</td></tr>
       <tr><td><span class="swatch" style="background:var(--wire-black-core)"></span>black</td><td class="pin">− rail</td><td class="pin">GND</td><td>common ground</td></tr>
-      <tr><td>FPC</td><td class="pin" colspan="2">panel ↔ driver board, 24-pin</td><td>contacts down, flip latch up, insert, latch down</td></tr>
+      <tr><td>FPC</td><td class="pin" colspan="2">panel ↔ driver board, 24-pin</td><td>flip latch up, insert the easy-slide way until the stiffener is in, latch down</td></tr>
     </tbody>
   </table>
   </div>
@@ -392,8 +394,13 @@
       back and mirror when it lies sockets-up — a one-off or mirrored shift is
       the classic mistake with jumpers into a header.</li>
     <li><strong>FPC before power:</strong> flip the connector latch up, slide
-      the cable in contacts-down until it stops, press the latch closed. Never
-      insert or remove the cable powered.</li>
+      the cable in. <strong>The correct orientation goes in with light finger
+      pressure; the reversed one needs force</strong> &mdash; reversed, tab
+      <em>n</em> meets panel pin 25&minus;<em>n</em>, putting VDDIO on RST and
+      VCI on BUSY, and driving RST low then shorts a supply rail. Push until
+      the <strong>stiffener is inside the housing</strong>, not merely as far
+      as it seems to go, then press the latch closed. Never insert or remove
+      the cable powered, and treat the bare flex as ESD-sensitive.</li>
     <li><strong>3V3 row is now shared three ways</strong> (XIAO pin, SHT40
       VCC, driver board) — all in the same 5-hole row.</li>
     <li>Battery JST and the driver board's power switch stay untouched.</li>
