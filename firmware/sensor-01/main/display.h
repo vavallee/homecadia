@@ -32,8 +32,14 @@ esp_err_t display_init(void);
  * full one to clear ghosting. */
 void display_show_readings(const sensor_readings_t *r);
 
-/* First-boot / decommissioned screen: commissioning QR + manual pairing code. */
+/* First-boot / decommissioned screen: commissioning QR + manual pairing code.
+ * Latches: until display_commissioning_done() the readings view renders these
+ * codes instead, so periodic sensor reports cannot paint over an unpaired
+ * device's only way of being paired. */
 void display_show_commissioning(const char *qr_payload, const char *manual_code);
+
+/* Releases the display_show_commissioning() latch (call when a fabric exists). */
+void display_commissioning_done(void);
 
 /* View 2: Thread RSSI, uptime, battery, firmware version. */
 void display_show_diagnostics(const display_diag_t *d);
