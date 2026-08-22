@@ -36,8 +36,36 @@ Reversed polarity destroys the XIAO's charge circuit instantly.
    case). **Charging only works with a USB A-to-C cable** — the 2-wire pigtail
    has no CC resistors, so C-to-C supplies won't enable VBUS.
 6. Multimeter polarity check (above), then solder battery to XIAO pads.
-7. Seat XIAO on driver board, connect 24-pin FPC (contacts down, lock the
-   latch), fit into case, M2 self-tappers.
+7. Seat XIAO on driver board — **USB-C end pointing away from the FPC
+   connector**. The board's RST/5V silkscreen marks the XIAO's USB end, at the
+   opposite end of the board from the ribbon. Seated 180° out, nothing works
+   and nothing is obviously wrong to look at.
+8. Connect the 24-pin FPC — see the orientation rule below — then fit into
+   case, M2 self-tappers.
+
+### FPC orientation: go by insertion force, not by which way the copper faces
+
+**The correct orientation slides in with light finger pressure. The reversed
+one needs force.** That is the reliable test; "contacts down" is ambiguous
+depending on how you are holding the board, and getting it wrong is not a
+no-op. Reversing the ribbon mirrors the pin order — tab *n* meets panel pin
+25−*n* — which lands the panel's VDDIO on RST and VCI on BUSY. The MCU is then
+driving a supply rail: pulling RST low shorts it, and the board browns out.
+Two panels died during bring-up (2026-08-18/22).
+
+Procedure: flip the black latch up, slide the ribbon in until the **stiffener
+is inside the housing** (not merely "as far as it will go" — a ribbon stopped
+short still latches and makes intermittent contact), press the latch closed.
+Insert and remove only with the power off.
+
+On this batch the working orientation puts the copper contacts facing **up**,
+away from the driver board — observed on the bench, not vendor-confirmed, so
+use the insertion-force rule as the check.
+
+**Handle the bare flex as an ESD-sensitive part.** One panel failed after a
+successful refresh with nothing electrically suspicious in between; ESD from
+handling is the leading guess but is unproven. Ground yourself before touching
+the ribbon, and hold the panel by the glass edges.
 
 ## The driver board carries every pin this build needs
 
@@ -90,4 +118,6 @@ resets, and two USB brownouts severe enough that Windows reported
 ## HW-VERIFY
 
 - Confirm BAT+/BAT− pad markings on this XIAO revision before soldering.
-- Confirm FPC contact orientation for this panel batch.
+- ~~Confirm FPC contact orientation for this panel batch.~~ **Closed
+  2026-08-22** — resolved by the insertion-force rule above; panel refreshed
+  full and partial on driver board #1.

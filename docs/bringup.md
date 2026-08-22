@@ -39,8 +39,8 @@ Bench wiring diagrams and the no-solder connectivity procedure live in
 - [x] ePaper driver board V2 actually uses D0=RST, D1=CS, D2=BUSY, D3=DC,
       D8=SCK, D10=MOSI — **silkscreen-confirmed 2026-08-17** (back of the
       board labels the D0–D3/D8/D10 positions RST/CS/BUSY/DC/SCK/MOSI by
-      function). Electrical confirmation comes free when the display first
-      draws; probe only if init fails. Bonus: the board breaks out D4/D5 as
+      function). **Electrically confirmed 2026-08-22** — the panel refreshed
+      with these assignments. Bonus: the board breaks out D4/D5 as
       labelled through-holes — a candidate solder point for the SHT40 in
       final assembly instead of the XIAO pins.
 - [ ] BAT+/BAT− underside pad markings confirmed on this XIAO revision.
@@ -62,9 +62,55 @@ Bench wiring diagrams and the no-solder connectivity procedure live in
 
 ## Display
 
+- [x] **Panel draws — verified 2026-08-22** on driver board #1 with the XIAO
+      seated directly (no jumpers), SHT40 on Grove. Full refresh holds BUSY
+      high 1790ms, partial 540ms; readings render with `LOW BATT` (no cell
+      fitted, 824mV on the divider reads as 0%). Image upright with
+      `DISPLAY_FLIP_LONG_AXIS 1`, short axis 0.
 - [ ] Panel deep-sleep current measured (panel + driver board leakage).
 - [ ] Partial refresh charge cost measured; full refresh cost measured.
 - [ ] Ghosting acceptable with chosen full-refresh-every-N policy.
+
+### Bring-up post-mortem, 2026-08-18 → 22
+
+Two days were spent probing pins for a fault that was mostly mechanical. What
+actually went wrong, in the order it mattered:
+
+1. **The FPC was in reversed.** Flipping the ribbon mirrors the pin order (tab
+   *n* meets panel pin 25−*n*), which puts the panel's VDDIO on RST and VCI on
+   BUSY — the MCU ends up driving a supply rail, and pulling RST low browns the
+   board out. The insertion-force rule and the rest of the handling procedure
+   are in [assembly.md](assembly.md#fpc-orientation-go-by-insertion-force-not-by-which-way-the-copper-faces).
+2. **The ribbon was not seated to the stiffener.** It latched and made
+   intermittent contact, which looks identical to a dead panel.
+3. **The XIAO was seated 180° out** on board #2. USB-C points *away* from the
+   FPC connector.
+4. **The firmware could not tell a working panel from a silent one.** `busy_wait()`
+   returned `ESP_OK` the moment BUSY read low, which is also the resting state
+   of a panel that received nothing, so every refresh reported success while
+   nothing was drawn. Fixed by requiring BUSY to *rise* after
+   `CMD_MASTER_ACTIVATE` (`ssd1680.c`). Without that check the hardware fault
+   was invisible from the log, which is why it was hunted with a multimeter.
+
+Instrumentation that was wasted effort: pin-to-pin bridge sweeps, ADC line
+voltages, and an output-drive test (which gave a false STUCK verdict on RST/CS
+because configuring an ADC channel disconnects the digital driver). The one
+useful measurement was the BUSY timing above.
+
+### Component status, 2026-08-22
+
+| Item | State |
+|---|---|
+| Panel A (first used) | **dead** — SDA shorted to VDDIO, 16–50Ω |
+| Panel B | **dead** — same short, failed after one successful refresh |
+| Panel C | **working** — the only good panel left |
+| Driver board #1 | working; retains kΩ leaks (see [power-budget.md](power-budget.md)) |
+| Driver board #2 | **connector damaged** — bridges tabs 14/15 (SDA↔VDDIO) at 19–49Ω with any ribbon seated, open with none. Not usable for a display |
+| Driver board #3 | unopened, headers not fitted |
+| XIAO (unit 1) | healthy — D10 to 3V3 open with the board removed |
+
+Blocker: **2 of 3 panels are gone and there is no spare.** Reorder Seeed SKU
+104990853 before the next two units are assembled.
 
 ## Case & mechanical
 

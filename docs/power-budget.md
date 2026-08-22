@@ -36,6 +36,27 @@ display refreshes 30×/day, that adds ~3.5µA average — fine. 500 refreshes/da
 would add ~58µA — not fine. Refresh policy (only on wake/report/dial) exists
 because of this table.
 
+## Known leakage on driver board #1 (measured 2026-08-22)
+
+Board #1 survived bring-up but carries resistive leaks to the rails. Every GPIO
+still drives valid logic through them — the C6's push-pull output is ~25Ω
+against kΩ-scale leaks, so this is a power problem, not a functional one:
+
+| Net | Leak | Measured |
+|---|---|---|
+| RST (D0) | to GND | ~0.6–1.2kΩ |
+| CS (D1) | to GND | ~9.5–11.6kΩ |
+| BUSY (D2) | to GND | kΩ-scale |
+| MOSI (D10) | to 3V3 | weak, ~20–50kΩ |
+
+The RST leak is the one that matters: RST is held **high** through the panel's
+deep sleep, so 3.3V across ~600Ω is ~5.5mA continuous — roughly **20× the
+entire 300µA budget**, and it would flatten a 2000mAh cell in about two weeks.
+
+Board #1 is therefore a **bench board, not a shipping board**. Measure RST-to-GND
+on boards #2 and #3 before committing either to a unit, and re-measure any board
+that has had rework on the header pins.
+
 ## Firmware policies that exist because of this budget
 
 - 2×1MΩ divider, not 100k (21µA → 2.1µA bleed).
