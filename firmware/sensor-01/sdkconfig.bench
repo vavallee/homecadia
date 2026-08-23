@@ -1,0 +1,18 @@
+# Bench profile: overrides sdkconfig.defaults to keep the USB console alive.
+#
+# Automatic light sleep powers down the USB-serial-JTAG at runtime. The port
+# still enumerates, but every open fails with a driver-level error ("A device
+# attached to the system is not functioning" on Windows), which reads as broken
+# hardware rather than a sleep state. Bring-up on 2026-08-22 lost hours to that.
+#
+# Use this profile for any work that needs a console — driver bring-up, sensor
+# and input integration, anything where you need to see what the firmware did.
+# Ship on the default profile, and re-validate Matter/Thread behaviour there:
+# NOTHING verified under this profile carries over to light sleep, because ICD
+# timing, radio wake and peripheral power-down all change.
+#
+#   idf.py -B build-bench -DSDKCONFIG=build-bench/sdkconfig \
+#          -DSDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.bench" build
+CONFIG_PM_ENABLE=n
+CONFIG_FREERTOS_USE_TICKLESS_IDLE=n
+CONFIG_BT_LE_SLEEP_ENABLE=n

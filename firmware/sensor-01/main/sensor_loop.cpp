@@ -34,6 +34,17 @@ static float s_reported_rh = NAN;
 static uint8_t s_reported_bat_pct = 0xFF;
 static unsigned s_polls_since_report;
 
+/* esp_matter::attribute::update() returns a code that is easy to discard; a silent
+ * failure here is indistinguishable from a healthy device until a controller reads
+ * the attribute and gets null. */
+static void log_update(const char *what, uint16_t endpoint_id, esp_err_t err)
+{
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "attribute update failed for %s on endpoint %u: %s", what,
+                 (unsigned)endpoint_id, esp_err_to_name(err));
+    }
+}
+
 static void report_matter(float temp_c, float rh, uint32_t bat_mv, uint8_t bat_pct)
 {
     /* Attribute updates must run under the Matter stack lock; this runs in the
@@ -41,22 +52,29 @@ static void report_matter(float temp_c, float rh, uint32_t bat_mv, uint8_t bat_p
      * With portMAX_DELAY the scoped lock only ever proceeds locked. */
     esp_matter::lock::ScopedChipStackLock stack_lock(portMAX_DELAY);
 
+    /* A failed update leaves the attribute at its previous value — null on a fresh
+     * boot — while the sensor log still shows a good reading, so the device looks
+     * healthy locally and reads as null to a controller. Never drop these codes. */
     esp_matter_attr_val_t val = esp_matter_nullable_int16((int16_t)lroundf(temp_c * 100.0f));
-    update(s_eps.temperature_endpoint_id, TemperatureMeasurement::Id,
-           TemperatureMeasurement::Attributes::MeasuredValue::Id, &val);
+    log_update("temperature", s_eps.temperature_endpoint_id,
+               update(s_eps.temperature_endpoint_id, TemperatureMeasurement::Id,
+                      TemperatureMeasurement::Attributes::MeasuredValue::Id, &val));
 
     val = esp_matter_nullable_uint16((uint16_t)lroundf(rh * 100.0f));
-    update(s_eps.humidity_endpoint_id, RelativeHumidityMeasurement::Id,
-           RelativeHumidityMeasurement::Attributes::MeasuredValue::Id, &val);
+    log_update("humidity", s_eps.humidity_endpoint_id,
+               update(s_eps.humidity_endpoint_id, RelativeHumidityMeasurement::Id,
+                      RelativeHumidityMeasurement::Attributes::MeasuredValue::Id, &val));
 
     /* BatPercentRemaining is in half-percent units (0..200). */
     val = esp_matter_nullable_uint8(bat_pct * 2);
-    update(s_eps.power_source_endpoint_id, PowerSource::Id,
-           PowerSource::Attributes::BatPercentRemaining::Id, &val);
+    log_update("battery pct", s_eps.power_source_endpoint_id,
+               update(s_eps.power_source_endpoint_id, PowerSource::Id,
+                      PowerSource::Attributes::BatPercentRemaining::Id, &val));
 
     val = esp_matter_nullable_uint32(bat_mv);
-    update(s_eps.power_source_endpoint_id, PowerSource::Id,
-           PowerSource::Attributes::BatVoltage::Id, &val);
+    log_update("battery mV", s_eps.power_source_endpoint_id,
+               update(s_eps.power_source_endpoint_id, PowerSource::Id,
+                      PowerSource::Attributes::BatVoltage::Id, &val));
 }
 
 static void poll_cb(void *arg)
