@@ -1,0 +1,47 @@
+# Temporary BLE proxy host for Matter commissioning.
+#
+# matter-server drives BLE commissioning through a proxy client on a machine with
+# a Bluetooth adapter. Home Assistant's own proxy (bleak on BlueZ) cannot complete
+# the BTP handshake -- bleak reports the default 23-byte ATT MTU because BlueZ will
+# not expose the negotiated value for Matter's characteristic set, and forcing a
+# larger value still yields "BTP handshake response not received"
+# (matter-js/matterjs-server#1006).
+#
+# The Node/noble client works, because noble drives HCI directly and negotiates its
+# own ATT MTU. This pod runs it on the node holding the Bluetooth adapter. noble
+# coexists with BlueZ here -- HA does not lose Bluetooth.
+#
+# The upstream reference client needs two fixes before it can commission at all
+# (matter-js/matterjs-server#1005); apply them to the installed dist after npm
+# install until that PR lands:
+#   npm install @matter-server/ble-proxy@0.7.1 @stoprocent/noble ws
+#   node node_modules/@matter-server/ble-proxy/dist/esm/example/noble-ble-proxy.js \
+#        --server ws://<matter-server>:5580/ble
+#
+# The server accepts ONE proxy client. Disable HA's Matter integration first or it
+# holds the slot. Commissioning also needs the device in Thread range of the border
+# router, not just BLE range of this node.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: noble-ble-proxy
+  namespace: default
+  labels:
+    app: noble-ble-proxy
+    temporary: "true"
+spec:
+  nodeSelector:
+    kubernetes.io/hostname: k8sn1-master
+  hostNetwork: true
+  dnsPolicy: ClusterFirstWithHostNet
+  restartPolicy: Never
+  containers:
+  - name: proxy
+    image: node:22-bookworm
+    command: ["sleep", "infinity"]
+    securityContext:
+      capabilities:
+        add: ["NET_RAW", "NET_ADMIN"]
+    resources:
+      requests: {cpu: 100m, memory: 256Mi}
+      limits: {cpu: "1", memory: 1Gi}

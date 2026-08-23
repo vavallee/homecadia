@@ -16,3 +16,4 @@ __pycache__/
 # Local agent/tooling scratch
 .gastown-ignore
 .claude/
+firmware/**/build-bench/
