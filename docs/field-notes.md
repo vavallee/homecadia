@@ -126,3 +126,37 @@ Apple will not surrender without an Apple border router present.
 - **Suspect your own instrumentation.** A capture that resets the device, a
   `pkill` that matches its own shell, an `sed` range whose end marker never
   matches — all produced confident, wrong conclusions in this build.
+
+## 9. OPEN: temperature/humidity MeasuredValue is null on the wire
+
+Unresolved as of 2026-08-23. The device reports readings correctly to its own
+log and HA shows no temperature or humidity entity at all, because Home
+Assistant skips a sensor whose primary attribute reads null.
+
+What is established:
+
+- Endpoints declare the right device types — `770` (0x0302 Temperature Sensor)
+  on ep1, `775` (0x0307 Humidity Sensor) on ep2 — with clusters 1026/1029.
+- `MinMeasuredValue` (`1/1026/1`) reads back `-4000` over the wire. Set from
+  the same `config_t` by the adjacent SDK line. So the cluster is served fine.
+- `MeasuredValue` (`1/1026/0`) reads null — whether set at creation via
+  `temp_cfg.temperature_measurement.measured_value` or at runtime via
+  `attribute::update()`.
+- A forced `interview_node` (a live read of everything) still returns null, so
+  it is not a matter-server cache artifact.
+- Reading the attribute back on the device with `attribute::get_val()`
+  immediately after the update returns `type=137` (nullable int16) with
+  `i16=-32768` — the null sentinel — while `esp_matter_attribute` has just
+  logged `Attribute 0x00000000 is 2437`.
+
+So the value is lost inside `update()`, and that log line prints the requested
+value rather than the stored one. Battery attributes on ep3 work at both
+creation and runtime; they are the two the app creates explicitly with
+`create_bat_percent_remaining` / `create_bat_voltage`, which is the only
+structural difference found so far.
+
+Next steps: confirm whether `-32768` is genuinely esp-matter's null marker for
+this type rather than an artifact of reading `val.i16`; then either create the
+measurement attributes explicitly the way the battery ones are, or raise it
+with esp-matter upstream with the repro above. Build is esp-matter v1.6 with
+`CONFIG_ESP_MATTER_ENABLE_DATA_MODEL=y` and `ENABLE_GENERATED_DATA_MODEL` unset.
