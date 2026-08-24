@@ -13,9 +13,9 @@ Bench wiring diagrams and the no-solder connectivity procedure live in
       [build.md](build.md) for the gotchas). Chip: ESP32-C6FH4 (QFN32) v0.2 —
       FH4 = **4MB embedded flash, confirmed**; matches the `partitions.csv`
       4MB OTA layout.
-- [ ] **OTA slot headroom.** Current app image is 1.66MB of the 1.92MB
-      (0x1E0000) OTA slot — **~84% full** with milestone 5–6 features still
-      landing. Check after every feature merge; overflow forces a partition
+- [ ] **OTA slot headroom.** App image is 0x195990 (1.66MB) of the 1.92MB
+      (0x1E0000) OTA slot — **84% full, 16% free** as of 2026-08-23 with
+      milestone 5–6 features still landing. Check after every feature merge; overflow forces a partition
       rework and a full reflash of deployed units (`partitions.csv` note).
 - [x] USB console stays enumerated with the app running —
       `CONFIG_USJ_NO_AUTO_LS_ON_CONNECTION=y` verified: port alive
@@ -29,8 +29,9 @@ Bench wiring diagrams and the no-solder connectivity procedure live in
       seconds-long look at a boot banner is not a boot verification — watch
       the console ≥30s. Now boots to `Server Listening...` with the SHT40
       attached.
-- [ ] Onboarding codes verified from a live console (`idf.py monitor`,
-      interactive) against the compiled-in test defaults (34970112332).
+- [x] Onboarding codes verified from a live console — **2026-08-23**: console
+      printed `QRCODE: MT:Y.K9042C00KA0648G00` and the manual code 34970112332
+      commissioned the device.
 
 ## Pins & wiring
 
@@ -138,6 +139,14 @@ Blocker: **2 of 3 panels are gone and there is no spare.** Reorder Seeed SKU
 
 ## Radio / Matter
 
-- [ ] Commissions to HA via ZBT-2 OTBR (uncertified-VID warning accepted).
+- [x] Commissions to HA via ZBT-2 OTBR — **2026-08-23**, node 20, 14.8s once
+      the preconditions held: `ENABLE_TEST_NET_DCL=true` on matter-server, the
+      noble BLE proxy (`docs/ble-proxy-pod.yaml`), and the device in range of
+      the border router. Readings visible in HA as `sensor.test_product_temperature`
+      / `_humidity` after the MeasuredValue fix ([field-notes.md](field-notes.md) §9).
+      Commissioning survives a reflash (NVS retains the fabric).
 - [ ] Survives HA restart / OTBR restart without falling off the fabric.
-- [ ] ICD: HA shows fresh readings at the configured report cadence.
+- [ ] ICD: HA shows fresh readings at the configured report cadence. Partial
+      **2026-08-23**: on the shipping profile (light sleep on) the device stays
+      attached as a sleepy child and serves live reads over Thread 150s+ after
+      boot. Cadence as seen from HA not yet observed over a longer window.
