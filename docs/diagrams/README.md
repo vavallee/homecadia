@@ -8,6 +8,7 @@ Each follows the viewer's light/dark theme.
 |---|---|
 | [bench-rig.html](bench-rig.html) | Breadboard wiring for the second bench step: XIAO + Grove SHT40 + ePaper driver board + panel, with the full jumper table |
 | [battery-divider.html](battery-divider.html) | Step 3: the LiPo on the XIAO's underside pads and the 2×1M + 100nF ADC divider — schematic, connection table, and the polarity warning |
+| [encoder-led.html](encoder-led.html) | Step 4: the EC11 rotary encoder and status LED — including the push-switch lead that has to be soldered to an underside pad |
 | [internals.html](internals.html) | How the parts sit inside the enclosure — plan view and side elevation, dimensioned from the STLs |
 | [bringup-ladder.html](bringup-ladder.html) | The no-solder connectivity procedure: one thing added per rung, using only internal pull resistors and the ADC |
 
@@ -26,9 +27,11 @@ has contradicted parts of them, and the contradictions are the useful bit:
   it straight back (`0x44` answering, readings flowing).
 - **The panel has still never drawn.** Every "what success looks like" item in
   `bench-rig.html` remains unobserved.
-- **`battery-divider.html` is drawn ahead of the work**, 2026-08-24. Values and
-  pins come from `app_config.h` and `assembly.md`, but nothing in it has been
-  built or measured yet.
+- **`battery-divider.html` and `encoder-led.html` are drawn ahead of the
+  work**, 2026-08-24. Pins and values come from `app_config.h`, `pinmap.md`
+  and the component sources, but nothing in either has been built or measured.
+  `encoder-led.html` draws the bench wiring; in the assembled unit the encoder
+  A/B lines move to the driver board's `D4`–`D7`/`D9` breakout instead.
 - **`internals.html` marks its own soft spots.** The driver board and ePaper
   module outlines are sketched rather than measured; everything tagged
   *geometry* came out of the STL files and is trustworthy.
