@@ -211,10 +211,33 @@ Two consequences worth carrying:
 - `esp_matter_attribute`'s `Attribute 0x... is <value>` log prints the
   *requested* value. It is not evidence of storage.
 
-Next: create the measurement attributes explicitly the way the battery ones
-are, and if that fixes it, raise it with esp-matter upstream with this repro.
+### Ruled out: bounds
+
+The only difference between the two creation paths in the SDK is one line:
+
+```c
+create_measured_value(...)  ->  attribute::create(cluster, id, ATTRIBUTE_FLAG_NULLABLE, val);
+
+create_bat_voltage(...)     ->  attribute::create(cluster, id, ATTRIBUTE_FLAG_NULLABLE, val);
+                                attribute::add_bounds(attribute, min, max);
+```
+
+`add_bounds()` sets `ATTRIBUTE_FLAG_MIN_MAX`, which `set_val()` checks. Calling
+it on both MeasuredValue attributes after endpoint creation applied cleanly —
+no errors, attributes found — and **did not fix the read**. Bounds are not the
+difference. Reverted rather than left in.
+
+Remaining difference: the battery attributes are created by the application
+*after* `endpoint::power_source::create()` returns, whereas MeasuredValue is
+created *inside* `endpoint::temperature_sensor::create()`. Whether attributes
+registered after endpoint creation are served from a different store is the
+next thing to test.
+
 Build is esp-matter v1.6, `CONFIG_ESP_MATTER_ENABLE_DATA_MODEL=y`,
-`ENABLE_GENERATED_DATA_MODEL` unset.
+`ENABLE_GENERATED_DATA_MODEL` unset. This is worth raising with Espressif with
+the repro above rather than guessing further: an endpoint helper that silently
+produces a write-only attribute, where every `update()` returns `ESP_OK` and
+every controller read returns null, is a bug whichever layer owns it.
 
 ## 10. Measuring sleep current: suspect the meter first
 
