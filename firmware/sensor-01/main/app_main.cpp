@@ -8,6 +8,8 @@
 #include <driver/gpio.h>
 #include <esp_err.h>
 #include <esp_log.h>
+#include <esp_system.h>
+#include <esp_timer.h>
 #include <nvs_flash.h>
 #if CONFIG_PM_ENABLE
 #include <esp_pm.h>
@@ -42,6 +44,7 @@ using namespace esp_matter::attribute;
 using namespace esp_matter::endpoint;
 
 constexpr auto k_commissioning_window_timeout = chip::System::Clock::Seconds16(300);
+constexpr int k_decommission_reboot_delay_s = 3;
 
 #if CHIP_DEVICE_CONFIG_ENABLE_THREAD
 #define ESP_OPENTHREAD_DEFAULT_RADIO_CONFIG() \
@@ -121,17 +124,35 @@ static void app_event_cb(const ChipDeviceEvent *event, intptr_t arg)
          * recovered by power-cycling it, which is exactly the manual
          * intervention this block exists to avoid. */
         if (chip::Server::GetInstance().GetFabricTable().FabricCount() == 0) {
-            chip::CommissioningWindowManager &mgr = chip::Server::GetInstance().GetCommissioningWindowManager();
-            if (!mgr.IsCommissioningWindowOpen()) {
-                CHIP_ERROR err = mgr.OpenBasicCommissioningWindow(k_commissioning_window_timeout,
-                                                                  chip::CommissioningWindowAdvertisement::kAllSupported);
-                if (err != CHIP_NO_ERROR) {
-                    ESP_LOGE(TAG, "Failed to open commissioning window, err:%" CHIP_ERROR_FORMAT, err.Format());
-                }
-            }
-            /* Put the codes back on the panel: the window is open again and
-             * they are the only way to re-adopt the device. */
+            /* Put the codes back on the panel before we go down. */
             show_commissioning_screen();
+
+            /* Reboot rather than just reopening the window here. With
+             * CONFIG_USE_BLE_ONLY_FOR_COMMISSIONING the stack tears BLE down
+             * once commissioning finishes and hands its RAM back to the heap
+             * (BLEManagerImpl::DeinitESPBleLayer -> ClaimBLEMemory, ESP32
+             * nimble/BLEManagerImpl.cpp), which cannot be undone in place. So a
+             * window opened now advertises over DNS-SD on a network we just
+             * left, and over a BLE stack that no longer exists -- verified on
+             * hardware 2026-08-24: removeFabric returned 0 and the device then
+             * advertised nothing at all.
+             *
+             * A fresh boot with no fabrics brings BLE up and advertises the way
+             * first boot does. The delay lets the RemoveFabric response and the
+             * Leave event reach the controller first. */
+            ESP_LOGW(TAG, "Last fabric removed: rebooting in %ds to re-advertise for commissioning",
+                     k_decommission_reboot_delay_s);
+            esp_timer_handle_t t = nullptr;
+            const esp_timer_create_args_t args = {
+                .callback = [](void *) { esp_restart(); },
+                .name = "decommission_reboot",
+            };
+            if (esp_timer_create(&args, &t) == ESP_OK) {
+                esp_timer_start_once(t, (uint64_t)k_decommission_reboot_delay_s * 1000000ULL);
+            } else {
+                ESP_LOGE(TAG, "Reboot timer failed; restarting immediately");
+                esp_restart();
+            }
         }
         break;
     }
