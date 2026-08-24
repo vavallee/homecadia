@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sensor-01 Battery &amp; Divider</title>
+<style>
+  :root {
+    --bg: #f4f6f8;
+    --surface: #ffffff;
+    --ink: #1b2733;
+    --ink-soft: #55636f;
+    --line: #d5dce2;
+    --accent: #0e7c7b;
+    --accent-soft: #e0efee;
+    --warn-bg: #fdf3e4;
+    --warn-edge: #c77e1f;
+    --ok-bg: #e8f3ec;
+    --ok-edge: #2e7d4f;
+    --board: #e9ecef;
+    --board-edge: #c3cad1;
+    --chip: #2b3440;
+    --chip-ink: #e8edf2;
+    --panel: #f8f8f5;
+    --wire-red: #d33f2e;
+    --wire-black-core: #26282b;
+    --wire-yellow: #e0ac14;
+    --wire-white-core: #f2f1ec;
+    --wire-signal: #4a7fa5;
+    --wire-purple: #8256b0;
+    --wire-green: #3f8f4f;
+    --wire-casing: #98a0a8;
+    --rail-blue: #3d6fb4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14181d;
+      --surface: #1c2229;
+      --ink: #e7ebee;
+      --ink-soft: #9aa6b0;
+      --line: #333c45;
+      --accent: #3aa8a4;
+      --accent-soft: #17332f;
+      --warn-bg: #2c2413;
+      --warn-edge: #d99a3d;
+      --ok-bg: #17301f;
+      --ok-edge: #4f9c6f;
+      --board: #242b33;
+      --board-edge: #39424c;
+      --chip: #0e1216;
+      --chip-ink: #dbe2e8;
+      --panel: #2a2f35;
+      --wire-red: #e05a48;
+      --wire-black-core: #111315;
+      --wire-yellow: #e8bc32;
+      --wire-white-core: #eeede7;
+      --wire-signal: #6ea3c9;
+      --wire-purple: #a887cf;
+      --wire-green: #64ad74;
+      --wire-casing: #6b747d;
+      --rail-blue: #5e8fd0;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14181d;
+    --surface: #1c2229;
+    --ink: #e7ebee;
+    --ink-soft: #9aa6b0;
+    --line: #333c45;
+    --accent: #3aa8a4;
+    --accent-soft: #17332f;
+    --warn-bg: #2c2413;
+    --warn-edge: #d99a3d;
+    --ok-bg: #17301f;
+    --ok-edge: #4f9c6f;
+    --board: #242b33;
+    --board-edge: #39424c;
+    --chip: #0e1216;
+    --chip-ink: #dbe2e8;
+    --panel: #2a2f35;
+    --wire-red: #e05a48;
+    --wire-black-core: #111315;
+    --wire-yellow: #e8bc32;
+    --wire-white-core: #eeede7;
+    --wire-signal: #6ea3c9;
+    --wire-purple: #a887cf;
+    --wire-green: #64ad74;
+    --wire-casing: #6b747d;
+    --rail-blue: #5e8fd0;
+  }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
+    margin: 0;
+    padding: 2rem 1rem 4rem;
+  }
+  .mono, code, td.pin, .psu-val {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  }
+  main { max-width: 62rem; margin: 0 auto; display: grid; gap: 1.4rem; }
+  header .eyebrow {
+    text-transform: uppercase; letter-spacing: 0.14em; font-size: 0.72rem;
+    color: var(--accent); font-weight: 600;
+  }
+  h1 { font-size: 1.7rem; margin: 0.15rem 0 0.3rem; text-wrap: balance; }
+  header p { color: var(--ink-soft); margin: 0; max-width: 46rem; }
+  section {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 1.1rem 1.3rem;
+  }
+  h2 {
+    font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--ink-soft); margin: 0 0 0.7rem;
+  }
+  .done {
+    background: var(--ok-bg); border-left: 3px solid var(--ok-edge);
+    border-radius: 6px; padding: 0.7rem 0.9rem; font-size: 0.92rem;
+  }
+  .psu-strip { display: flex; flex-wrap: wrap; gap: 1rem 2.2rem; align-items: baseline; }
+  .psu-item { display: flex; flex-direction: column; }
+  .psu-val { font-size: 1.35rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .psu-item small { color: var(--ink-soft); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.09em; }
+  .psu-item.hot .psu-val { color: var(--accent); }
+  figure { margin: 0; overflow-x: auto; }
+  figure svg { max-width: 100%; height: auto; min-width: 680px; display: block; margin: 0 auto; }
+  figcaption { color: var(--ink-soft); font-size: 0.85rem; margin-top: 0.6rem; max-width: 52rem; }
+  .svg-ink { fill: var(--ink); }
+  .svg-soft { fill: var(--ink-soft); }
+  .svg-board { fill: var(--board); stroke: var(--board-edge); }
+  .svg-chip { fill: var(--chip); stroke: var(--board-edge); }
+  .svg-chip-ink { fill: var(--chip-ink); }
+  .svg-panel { fill: var(--panel); stroke: var(--board-edge); }
+  .svg-outline { fill: none; stroke: var(--ink-soft); }
+  .pin-dot { fill: var(--surface); stroke: var(--ink-soft); }
+  .pin-dot.used { stroke: var(--accent); stroke-width: 2; }
+  .casing { fill: none; stroke: var(--wire-casing); stroke-width: 5.5; stroke-linejoin: round; }
+  .core { fill: none; stroke-width: 3; stroke-linejoin: round; }
+  .w-red   { stroke: var(--wire-red); }
+  .w-black { stroke: var(--wire-black-core); }
+  .w-yellow{ stroke: var(--wire-yellow); }
+  .w-white { stroke: var(--wire-white-core); }
+  .w-sig   { stroke: var(--wire-signal); }
+  .w-purple{ stroke: var(--wire-purple); }
+  .w-green { stroke: var(--wire-green); }
+  .rail-blue { stroke: var(--rail-blue); stroke-width: 2.5; }
+  .fpc { stroke: var(--wire-casing); stroke-width: 13; }
+  .wire-tag { font-size: 11px; font-family: ui-monospace, Menlo, Consolas, monospace; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+  th, td { text-align: left; padding: 0.45rem 0.9rem 0.45rem 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.09em; color: var(--ink-soft); font-weight: 600; }
+  tr:last-child td { border-bottom: none; }
+  td.pin { white-space: nowrap; font-size: 0.85rem; }
+  .swatch { display: inline-block; width: 0.75em; height: 0.75em; border-radius: 50%; border: 1px solid var(--wire-casing); vertical-align: -0.05em; margin-right: 0.35em; }
+  ol.check { margin: 0; padding-left: 1.2rem; display: grid; gap: 0.5rem; }
+  ol.check li::marker { color: var(--accent); font-weight: 600; }
+  .warn {
+    background: var(--warn-bg); border-left: 3px solid var(--warn-edge);
+    border-radius: 6px; padding: 0.7rem 0.9rem; margin-top: 0.9rem; font-size: 0.92rem;
+  }
+  .foot { color: var(--ink-soft); font-size: 0.8rem; }
+  .foot code { font-size: 0.78rem; }
+  .two-col { display: grid; gap: 1.4rem; grid-template-columns: 1fr 1fr; }
+  @media (max-width: 720px) { .two-col { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <div class="eyebrow">homecadia · bench bring-up 3</div>
+  <h1>Sensor-01 Battery &amp; Divider</h1>
+  <p>Step 3 puts the sensor on its own cell and gives firmware a way to read
+  the voltage. Three parts and four solder joints, all on the XIAO's
+  <strong>underside</strong> pads. This is the first step where a mistake
+  destroys hardware rather than just failing to work.</p>
+</header>
+
+<section>
+  <div class="warn"><strong>⚠️ Verify battery polarity with a multimeter before
+  the cell touches the board.</strong> Reversed polarity destroys the XIAO's
+  charge circuit instantly. Red probe to the lead you believe is +, DC volts,
+  expect <strong>+3.5 to +4.2&nbsp;V</strong>. A negative reading means the
+  leads are swapped. Do this on <em>all three</em> cells — do not assume the
+  colours are consistent between them.</div>
+</section>
+
+<section>
+  <h2>Power — the cell is now the supply</h2>
+  <div class="psu-strip">
+    <div class="psu-item hot"><span class="psu-val">LiPo → BAT+/BAT−</span><small>XIAO underside pads</small></div>
+    <div class="psu-item"><span class="psu-val">USB-C</span><small>charges the cell, safe to co-exist</small></div>
+    <div class="psu-item"><span class="psu-val">driver board JST</span><small>not used — does not charge</small></div>
+  </div>
+  <p style="margin-top:0.7rem">Unlike the bench PSU in step 2, <strong>USB and
+  the battery are not mutually exclusive</strong> — the XIAO's charge IC expects
+  both. But <strong>charging only works with a USB&nbsp;A-to-C cable</strong>:
+  the 2-wire panel pigtail has no CC resistors, so a C-to-C supply never enables
+  VBUS.</p>
+</section>
+
+<section>
+  <h2>Schematic</h2>
+  <figure>
+    <svg viewBox="0 0 900 430" role="img"
+         aria-label="Schematic: LiPo cell positive terminal connects to the XIAO BAT+ underside pad and to one end of a 1 megohm resistor R1. The other end of R1 forms the sense node, which connects to the MTDI GPIO5 underside pad TP5. From the sense node, a second 1 megohm resistor R2 goes to ground, and a 100 nanofarad capacitor C1 also goes to ground. The cell negative terminal connects to the XIAO BAT minus pad and to the same ground. The sense node sits at half the battery voltage, about 1.9 volts.">
+      <defs>
+        <marker id="dot" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5">
+          <circle cx="3.5" cy="3.5" r="3" fill="var(--ink)"/>
+        </marker>
+      </defs>
+      <style>
+        .wire { stroke: var(--wire-signal); stroke-width: 2.4; fill: none; }
+        .wpos { stroke: var(--wire-red); stroke-width: 2.8; fill: none; }
+        .wgnd { stroke: var(--wire-black-core); stroke-width: 2.8; fill: none; }
+        .part { fill: var(--surface); stroke: var(--ink); stroke-width: 2; }
+        .lbl  { fill: var(--ink); font: 600 14px system-ui, sans-serif; }
+        .sub  { fill: var(--ink-soft); font: 12px system-ui, sans-serif; }
+        .val  { fill: var(--ink); font: 700 15px system-ui, sans-serif; }
+        .pad  { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 2; }
+        .padt { fill: var(--accent); font: 700 12px system-ui, sans-serif; }
+      </style>
+
+      <!-- battery -->
+      <text class="lbl" x="40" y="66">EEMB LP103454 · 2000 mAh</text>
+      <text class="sub" x="40" y="84">JST lead cut off</text>
+      <line class="part" x1="70"  y1="110" x2="70"  y2="180"/>
+      <line class="part" x1="96"  y1="126" x2="96"  y2="164"/>
+      <line class="part" x1="122" y1="110" x2="122" y2="180"/>
+      <line class="part" x1="148" y1="126" x2="148" y2="164"/>
+      <text class="val" x="52" y="104">+</text>
+      <text class="val" x="140" y="104">−</text>
+
+      <!-- + rail -->
+      <path class="wpos" d="M70 110 L70 96 L300 96"/>
+      <circle cx="300" cy="96" r="4" fill="var(--wire-red)"/>
+      <path class="wpos" d="M300 96 L470 96"/>
+      <rect class="pad" x="470" y="80" rx="5" width="118" height="32"/>
+      <text class="padt" x="486" y="101">BAT+ pad</text>
+
+      <!-- R1 -->
+      <rect class="part" x="282" y="126" rx="4" width="36" height="74"/>
+      <text class="val" x="330" y="158">R1</text>
+      <text class="sub" x="330" y="176">1 MΩ</text>
+      <path class="wpos" d="M300 96 L300 126"/>
+
+      <!-- sense node -->
+      <path class="wire" d="M300 200 L300 226"/>
+      <circle cx="300" cy="226" r="4.5" fill="var(--ink)"/>
+      <path class="wire" d="M300 226 L470 226"/>
+      <rect class="pad" x="470" y="210" rx="5" width="212" height="32"/>
+      <text class="padt" x="486" y="231">TP5 · MTDI / GPIO5 · ADC1_CH5</text>
+      <text class="sub" x="316" y="218">sense node ≈ V<tspan baseline-shift="sub">bat</tspan>/2 ≈ 1.9 V</text>
+
+      <!-- R2 to gnd -->
+      <rect class="part" x="282" y="252" rx="4" width="36" height="74"/>
+      <text class="val" x="330" y="284">R2</text>
+      <text class="sub" x="330" y="302">1 MΩ</text>
+      <path class="wire" d="M300 226 L300 252"/>
+      <path class="wgnd" d="M300 326 L300 356"/>
+
+      <!-- C1 to gnd -->
+      <path class="wire" d="M300 226 L200 226 L200 268"/>
+      <line class="part" x1="176" y1="268" x2="224" y2="268"/>
+      <line class="part" x1="176" y1="282" x2="224" y2="282"/>
+      <text class="val" x="130" y="270">C1</text>
+      <text class="sub" x="112" y="288">100 nF</text>
+      <path class="wgnd" d="M200 282 L200 356"/>
+
+      <!-- gnd rail -->
+      <path class="wgnd" d="M148 180 L148 356 L620 356"/>
+      <circle cx="200" cy="356" r="4" fill="var(--wire-black-core)"/>
+      <circle cx="300" cy="356" r="4" fill="var(--wire-black-core)"/>
+      <rect class="pad" x="620" y="340" rx="5" width="118" height="32"/>
+      <text class="padt" x="638" y="361">BAT− pad</text>
+
+      <!-- gnd symbol -->
+      <path class="wgnd" d="M520 356 L520 386"/>
+      <line class="wgnd" x1="502" y1="386" x2="538" y2="386"/>
+      <line class="wgnd" x1="508" y1="394" x2="532" y2="394"/>
+      <line class="wgnd" x1="514" y1="402" x2="526" y2="402"/>
+
+      <text class="sub" x="470" y="140">all four joints are on the XIAO's</text>
+      <text class="sub" x="470" y="158"><tspan font-weight="700">underside</tspan> — see pad map below</text>
+    </svg>
+    <figcaption>The divider is permanently connected: it bleeds
+    4.2&nbsp;V ÷ 2&nbsp;MΩ = <strong>2.1&nbsp;µA</strong> continuously, which is
+    0.7% of the 300&nbsp;µA budget and was accepted deliberately rather than
+    gated with a MOSFET (see below). C1 is the ADC hold cap — the source is
+    high-impedance, so <code>app_config.h</code> sets
+    <code>VBAT_ADC_SETTLE_MS 5</code> before each read.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2>Connections</h2>
+  <div style="overflow-x:auto">
+  <table>
+    <thead><tr><th>From</th><th>To</th><th>Part</th><th>Note</th></tr></thead>
+    <tbody>
+      <tr><td>Cell <strong>+</strong></td><td class="pin">BAT+ underside pad</td><td>—</td><td>polarity verified with a meter first</td></tr>
+      <tr><td>Cell <strong>−</strong></td><td class="pin">BAT− underside pad</td><td>—</td><td>—</td></tr>
+      <tr><td>BAT+</td><td class="pin">TP5 · MTDI / GPIO5</td><td>R1 1 MΩ</td><td>upper leg</td></tr>
+      <tr><td class="pin">TP5 · MTDI / GPIO5</td><td class="pin">GND</td><td>R2 1 MΩ</td><td>lower leg</td></tr>
+      <tr><td class="pin">TP5 · MTDI / GPIO5</td><td class="pin">GND</td><td>C1 100 nF</td><td>ADC hold cap</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p style="margin-top:0.7rem"><strong>Not A0.</strong> A0 is the ePaper reset
+  line on this build — the Seeed wiki's <code>analogReadMilliVolts(A0)</code>
+  battery snippet is shared XIAO boilerplate and does not apply here. No divider
+  is populated on the board; this one is entirely ours
+  (<a href="../pinmap.md">pinmap.md</a>).</p>
+  <p><strong>Not the driver board's JST.</strong> That path does not charge in
+  this stack — confirmed in veltoc's build; the wiki's charging-IC claim did not
+  hold (<a href="../assembly.md">assembly.md</a>).</p>
+</section>
+
+<div class="two-col">
+<section>
+  <h2>Carrying the three parts</h2>
+  <p>Two options, both in the BOM, decided at test fit:</p>
+  <ul>
+    <li><strong>Perfboard offcut</strong> — tidier, but the case has no mount
+    for it, so it needs somewhere in the cavity to live.</li>
+    <li><strong>Inline and heat-shrunk</strong> — no mount needed, less tidy.</li>
+  </ul>
+  <p>Only three connections genuinely need the XIAO's underside pads: the
+  encoder push switch (MTCK/GPIO6), this divider node (MTDI/GPIO5), and
+  BAT+/BAT−. Everything else solders to the driver board's larger
+  through-holes.</p>
+</section>
+
+<section>
+  <h2>Strapping on GPIO5 — resolved, not a risk</h2>
+  <p>GPIO5 is in Seeed's avoid list, and the permanent divider holds it at
+  ~1.9&nbsp;V — inside the undefined logic band while straps are sampled, so the
+  strap latches unpredictably.</p>
+  <p><strong>It does not matter.</strong> Per the ESP32-C6 datasheet Table 3-4,
+  MTDI straps <em>the SDIO sampling and driving clock edge</em> and nothing else.
+  sensor-01 uses no SDIO — display is SPI, sensor is I2C, console is native USB.
+  No code path reads the setting, so no gating MOSFET is needed and the
+  2.1&nbsp;µA bleed stays as budgeted.</p>
+  <p class="sub">One real cost remains: MTDI is JTAG TDI, so external JTAG
+  through the underside pads is given up.</p>
+</section>
+</div>
+
+<section>
+  <h2>What success looks like</h2>
+  <ul class="check">
+    <li>Meter across the cell and the ADC agree: firmware reports
+    <strong>V<sub>bat</sub>/2 ±5%</strong> of what the meter reads at the
+    battery. That closes the <code>HW-VERIFY</code> row in
+    <a href="../bringup.md">bringup.md</a>.</li>
+    <li><code>LOW BATT</code> clears from the display once a charged cell is
+    fitted — it appears below <code>LOW_BATTERY_PCT</code> 10%.</li>
+    <li>Matter attribute <code>3/47/11</code> (BatVoltage, millivolts) tracks the
+    meter, and <code>3/47/12</code> reports a sane percentage.</li>
+    <li>Calibrate the LUT endpoints against the meter at two or three states of
+    charge — the percentage comes from an open-circuit-voltage table, not a
+    coulomb counter, so it is only as good as its endpoints.</li>
+  </ul>
+  <div class="warn" style="margin-top:0.8rem"><strong>Measuring sleep current
+  comes after this, not during.</strong> Putting a handheld meter in series
+  browns the C6 out on every Thread poll. The procedure that works with the
+  AstroAI AM33D — bypass jumper, lowest range only once asleep — is
+  <a href="../field-notes.md">field-notes.md</a> section 10. Expect driver board
+  #1's RST leak (~5.5&nbsp;mA) to dominate anything measured on that board.</div>
+</section>
+
+<section class="foot">
+  Divider values and pin from <code>app_config.h:31</code>
+  (<code>VBAT_ADC_GPIO 5</code>, <code>VBAT_ADC_SETTLE_MS 5</code>); ADC is
+  one-shot on ADC1_CH5 at <code>ADC_ATTEN_DB_12</code>
+  (<code>battery.cpp</code>). Build order and the polarity warning are
+  <code>docs/assembly.md</code> step 1; the strapping analysis and the A0
+  conflict are <code>docs/pinmap.md</code>; the 2.1&nbsp;µA bleed is line 1 of
+  the table in <code>docs/power-budget.md</code>. Drawn 2026-08-24, before the
+  divider was built — <strong>nothing here is verified on hardware yet</strong>.
+</section>
+</main>
+</body>
+</html>

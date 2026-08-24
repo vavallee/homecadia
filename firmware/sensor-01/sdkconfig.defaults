@@ -100,3 +100,8 @@ CONFIG_ICD_ACTIVE_MODE_THRESHOLD_MS=5000
 
 # disable groupcast cluster until verified (upstream icd_app default)
 CONFIG_SUPPORT_GROUPCAST_CLUSTER=n
+
+# Device identity shown by controllers (vendor/product name, hardware version).
+# Without this the device reports TEST_VENDOR / TEST_PRODUCT. IDs stay 0xFFF1/
+# 0x8000 to match the test DAC — see main/chip_project_config.h.
+CONFIG_CHIP_PROJECT_CONFIG="main/chip_project_config.h"
