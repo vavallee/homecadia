@@ -137,7 +137,7 @@ will show an uncertified-device warning. Per-device factory partitions
 | [docs/field-notes.md](docs/field-notes.md) | **Traps that cost real time during bring-up**, ordered by cost. Read before bringing up another unit |
 | [docs/power-budget.md](docs/power-budget.md) | Modeled current draw, battery-life calculator, the policies it forced |
 | [docs/bringup.md](docs/bringup.md) | Hardware verification checklist — every `HW-VERIFY` marker has a row |
-| [docs/diagrams/](docs/diagrams/) | Bench wiring diagrams and the no-solder bring-up ladder (self-contained HTML) |
+| [docs/diagrams/](docs/diagrams/) | Bench wiring, battery/divider schematic, enclosure internals and the no-solder bring-up ladder (self-contained HTML) |
 | [docs/infrastructure.md](docs/infrastructure.md) | Network-side hardware: ZBT-2 border router, Thread coverage, Voice PE, order status |
 | [docs/source-reliability.md](docs/source-reliability.md) | Documented traps in vendor docs and third-party sources |
 | [hardware/case/README.md](hardware/case/README.md) | Enclosure: revision history, measured wall thicknesses, print vendor and material, engraving artwork |

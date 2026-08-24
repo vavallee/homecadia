@@ -22,6 +22,8 @@ Reversed polarity destroys the XIAO's charge circuit instantly.
 1. Solder the battery divider: 1MΩ from BAT+ to the **MTDI underside pad**
    (GPIO5), 1MΩ from that pad to GND, 100nF from the pad to GND. Not A0 —
    A0 is the ePaper reset line ([pinmap.md](pinmap.md)).
+   Schematic and connection table:
+   [diagrams/battery-divider.html](diagrams/battery-divider.html).
    Two ways to physically carry it: a small perfboard offcut (tidier, needs
    somewhere in the cavity to live — the case has no mount for it), or the
    three parts soldered inline and heat-shrunk. Both are in the BOM; decide at
