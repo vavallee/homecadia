@@ -155,8 +155,68 @@ creation and runtime; they are the two the app creates explicitly with
 `create_bat_percent_remaining` / `create_bat_voltage`, which is the only
 structural difference found so far.
 
-Next steps: confirm whether `-32768` is genuinely esp-matter's null marker for
-this type rather than an artifact of reading `val.i16`; then either create the
-measurement attributes explicitly the way the battery ones are, or raise it
-with esp-matter upstream with the repro above. Build is esp-matter v1.6 with
-`CONFIG_ESP_MATTER_ENABLE_DATA_MODEL=y` and `ENABLE_GENERATED_DATA_MODEL` unset.
+A controlled comparison narrows it to the attribute rather than the API. Both
+calls are in the same function, one line apart, through the same `update()`:
+
+```
+DIAG in:               type=137 i16=2442                      <- value we construct is correct
+DIAG after update():   err=ESP_OK  type=137 i16=-32768         <- temperature, nullable int16: LOST
+DIAG after set_val():  err=ESP_ERR_NOT_FINISHED type=137 i16=-32768
+DIAG battery readback: type=140 u32=680 (wrote 680)            <- battery, nullable uint32: STORED
+```
+
+So `esp_matter_nullable_int16()` builds the value correctly, `update()` returns
+`ESP_OK`, and the store ends up holding the null sentinel — while the identical
+pattern on `BatVoltage` stores fine. The only structural difference found: the
+battery attributes are created explicitly by the app with
+`create_bat_percent_remaining` / `create_bat_voltage`, whereas the measurement
+attributes come from `endpoint::temperature_sensor::create()`.
+
+Note `esp_matter_attribute`'s `Attribute 0x00000000 is 2442` prints the
+*requested* value, not the stored one — the same "a log that cannot report
+failure" shape as the `busy_wait()` defect in section 1. Do not trust it.
+
+Next: create the measurement attributes explicitly the way the battery ones
+are; if that fixes it, raise it with esp-matter upstream with this repro. Build
+is esp-matter v1.6, `CONFIG_ESP_MATTER_ENABLE_DATA_MODEL=y`,
+`ENABLE_GENERATED_DATA_MODEL` unset.
+
+## 10. Measuring sleep current: suspect the meter first
+
+Before trusting any power number, rule out the instrument. A XIAO ESP32-C6 user
+on the Seeed forum measured 57–80 mA where an ESP32-H2 running identical code
+drew 2.5 mA, and concluded the board was broken. It was the multimeter: a flat
+meter battery plus the wrong input jack (standard rather than the 10 A jack)
+dropped enough voltage across the meter to restart the C6 continuously. With
+that fixed the real figure was ~2 mA.
+
+The failure mode is nasty because the device genuinely misbehaves — it is
+restarting — so the readings look like a real fault rather than a measurement
+artefact. Applies directly to milestone 5. Check the meter's own battery, use
+the low-burden-voltage path, and confirm the device is actually running while
+you measure.
+
+## 11. There is no reference implementation for this build
+
+Worth knowing when something does not work: as of 2026-08, nothing published
+combines XIAO ESP32-C6 + esp-matter (ESP-IDF, C++) + Matter over Thread as a
+LIT ICD + ePaper + battery + encoder. What exists:
+
+- Seeed's wiki and marketing: "supports Matter and Thread", no working device.
+- Seeed forum threads at Arduino / ESP LaunchPad level — sketches exceeding the
+  1.3 MB limit, needing a "Huge APP" partition scheme, and commissioning that
+  "added to Google Home but showed disconnected", HA discovery failing, and
+  needing physical proximity to the hub. None of it diagnosed. In hindsight
+  those read like the same two causes that cost days here: Thread coverage and
+  a BLE proxy that cannot complete the BTP handshake.
+- `github.com/Frapais/Sprig-C6` — a competent C6 board with battery management,
+  but ESPHome/WiFi oriented, no display, ~32 mA average. Not a sleepy ICD.
+- `tomasmcguinness.com/2025/01/06/lowering-power-consumption-in-esp32-c6/` —
+  the only material found doing real Matter power work on this silicon. Worth
+  reading before milestone 5.
+
+Consequence: when something breaks there is no known-good implementation to
+diff against, so budget for first-principles debugging and keep instrumenting.
+One independent confirmation did turn up — the same light-sleep serial symptom
+in section 2, reported verbatim ("device reports readiness to read but returned
+no data") by another XIAO C6 user.
