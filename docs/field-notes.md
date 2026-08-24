@@ -176,9 +176,44 @@ Note `esp_matter_attribute`'s `Attribute 0x00000000 is 2442` prints the
 *requested* value, not the stored one — the same "a log that cannot report
 failure" shape as the `busy_wait()` defect in section 1. Do not trust it.
 
+### Root cause: writes and reads use different stores
+
+Established by writing a value that could not already be present and reading it
+straight back:
+
+```
+DIAG after set_val(4660): err=ESP_OK   type=137 i16=-32768
+```
+
+`set_val()` returned `ESP_OK` — it stored — and the read immediately after still
+returned the null sentinel. Writing the *same* value twice instead returns
+`ESP_ERR_NOT_FINISHED`, which `set_val` only emits when `val_compare()` finds
+the stored value equal to the new one. So the writes are landing.
+
+Following the SDK:
+
+- `set_val()` writes `current_attribute->attribute_val` on the `_attribute_t`
+  struct, and `val_compare()` compares against that same struct.
+- `get_val(attribute_t *)` does **not** read that struct. It resolves the path
+  and delegates to `get_val(endpoint_id, cluster_id, attribute_id, ...)`, the
+  path-based read that the Matter wire read also goes through.
+
+For `MeasuredValue` those two are not linked, so every write succeeds and every
+read returns null. For `BatVoltage` they are — and that attribute is created
+explicitly by the app with `create_bat_voltage()` rather than by
+`endpoint::temperature_sensor::create()`. That is the only structural
+difference found, and it matches which attributes work.
+
+Two consequences worth carrying:
+
+- `attribute::update()` returning `ESP_OK` does not mean a controller will be
+  able to read the value back. Verify over the wire, not from the return code.
+- `esp_matter_attribute`'s `Attribute 0x... is <value>` log prints the
+  *requested* value. It is not evidence of storage.
+
 Next: create the measurement attributes explicitly the way the battery ones
-are; if that fixes it, raise it with esp-matter upstream with this repro. Build
-is esp-matter v1.6, `CONFIG_ESP_MATTER_ENABLE_DATA_MODEL=y`,
+are, and if that fixes it, raise it with esp-matter upstream with this repro.
+Build is esp-matter v1.6, `CONFIG_ESP_MATTER_ENABLE_DATA_MODEL=y`,
 `ENABLE_GENERATED_DATA_MODEL` unset.
 
 ## 10. Measuring sleep current: suspect the meter first
