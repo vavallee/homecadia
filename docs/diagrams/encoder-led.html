@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sensor-01 Encoder &amp; LED</title>
+<style>
+  :root {
+    --bg: #f4f6f8;
+    --surface: #ffffff;
+    --ink: #1b2733;
+    --ink-soft: #55636f;
+    --line: #d5dce2;
+    --accent: #0e7c7b;
+    --accent-soft: #e0efee;
+    --warn-bg: #fdf3e4;
+    --warn-edge: #c77e1f;
+    --ok-bg: #e8f3ec;
+    --ok-edge: #2e7d4f;
+    --board: #e9ecef;
+    --board-edge: #c3cad1;
+    --chip: #2b3440;
+    --chip-ink: #e8edf2;
+    --panel: #f8f8f5;
+    --wire-red: #d33f2e;
+    --wire-black-core: #26282b;
+    --wire-yellow: #e0ac14;
+    --wire-white-core: #f2f1ec;
+    --wire-signal: #4a7fa5;
+    --wire-purple: #8256b0;
+    --wire-green: #3f8f4f;
+    --wire-casing: #98a0a8;
+    --rail-blue: #3d6fb4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14181d;
+      --surface: #1c2229;
+      --ink: #e7ebee;
+      --ink-soft: #9aa6b0;
+      --line: #333c45;
+      --accent: #3aa8a4;
+      --accent-soft: #17332f;
+      --warn-bg: #2c2413;
+      --warn-edge: #d99a3d;
+      --ok-bg: #17301f;
+      --ok-edge: #4f9c6f;
+      --board: #242b33;
+      --board-edge: #39424c;
+      --chip: #0e1216;
+      --chip-ink: #dbe2e8;
+      --panel: #2a2f35;
+      --wire-red: #e05a48;
+      --wire-black-core: #111315;
+      --wire-yellow: #e8bc32;
+      --wire-white-core: #eeede7;
+      --wire-signal: #6ea3c9;
+      --wire-purple: #a887cf;
+      --wire-green: #64ad74;
+      --wire-casing: #6b747d;
+      --rail-blue: #5e8fd0;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14181d;
+    --surface: #1c2229;
+    --ink: #e7ebee;
+    --ink-soft: #9aa6b0;
+    --line: #333c45;
+    --accent: #3aa8a4;
+    --accent-soft: #17332f;
+    --warn-bg: #2c2413;
+    --warn-edge: #d99a3d;
+    --ok-bg: #17301f;
+    --ok-edge: #4f9c6f;
+    --board: #242b33;
+    --board-edge: #39424c;
+    --chip: #0e1216;
+    --chip-ink: #dbe2e8;
+    --panel: #2a2f35;
+    --wire-red: #e05a48;
+    --wire-black-core: #111315;
+    --wire-yellow: #e8bc32;
+    --wire-white-core: #eeede7;
+    --wire-signal: #6ea3c9;
+    --wire-purple: #a887cf;
+    --wire-green: #64ad74;
+    --wire-casing: #6b747d;
+    --rail-blue: #5e8fd0;
+  }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
+    margin: 0;
+    padding: 2rem 1rem 4rem;
+  }
+  .mono, code, td.pin, .psu-val {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  }
+  main { max-width: 62rem; margin: 0 auto; display: grid; gap: 1.4rem; }
+  header .eyebrow {
+    text-transform: uppercase; letter-spacing: 0.14em; font-size: 0.72rem;
+    color: var(--accent); font-weight: 600;
+  }
+  h1 { font-size: 1.7rem; margin: 0.15rem 0 0.3rem; text-wrap: balance; }
+  header p { color: var(--ink-soft); margin: 0; max-width: 46rem; }
+  section {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 1.1rem 1.3rem;
+  }
+  h2 {
+    font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--ink-soft); margin: 0 0 0.7rem;
+  }
+  .done {
+    background: var(--ok-bg); border-left: 3px solid var(--ok-edge);
+    border-radius: 6px; padding: 0.7rem 0.9rem; font-size: 0.92rem;
+  }
+  .psu-strip { display: flex; flex-wrap: wrap; gap: 1rem 2.2rem; align-items: baseline; }
+  .psu-item { display: flex; flex-direction: column; }
+  .psu-val { font-size: 1.35rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .psu-item small { color: var(--ink-soft); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.09em; }
+  .psu-item.hot .psu-val { color: var(--accent); }
+  figure { margin: 0; overflow-x: auto; }
+  figure svg { max-width: 100%; height: auto; min-width: 680px; display: block; margin: 0 auto; }
+  figcaption { color: var(--ink-soft); font-size: 0.85rem; margin-top: 0.6rem; max-width: 52rem; }
+  .svg-ink { fill: var(--ink); }
+  .svg-soft { fill: var(--ink-soft); }
+  .svg-board { fill: var(--board); stroke: var(--board-edge); }
+  .svg-chip { fill: var(--chip); stroke: var(--board-edge); }
+  .svg-chip-ink { fill: var(--chip-ink); }
+  .svg-panel { fill: var(--panel); stroke: var(--board-edge); }
+  .svg-outline { fill: none; stroke: var(--ink-soft); }
+  .pin-dot { fill: var(--surface); stroke: var(--ink-soft); }
+  .pin-dot.used { stroke: var(--accent); stroke-width: 2; }
+  .casing { fill: none; stroke: var(--wire-casing); stroke-width: 5.5; stroke-linejoin: round; }
+  .core { fill: none; stroke-width: 3; stroke-linejoin: round; }
+  .w-red   { stroke: var(--wire-red); }
+  .w-black { stroke: var(--wire-black-core); }
+  .w-yellow{ stroke: var(--wire-yellow); }
+  .w-white { stroke: var(--wire-white-core); }
+  .w-sig   { stroke: var(--wire-signal); }
+  .w-purple{ stroke: var(--wire-purple); }
+  .w-green { stroke: var(--wire-green); }
+  .rail-blue { stroke: var(--rail-blue); stroke-width: 2.5; }
+  .fpc { stroke: var(--wire-casing); stroke-width: 13; }
+  .wire-tag { font-size: 11px; font-family: ui-monospace, Menlo, Consolas, monospace; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+  th, td { text-align: left; padding: 0.45rem 0.9rem 0.45rem 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.09em; color: var(--ink-soft); font-weight: 600; }
+  tr:last-child td { border-bottom: none; }
+  td.pin { white-space: nowrap; font-size: 0.85rem; }
+  .swatch { display: inline-block; width: 0.75em; height: 0.75em; border-radius: 50%; border: 1px solid var(--wire-casing); vertical-align: -0.05em; margin-right: 0.35em; }
+  ol.check { margin: 0; padding-left: 1.2rem; display: grid; gap: 0.5rem; }
+  ol.check li::marker { color: var(--accent); font-weight: 600; }
+  .warn {
+    background: var(--warn-bg); border-left: 3px solid var(--warn-edge);
+    border-radius: 6px; padding: 0.7rem 0.9rem; margin-top: 0.9rem; font-size: 0.92rem;
+  }
+  .foot { color: var(--ink-soft); font-size: 0.8rem; }
+  .foot code { font-size: 0.78rem; }
+  .two-col { display: grid; gap: 1.4rem; grid-template-columns: 1fr 1fr; }
+  @media (max-width: 720px) { .two-col { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <div class="eyebrow">homecadia · bench bring-up 4</div>
+  <h1>Sensor-01 Encoder &amp; LED</h1>
+  <p>Step 4 adds the two input/output parts the enclosure needs: the EC11
+  rotary encoder that drives the three display views, and the status LED.
+  Four wires, one resistor, and one joint that <strong>cannot be
+  breadboarded</strong> — the encoder's push switch lives on an underside pad,
+  not on the header.</p>
+</header>
+
+<section>
+  <h2>Power — unchanged from step 3</h2>
+  <div class="psu-strip">
+    <div class="psu-item"><span class="psu-val">LiPo or USB-C</span><small>either; both is fine</small></div>
+    <div class="psu-item hot"><span class="psu-val">3V3 logic</span><small>LED and encoder both run off it</small></div>
+    <div class="psu-item"><span class="psu-val">no new supply</span><small>nothing here draws more than ~4 mA</small></div>
+  </div>
+  <p style="margin-top:0.7rem">Neither part needs its own rail. The encoder is
+  passive — it only shorts contacts to ground — and the LED is driven straight
+  off a GPIO through a series resistor. Total added idle draw is
+  <strong>zero</strong>: the encoder's internal pull-ups only sink current
+  while a contact is closed, and the LED is off except during commissioning
+  and low battery (<code>led.cpp</code>).</p>
+</section>
+
+<section>
+  <h2>Layout</h2>
+  <figure>
+    <svg viewBox="0 0 1000 640" role="img"
+         aria-label="Wiring diagram. The XIAO ESP32-C6 sits in a breadboard. Four connections are added. Encoder terminal A goes to XIAO pin D7. Encoder terminal B goes to pin D9. The encoder common terminal C goes to the breadboard ground rail. One of the two push-switch terminals goes to the ground rail and the other is soldered by flying lead to the MTCK slash GPIO6 pad on the XIAO's underside, because that signal is not brought out to the header. Separately, pin D6 drives a series resistor into the LED anode, and the LED cathode returns to ground. No external pull-up resistors or debounce capacitors are fitted; the firmware supplies both.">
+      <style>
+        .lbl2 { fill: var(--ink); font: 600 12px system-ui, sans-serif; }
+        .part2 { fill: var(--surface); stroke: var(--ink); stroke-width: 2; }
+        .ledbody { fill: var(--accent-soft); stroke: var(--ink); stroke-width: 2; }
+        .callout { fill: none; stroke: var(--ink-soft); stroke-width: 1.4; stroke-dasharray: 6 5; }
+        .pad2 { fill: var(--surface); stroke: var(--ink-soft); stroke-width: 1.6; }
+        .pad2.hot { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 2; }
+      </style>
+
+      <!-- breadboard -->
+      <rect x="260" y="80" width="380" height="280" rx="8" class="svg-board" stroke-width="1.5"/>
+      <line x1="278" y1="338" x2="622" y2="338" class="rail-blue"/>
+      <text x="278" y="356" class="svg-soft mono" font-size="10">− rail (ground)</text>
+      <line x1="262" y1="222" x2="638" y2="222" stroke="var(--board-edge)" stroke-width="1" stroke-dasharray="3 4"/>
+      <text x="450" y="76" text-anchor="middle" class="svg-ink" font-size="12" font-weight="600">breadboard — steps 1–3 wiring still fitted, not drawn</text>
+
+      <!-- wires -->
+      <g>
+        <!-- XIAO GND to rail -->
+        <polyline points="602,338 602,180 476,180" class="casing"/>
+        <polyline points="602,338 602,180 476,180" class="core w-black"/>
+        <!-- D7 -> encoder A -->
+        <polyline points="476,280 650,280 650,150 696,150" class="casing"/>
+        <polyline points="476,280 650,280 650,150 696,150" class="core w-sig"/>
+        <!-- D9 -> encoder B -->
+        <polyline points="476,240 630,240 630,230 696,230" class="casing"/>
+        <polyline points="476,240 630,240 630,230 696,230" class="core w-purple"/>
+        <!-- encoder C -> rail -->
+        <polyline points="696,190 672,190 672,338 622,338" class="casing"/>
+        <polyline points="696,190 672,190 672,338 622,338" class="core w-black"/>
+        <!-- switch pin 2 -> rail -->
+        <polyline points="904,250 950,250 950,370 600,370 600,338" class="casing"/>
+        <polyline points="904,250 950,250 950,370 600,370 600,338" class="core w-black"/>
+        <!-- switch pin 1 -> TP6 flying lead -->
+        <polyline points="904,170 966,170 966,392 470,392 470,440" class="casing"/>
+        <polyline points="904,170 966,170 966,392 470,392 470,440" class="core w-green"/>
+        <!-- D6 -> resistor -->
+        <polyline points="394,280 300,280 300,415 740,415 740,430" class="casing"/>
+        <polyline points="394,280 300,280 300,415 740,415 740,430" class="core w-yellow"/>
+        <!-- LED cathode -> shared ground run -->
+        <polyline points="740,545 740,600 950,600 950,372" class="casing"/>
+        <polyline points="740,545 740,600 950,600 950,372" class="core w-black"/>
+        <circle cx="950" cy="370" r="4" fill="var(--wire-black-core)"/>
+      </g>
+
+      <!-- XIAO -->
+      <rect x="398" y="146" width="74" height="148" rx="6" class="svg-chip" stroke-width="1"/>
+      <rect x="422" y="140" width="26" height="12" rx="2" class="svg-outline" stroke-width="1.5"/>
+      <text x="435" y="316" text-anchor="middle" class="svg-ink" font-size="12" font-weight="600">XIAO ESP32-C6</text>
+      <g class="svg-chip-ink" font-size="10.5" font-family="ui-monospace, Menlo, Consolas, monospace">
+        <text x="406" y="164">D0</text><text x="406" y="184">D1</text>
+        <text x="406" y="204">D2</text><text x="406" y="224">D3</text>
+        <text x="406" y="244">D4</text><text x="406" y="264">D5</text>
+        <text x="406" y="284" font-weight="700">D6</text>
+      </g>
+      <g class="svg-chip-ink" font-size="10.5" font-family="ui-monospace, Menlo, Consolas, monospace" text-anchor="end">
+        <text x="464" y="164">5V</text>
+        <text x="464" y="184" font-weight="700">GND</text>
+        <text x="464" y="204">3V3</text>
+        <text x="464" y="224">D10</text><text x="464" y="244" font-weight="700">D9</text>
+        <text x="464" y="264">D8</text><text x="464" y="284" font-weight="700">D7</text>
+      </g>
+      <g>
+        <circle cx="395" cy="160" r="3.2" class="pin-dot"/><circle cx="395" cy="180" r="3.2" class="pin-dot"/>
+        <circle cx="395" cy="200" r="3.2" class="pin-dot"/><circle cx="395" cy="220" r="3.2" class="pin-dot"/>
+        <circle cx="395" cy="240" r="3.2" class="pin-dot"/><circle cx="395" cy="260" r="3.2" class="pin-dot"/>
+        <circle cx="395" cy="280" r="3.2" class="pin-dot used"/>
+        <circle cx="475" cy="160" r="3.2" class="pin-dot"/><circle cx="475" cy="180" r="3.2" class="pin-dot used"/>
+        <circle cx="475" cy="200" r="3.2" class="pin-dot"/><circle cx="475" cy="220" r="3.2" class="pin-dot"/>
+        <circle cx="475" cy="240" r="3.2" class="pin-dot used"/><circle cx="475" cy="260" r="3.2" class="pin-dot"/>
+        <circle cx="475" cy="280" r="3.2" class="pin-dot used"/>
+      </g>
+
+      <!-- encoder -->
+      <rect x="696" y="120" width="208" height="180" rx="8" class="svg-board" stroke-width="1.5"/>
+      <circle cx="800" cy="210" r="34" class="svg-outline" stroke-width="1.5"/>
+      <line x1="781" y1="186" x2="819" y2="186" class="svg-outline" stroke-width="1.5"/>
+      <text x="800" y="266" text-anchor="middle" class="svg-soft" font-size="10">20 mm D-shaft</text>
+      <g class="svg-ink" font-size="11" font-family="ui-monospace, Menlo, Consolas, monospace">
+        <circle cx="696" cy="150" r="3.6" class="pin-dot used"/><text x="708" y="154" font-weight="700">A</text>
+        <circle cx="696" cy="190" r="3.6" class="pin-dot used"/><text x="708" y="194" font-weight="700">C</text>
+        <circle cx="696" cy="230" r="3.6" class="pin-dot used"/><text x="708" y="234" font-weight="700">B</text>
+      </g>
+      <g class="svg-ink" font-size="11" font-family="ui-monospace, Menlo, Consolas, monospace" text-anchor="end">
+        <circle cx="904" cy="170" r="3.6" class="pin-dot used"/><text x="892" y="174" font-weight="700">SW 1</text>
+        <circle cx="904" cy="250" r="3.6" class="pin-dot used"/><text x="892" y="254" font-weight="700">SW 2</text>
+      </g>
+      <text x="800" y="112" text-anchor="middle" class="svg-ink" font-size="12" font-weight="600">Bourns PEC11R-4220F-S0024</text>
+      <text x="800" y="318" text-anchor="middle" class="svg-soft" font-size="10">A/C/B on one face, switch on the other · SW is not polarised</text>
+
+      <!-- LED branch -->
+      <rect x="726" y="430" width="28" height="52" rx="3" class="part2"/>
+      <text x="768" y="452" class="lbl2">R3 series resistor</text>
+      <text x="768" y="468" class="svg-soft" font-size="10.5">value depends on LED colour — see table</text>
+      <line x1="740" y1="482" x2="740" y2="505" stroke="var(--ink)" stroke-width="2"/>
+      <polygon points="720,505 760,505 740,538" class="ledbody"/>
+      <line x1="718" y1="538" x2="762" y2="538" stroke="var(--ink)" stroke-width="2.5"/>
+      <line x1="740" y1="538" x2="740" y2="545" stroke="var(--ink)" stroke-width="2"/>
+      <text x="772" y="512" class="lbl2">anode — long leg</text>
+      <text x="772" y="542" class="lbl2">cathode — short leg, flat rim</text>
+      <text x="772" y="558" class="svg-soft" font-size="10.5">3 mm diffused, Chanzon assortment</text>
+
+      <!-- underside callout -->
+      <rect x="260" y="440" width="380" height="140" rx="8" class="callout"/>
+      <text x="276" y="462" class="svg-ink" font-size="12" font-weight="600">XIAO underside — soldered pads, not header pins</text>
+      <text x="276" y="478" class="svg-soft" font-size="10">legend only; these boxes are not the physical pad layout</text>
+      <g font-size="10" font-family="ui-monospace, Menlo, Consolas, monospace">
+        <rect x="286" y="494" width="60" height="26" rx="4" class="pad2"/>
+        <text x="316" y="511" text-anchor="middle" class="svg-soft">TP4</text>
+        <rect x="378" y="494" width="60" height="26" rx="4" class="pad2"/>
+        <text x="408" y="511" text-anchor="middle" class="svg-soft">TP5</text>
+        <rect x="440" y="494" width="60" height="26" rx="4" class="pad2 hot"/>
+        <text x="470" y="511" text-anchor="middle" fill="var(--accent)" font-weight="700">TP6</text>
+        <rect x="532" y="494" width="60" height="26" rx="4" class="pad2"/>
+        <text x="562" y="511" text-anchor="middle" class="svg-soft">TP7</text>
+      </g>
+      <g class="svg-soft" font-size="9.5" font-family="ui-monospace, Menlo, Consolas, monospace" text-anchor="middle">
+        <text x="316" y="534">MTMS/4</text>
+        <text x="408" y="534">MTDI/5</text>
+        <text x="470" y="534" fill="var(--accent)" font-weight="700">MTCK/6</text>
+        <text x="562" y="534">MTDO/7</text>
+      </g>
+      <text x="408" y="552" text-anchor="middle" class="svg-soft" font-size="9.5">already used —</text>
+      <text x="408" y="564" text-anchor="middle" class="svg-soft" font-size="9.5">step 3 divider</text>
+      <text x="470" y="558" text-anchor="middle" fill="var(--accent)" font-size="9.5" font-weight="700">encoder push</text>
+
+      <!-- wire tags -->
+      <g class="wire-tag svg-soft">
+        <text x="508" y="176">GND → − rail</text>
+        <text x="546" y="276" fill="var(--wire-signal)">D7 → A ↗</text>
+        <text x="546" y="234" fill="var(--wire-purple)">D9 → B →</text>
+        <text x="668" y="322" text-anchor="end">C → − rail</text>
+        <text x="820" y="364">SW 2 → − rail</text>
+        <text x="700" y="386" text-anchor="end" fill="var(--wire-green)">SW 1 → TP6 flying lead (soldered)</text>
+        <text x="310" y="410" fill="var(--wire-yellow)">D6 → R3 →</text>
+        <text x="800" y="594">LED cathode → shared ground</text>
+      </g>
+    </svg>
+    <figcaption>Colours here only make each run traceable in the drawing — use
+    whatever jumpers you have. Three of the four encoder runs are ordinary
+    breadboard jumpers into the rows the XIAO's <code>D7</code>,
+    <code>D9</code> and ground pins land in. The fourth is not: the push switch
+    goes to <strong>GPIO6</strong>, which the XIAO brings out only on the
+    <code>MTCK</code> pad underneath the board, so it needs a soldered flying
+    lead. The encoder's A/C/B face and its switch face are on opposite sides of
+    the body; the switch pair is not polarised, so SW&nbsp;1 and SW&nbsp;2 are
+    interchangeable. The LED <em>is</em> polarised — long leg to the resistor,
+    short leg (flat rim on the plastic) to ground.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2>Connections</h2>
+  <div style="overflow-x:auto">
+  <table>
+    <thead><tr><th>From</th><th>XIAO pin</th><th>GPIO</th><th>To</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="swatch" style="background:var(--wire-signal)"></span>Encoder A</td>
+        <td class="pin">D7</td><td class="pin">17</td><td class="pin">header</td>
+        <td>Input, internal pull-up, any-edge interrupt (<code>ec11.c:70-75</code>). Not an LP pad — cannot wake from deep sleep.</td>
+      </tr>
+      <tr>
+        <td><span class="swatch" style="background:var(--wire-purple)"></span>Encoder B</td>
+        <td class="pin">D9</td><td class="pin">20</td><td class="pin">header</td>
+        <td>Same configuration. Swap A and B if clockwise rotation reads backwards — that is the open HW-VERIFY row.</td>
+      </tr>
+      <tr>
+        <td><span class="swatch" style="background:var(--wire-black-core)"></span>Encoder C (common)</td>
+        <td class="pin">—</td><td class="pin">—</td><td class="pin">− rail</td>
+        <td>The middle terminal of the three-pin face. Both A and B switch against it.</td>
+      </tr>
+      <tr>
+        <td><span class="swatch" style="background:var(--wire-green)"></span>Encoder SW 1</td>
+        <td class="pin">MTCK pad</td><td class="pin">6</td><td class="pin"><strong>solder</strong></td>
+        <td><strong>Not on the header.</strong> Underside pad TP6. Configured active-low with an internal pull-up and registered as an <code>ext1</code> ANY_LOW wake source (<code>button_gpio.c:131-155</code>).</td>
+      </tr>
+      <tr>
+        <td><span class="swatch" style="background:var(--wire-black-core)"></span>Encoder SW 2</td>
+        <td class="pin">—</td><td class="pin">—</td><td class="pin">− rail</td>
+        <td>Either switch pin works for either job; the pair is not polarised.</td>
+      </tr>
+      <tr>
+        <td><span class="swatch" style="background:var(--wire-yellow)"></span>LED anode</td>
+        <td class="pin">D6</td><td class="pin">16</td><td class="pin">via R3</td>
+        <td>Push-pull output, <strong>active high</strong> (<code>led.cpp:25</code>). Series resistor is mandatory.</td>
+      </tr>
+      <tr>
+        <td><span class="swatch" style="background:var(--wire-black-core)"></span>LED cathode</td>
+        <td class="pin">—</td><td class="pin">—</td><td class="pin">− rail</td>
+        <td>Short leg / flat rim.</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="warn"><strong>This wiring is bench-only.</strong> In the
+  assembled unit the encoder does not connect to the XIAO header at all — the
+  ePaper driver board breaks out <code>D4</code>–<code>D7</code> and
+  <code>D9</code> as its own through-holes, and A/B solder there
+  (<a href="../assembly.md">assembly.md</a>). Only the SW-to-TP6 lead is the
+  same in both builds.</div>
+</section>
+
+<section>
+  <h2>What is deliberately absent</h2>
+  <table>
+    <thead><tr><th>Part you might expect</th><th>Why it is not here</th></tr></thead>
+    <tbody>
+      <tr><td>Pull-up resistors on A, B, SW</td>
+        <td>The C6's internal pull-ups are enabled in firmware for all three
+        (<code>ec11.c:73</code>, <code>button_gpio.c:136</code>). External ones
+        would only add a parallel leak path.</td></tr>
+      <tr><td>Debounce capacitors on A and B</td>
+        <td>Debounce is a 4-state Gray-code transition table, not a timer or an
+        RC network. Contact bounce produces invalid state transitions that the
+        table discards, so the encoder consumes nothing while idle
+        (<code>ec11.h:1-4</code>).</td></tr>
+      <tr><td>Debounce on the push switch</td>
+        <td>Handled in software by <code>espressif/button</code>.</td></tr>
+      <tr><td>A second LED</td>
+        <td>The XIAO already has a yellow one on GPIO15 — but it is
+        <strong>active low</strong>, sinks through an on-board 1.5&nbsp;kΩ to
+        3V3, and GPIO15 is a C6 strapping pin. It is left high-Z and unused
+        (<a href="../pinmap.md">pinmap.md</a>).</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2>Sizing R3</h2>
+  <p>Driven from a 3.3&nbsp;V push-pull output, so
+  <code>R = (3.3 − V<sub>f</sub>) / I</code>. The LED is a status indicator
+  seen through diffused plastic, not a lamp — a few milliamps is plenty, and
+  keeping it low protects the GPIO.</p>
+  <div style="overflow-x:auto">
+  <table>
+    <thead><tr><th>LED colour</th><th>Typical V<sub>f</sub></th><th>R3</th><th>Resulting current</th></tr></thead>
+    <tbody>
+      <tr><td>Red</td><td class="pin">~2.0 V</td><td class="pin">330 Ω</td><td class="pin">≈ 3.9 mA</td></tr>
+      <tr><td>Yellow / amber</td><td class="pin">~2.1 V</td><td class="pin">330 Ω</td><td class="pin">≈ 3.6 mA</td></tr>
+      <tr><td>Green</td><td class="pin">~2.2 V</td><td class="pin">220 Ω</td><td class="pin">≈ 5.0 mA</td></tr>
+      <tr><td>Blue / white</td><td class="pin">~3.0 V</td><td class="pin">100 Ω</td><td class="pin">≈ 3.0 mA</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="warn"><strong>Blue and white are a poor choice on a 3.3&nbsp;V
+  rail.</strong> With V<sub>f</sub> ≈ 3.0&nbsp;V there is only ~0.3&nbsp;V of
+  headroom, so brightness swings hard with part-to-part V<sub>f</sub> spread
+  and with the rail sagging as the cell discharges. Pick red, amber or green
+  from the assortment. The V<sub>f</sub> figures above are
+  <strong>typical values for the LED chemistry, not measured</strong> — Chanzon
+  does not publish a per-colour datasheet for the kit. Measure the drop across
+  the LED once it is lit and adjust R3 if the current is off target.</div>
+</section>
+
+<section>
+  <h2>What success looks like</h2>
+  <ol class="check">
+    <li><strong>One detent, one step.</strong> Turning the shaft one click
+    changes the view exactly once: readings → diagnostics → settings and back
+    (<code>ui.cpp:108-127</code>). Two steps per detent, or steps in both
+    directions from one click, means the Gray-code decode is seeing a pin that
+    is not making clean contact — check the C-to-ground wire first.</li>
+    <li><strong>Clockwise advances.</strong> If it goes backwards, swap the A
+    and B wires. This is the open HW-VERIFY row; the direction has never been
+    observed on hardware.</li>
+    <li><strong>Push does nothing outside settings.</strong> That is correct —
+    <code>on_push()</code> returns early unless the settings view is showing
+    (<code>ui.cpp:129-134</code>). Rotate to settings first, then push to enter
+    the menu, push again to edit.</li>
+    <li><strong>Ten-second hold factory-resets.</strong> Console prints
+    <code>W (…) ui: Encoder held 10s: factory reset</code> and the device
+    reboots into commissioning. Confirm this <em>before</em> the unit is
+    commissioned to anything you care about.</li>
+    <li><strong>LED blinks at 1&nbsp;Hz while uncommissioned</strong> (500&nbsp;ms
+    on, 500&nbsp;ms off) and pulses briefly every 10&nbsp;s below 10&nbsp;%
+    battery. Solid on or solid off in either state means the wrong leg is
+    grounded or R3 is open.</li>
+  </ol>
+</section>
+
+<section>
+  <h2>Bring-up rows this closes</h2>
+  <ul>
+    <li><code>GPIO6 (MTCK) wakes the C6 from deep sleep on encoder press</code>
+    — needs the TP6 lead in place and a deep-sleep build; the wake source is
+    registered but has never fired on hardware.</li>
+    <li>Encoder clockwise direction (<code>ec11.h</code> HW-VERIFY).</li>
+    <li>Encoder knob bore against the 6&nbsp;mm D-shaft — mechanical, and only
+    testable once a printed set exists.</li>
+  </ul>
+  <p class="foot" style="margin-top:0.9rem">Tracked in
+  <a href="../bringup.md">bringup.md</a>.</p>
+</section>
+
+<section>
+  <p class="foot"><strong>Drawn ahead of the work, 2026-08-24.</strong> Pin
+  assignments come from <code>app_config.h</code> and
+  <code>docs/pinmap.md</code>; the pull-up, interrupt, active-level and wake
+  configurations were read out of the component sources cited in each row.
+  Nothing on this page has been built or measured. The encoder body outline,
+  its pin spacing and the underside pad boxes are schematic, not scale
+  drawings — go by the part's own datasheet and the board silkscreen.</p>
+</section>
+</main>
+</body>
+</html>
