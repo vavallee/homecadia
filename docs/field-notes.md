@@ -259,6 +259,20 @@ exactly this as `RelativeHumidityMeasurement::SetMeasuredValue(EndpointId, ...)`
 in its `integration.h`; the temperature integration has no header. Verified
 over Thread: `1/1026/0 = 2463`, `2/1029/0 = 4952`, matching the device log.
 
+Upstream status (checked 2026-08-23): this is **espressif/esp-matter#1798**
+(2026-07-20, same root cause, same workaround) and **#1738** (2026-03-23, the
+OccupancySensing sibling). Espressif confirmed it as a bug on both. On `main`:
+`9a1c0777` (2026-07-23) makes `set_val` return `ESP_ERR_NOT_SUPPORTED` when the
+cluster is SCI-served, and `3abe4c20` (2026-08-14) adds
+`TemperatureMeasurement::SetMeasuredValue(EndpointId, ...)`. **Neither is on
+`release/v1.6`** (tip `31b76ad1`, 2026-08-20), which is what this project pins,
+so there the call still silently succeeds and there is no public setter. The
+real fix — `update()` routing to the registered object — is still open.
+
+When the toolchain moves to a release containing `3abe4c20`, the wrapper can
+replace the downcast in `sensor_loop.cpp`; the registry approach keeps working
+either way.
+
 Rule to keep: **`attribute::update()` is only correct for attributes esp-matter
 actually serves.** For any cluster with a local SCI integration, the served
 value lives on the registered object and must be set there. Check
