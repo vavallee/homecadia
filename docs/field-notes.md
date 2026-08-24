@@ -127,13 +127,17 @@ Apple will not surrender without an Apple border router present.
   `pkill` that matches its own shell, an `sed` range whose end marker never
   matches — all produced confident, wrong conclusions in this build.
 
-## 9. OPEN: temperature/humidity MeasuredValue is null on the wire
+## 9. `attribute::update()` is a no-op for code-driven clusters
 
-Unresolved as of 2026-08-23. The device reports readings correctly to its own
-log and HA shows no temperature or humidity entity at all, because Home
-Assistant skips a sensor whose primary attribute reads null.
+**Resolved 2026-08-23** — cause, fix and upstream status below. Symptom: the
+device logs correct readings, a controller reads null for temperature and
+humidity while battery reads fine, and HA creates no sensor entity at all
+(it skips a sensor whose primary attribute reads null).
 
-What is established:
+The investigation is kept in full because the elimination order is the reusable
+part — every layer reported success, and the shape recurs.
+
+What was established:
 
 - Endpoints declare the right device types — `770` (0x0302 Temperature Sensor)
   on ep1, `775` (0x0307 Humidity Sensor) on ep2 — with clusters 1026/1029.
