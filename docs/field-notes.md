@@ -278,20 +278,62 @@ actually serves.** For any cluster with a local SCI integration, the served
 value lives on the registered object and must be set there. Check
 `data_model_provider/clusters/<name>/integration.cpp` for `registry().Register`.
 
-## 10. Measuring sleep current: suspect the meter first
+## 10. Measuring sleep current with a manual-ranging DMM (AstroAI AM33D)
 
-Before trusting any power number, rule out the instrument. A XIAO ESP32-C6 user
-on the Seeed forum measured 57–80 mA where an ESP32-H2 running identical code
-drew 2.5 mA, and concluded the board was broken. It was the multimeter: a flat
-meter battery plus the wrong input jack (standard rather than the 10 A jack)
-dropped enough voltage across the meter to restart the C6 continuously. With
-that fixed the real figure was ~2 mA.
+The meter on hand is an AstroAI AM33D: 2000-count 3½-digit, **manual ranging**,
+DC current only, a fused µA/mA jack and a separate 10 A jack. Its exact DC
+current ranges are not published online — read them off the dial before
+starting and write them here. On this class of meter the lowest DC range is
+typically 2000 µA at 1 µA resolution, which is enough for a 15–40 µA sleep
+floor. The problem is not resolution; it is what the meter does to the device
+during a radio burst.
 
-The failure mode is nasty because the device genuinely misbehaves — it is
-restarting — so the readings look like a real fault rather than a measurement
-artefact. Applies directly to milestone 5. Check the meter's own battery, use
-the low-burden-voltage path, and confirm the device is actually running while
-you measure.
+**The trap, in two forms.** Before trusting any number, rule out the
+instrument. A XIAO ESP32-C6 user on the Seeed forum measured 57–80 mA where an
+ESP32-H2 running identical code drew 2.5 mA and concluded the board was broken.
+It was the meter: a flat meter battery plus the wrong input jack dropped enough
+voltage across the meter to restart the C6 continuously. With that fixed the
+real figure was ~2 mA. The failure mode is nasty because the device genuinely
+misbehaves — it is restarting — so the reading looks like a real fault.
+
+The mechanism is **burden voltage**: on a low current range the meter's shunt
+is large (roughly 100 Ω for a 2000 µA range on this class), so a sleep-floor
+reading is fine but a Thread TX burst of ~100–300 mA across that shunt drops
+volts, browns out the C6, and it reboots — and this device bursts every
+`CONFIG_ICD_SLOW_POLL_INTERVAL_MS` = 5 s, so you cannot wait one out. The same
+burst also exceeds the µA/mA jack's fuse rating on most meters of this class;
+a blown fuse reads as a device that draws nothing.
+
+**Procedure that works with this meter:**
+
+1. Fresh 9 V in the meter. Check it first, not after.
+2. Power the board from the cell (or a bench supply at 3.7–4.2 V) through the
+   battery pads. **USB disconnected** — USB powers the board and bypasses the
+   measurement entirely.
+3. Put the meter in series with the battery **positive** lead, on the 10 A
+   jack and range to start.
+4. Fit a **bypass jumper across the meter's leads** and keep it closed through
+   boot and commissioning. The board never sees the shunt.
+5. Once the device is attached to Thread and the panel is in deep sleep, move
+   the red lead to the µA/mA jack, select the lowest DC range, then open the
+   jumper. Read. If the display shows a reboot pattern (reading collapses and
+   climbs every few seconds), the burst is browning it out — close the jumper.
+6. To read a stable floor with bursts present, either raise
+   `CONFIG_ICD_SLOW_POLL_INTERVAL_MS` in a measurement build so bursts are rare
+   enough for the display to settle between them, or put a low-ESR bulk
+   capacitor (1000–4700 µF) across the board's supply so bursts are sourced
+   locally and the meter sees something close to the average. Say which was
+   used when recording the number.
+
+**What this meter cannot do:** capture the burst itself or a true average of a
+bursty load. The per-poll and per-refresh charge figures in
+[power-budget.md](power-budget.md) need a Nordic PPK2 or a µCurrent, as that
+file already says. The AM33D answers one question — the sleep floor — and only
+when the bursts are kept off it.
+
+Record alongside the reading: meter range and jack, whether a bypass cap or a
+longer poll interval was used, panel state, LED state, and whether the display
+had refreshed within the previous minute.
 
 ## 11. There is no reference implementation for this build
 
