@@ -175,8 +175,8 @@ pay for them twice. Full list in
 | # | Deliverable | Status |
 |---|---|---|
 | 1 | Repo scaffold, docs, CI compiling an esp-matter skeleton for esp32c6 | done |
-| 2 | Matter temp/humidity over Thread, commissions to HA (TinyENV parity) | code complete; commissioning test awaits hardware |
-| 3 | Display driver, view 1 rendering readings, measured refresh cost | code complete; refresh cost measurement awaits hardware |
+| 2 | Matter temp/humidity over Thread, commissions to HA (TinyENV parity) | **done 2026-08-23** — commissioned to HA over ZBT-2 OTBR, readings live in HA; see `docs/field-notes.md` for the preconditions |
+| 3 | Display driver, view 1 rendering readings, measured refresh cost | display verified on hardware 2026-08-22 (full 1.79s / partial 0.54s BUSY); refresh charge cost still unmeasured |
 | 4 | Encoder, views, settings, wake behavior | code complete; encoder direction + wake await hardware |
 | 5 | ICD tuning, battery reporting, power budget with measured numbers | LIT ICD configured; tuning + measurements await hardware |
 | 6 | Factory reset, low-battery behavior, assembly guide final, v1.0.0 | factory reset + LED + low-bat display done; rest awaits hardware |
