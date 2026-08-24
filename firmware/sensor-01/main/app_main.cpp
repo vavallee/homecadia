@@ -112,12 +112,19 @@ static void app_event_cb(const ChipDeviceEvent *event, intptr_t arg)
     case chip::DeviceLayer::DeviceEventType::kFabricRemoved: {
         ESP_LOGI(TAG, "Fabric removed");
         /* Last controller un-paired us: reopen the commissioning window so the
-         * device can be re-adopted without a manual factory reset. */
+         * device can be re-adopted without a manual factory reset.
+         *
+         * kAllSupported, not kDnssdOnly: removing the last fabric also takes us
+         * off Thread, so a DNS-SD-only window advertises on a network we are no
+         * longer attached to -- i.e. nowhere. Verified on hardware 2026-08-24:
+         * after remove_node the device went silent on BLE and could only be
+         * recovered by power-cycling it, which is exactly the manual
+         * intervention this block exists to avoid. */
         if (chip::Server::GetInstance().GetFabricTable().FabricCount() == 0) {
             chip::CommissioningWindowManager &mgr = chip::Server::GetInstance().GetCommissioningWindowManager();
             if (!mgr.IsCommissioningWindowOpen()) {
                 CHIP_ERROR err = mgr.OpenBasicCommissioningWindow(k_commissioning_window_timeout,
-                                                                  chip::CommissioningWindowAdvertisement::kDnssdOnly);
+                                                                  chip::CommissioningWindowAdvertisement::kAllSupported);
                 if (err != CHIP_NO_ERROR) {
                     ESP_LOGE(TAG, "Failed to open commissioning window, err:%" CHIP_ERROR_FORMAT, err.Format());
                 }
