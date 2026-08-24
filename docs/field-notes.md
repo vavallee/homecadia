@@ -281,12 +281,22 @@ value lives on the registered object and must be set there. Check
 ## 10. Measuring sleep current with a manual-ranging DMM (AstroAI AM33D)
 
 The meter on hand is an AstroAI AM33D: 2000-count 3½-digit, **manual ranging**,
-DC current only, a fused µA/mA jack and a separate 10 A jack. Its exact DC
-current ranges are not published online — read them off the dial before
-starting and write them here. On this class of meter the lowest DC range is
-typically 2000 µA at 1 µA resolution, which is enough for a 15–40 µA sleep
-floor. The problem is not resolution; it is what the meter does to the device
-during a radio burst.
+DC current only. Read off the dial 2026-08-23:
+
+| | |
+|---|---|
+| DC A ranges | **2000 µ · 20 m · 200 m · 10** |
+| VΩmA jack | fused, **500 mA MAX**, 600 V MAX |
+| 10 A jack | fused, **MAX 10 SEC EACH 15 MIN** |
+| DC V ranges | 200 m · 2000 m · 20 · 200 · 600 |
+
+2000 µA on a 2000-count display is 1 µA resolution — enough for a 15–40 µA
+sleep floor. The problem is not resolution; it is what the meter does to the
+device during a radio burst. Two consequences of the jack ratings: a C6 TX
+burst (~100–300 mA) will **not** blow the 500 mA mA-jack fuse, so the fuse trap
+below is mostly ruled out on this meter; but the 10 A jack **cannot** stay in
+circuit through a boot and commissioning, so the bypass jumper in the procedure
+is mandatory, not a convenience.
 
 **The trap, in two forms.** Before trusting any number, rule out the
 instrument. A XIAO ESP32-C6 user on the Seeed forum measured 57–80 mA where an
@@ -300,9 +310,10 @@ The mechanism is **burden voltage**: on a low current range the meter's shunt
 is large (roughly 100 Ω for a 2000 µA range on this class), so a sleep-floor
 reading is fine but a Thread TX burst of ~100–300 mA across that shunt drops
 volts, browns out the C6, and it reboots — and this device bursts every
-`CONFIG_ICD_SLOW_POLL_INTERVAL_MS` = 5 s, so you cannot wait one out. The same
-burst also exceeds the µA/mA jack's fuse rating on most meters of this class;
-a blown fuse reads as a device that draws nothing.
+`CONFIG_ICD_SLOW_POLL_INTERVAL_MS` = 5 s, so you cannot wait one out. On many
+meters of this class the burst also exceeds the mA-jack fuse (a blown fuse
+reads as a device that draws nothing); the AM33D's 500 mA rating gives margin,
+but check the fuse first if a reading is exactly zero.
 
 **Procedure that works with this meter:**
 
@@ -310,10 +321,11 @@ a blown fuse reads as a device that draws nothing.
 2. Power the board from the cell (or a bench supply at 3.7–4.2 V) through the
    battery pads. **USB disconnected** — USB powers the board and bypasses the
    measurement entirely.
-3. Put the meter in series with the battery **positive** lead, on the 10 A
-   jack and range to start.
+3. Put the meter in series with the battery **positive** lead.
 4. Fit a **bypass jumper across the meter's leads** and keep it closed through
-   boot and commissioning. The board never sees the shunt.
+   boot and commissioning. The board never sees the shunt, and the 10 A jack's
+   10-second limit never applies because the meter carries nothing until the
+   device is asleep.
 5. Once the device is attached to Thread and the panel is in deep sleep, move
    the red lead to the µA/mA jack, select the lowest DC range, then open the
    jumper. Read. If the display shows a reboot pattern (reading collapses and
