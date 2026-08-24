@@ -133,11 +133,12 @@ will show an uncertified-device warning. Per-device factory partitions
 | [docs/pinmap.md](docs/pinmap.md) | Pin assignments and schematic-verified XIAO ESP32-C6 board facts |
 | [docs/assembly.md](docs/assembly.md) | Wiring and build order, battery-polarity warning |
 | [docs/build.md](docs/build.md) | Pinned toolchain SHAs, Docker and native builds, flashing from WSL2 |
-| [docs/commissioning.md](docs/commissioning.md) | Pairing to Home Assistant or Apple Home, Matter server setup, factory reset |
+| [docs/commissioning.md](docs/commissioning.md) | Pairing to Home Assistant: the three preconditions, the BLE-proxy workaround, factory reset. Apple Home is not available here and the doc says why |
+| [docs/field-notes.md](docs/field-notes.md) | **Traps that cost real time during bring-up**, ordered by cost. Read before bringing up another unit |
 | [docs/power-budget.md](docs/power-budget.md) | Modeled current draw, battery-life calculator, the policies it forced |
 | [docs/bringup.md](docs/bringup.md) | Hardware verification checklist — every `HW-VERIFY` marker has a row |
 | [docs/diagrams/](docs/diagrams/) | Bench wiring diagrams and the no-solder bring-up ladder (self-contained HTML) |
-| [docs/infrastructure.md](docs/infrastructure.md) | Network-side hardware: ZBT-2 border router, Voice PE, order status |
+| [docs/infrastructure.md](docs/infrastructure.md) | Network-side hardware: ZBT-2 border router, Thread coverage, Voice PE, order status |
 | [docs/source-reliability.md](docs/source-reliability.md) | Documented traps in vendor docs and third-party sources |
 | [hardware/case/README.md](hardware/case/README.md) | Enclosure: revision history, measured wall thicknesses, print vendor and material, engraving artwork |
 | [circuit-board-maker/](circuit-board-maker/README.md) | Custom-PCB evaluation and two paper board designs. **Concluded: not worth it for three units.** Never fabricated — see the conflicts list before reviving it |

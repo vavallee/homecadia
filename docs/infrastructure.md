@@ -25,6 +25,27 @@ device — the sensor-01 parts list is [bom.md](bom.md); pairing procedure is
   reflashing to repeater mode removes coordinator capability until stock
   firmware is restored.
 
+## Thread coverage: one border router is not enough
+
+**Measured 2026-08-23.** The ZBT-2 in the basement does not reach the
+second-floor office. sensor-01 commissions and holds the mesh beside it and
+cannot attach at all from upstairs — nine attach attempts, backing off to 64
+seconds, `No valid parent when sending Child Update Request`. That is a
+deployment fact, not a device fault: BLE at -49 dBm and Thread both come off
+the same antenna, so the sensor is fine.
+
+Any mains-powered Matter-over-Thread device joins as a **router** and extends
+the mesh. Budget roughly one per floor; a Matter smart plug is the cheapest
+form. The Nanoleaf Shapes is a Thread border router but **hosts its own
+network** (`NanoleafThread91`) and cannot be moved onto `ha-thread-5df4`
+without credentials Apple will not release absent an Apple border router —
+see [field-notes.md](field-notes.md) section 7.
+
+Also worth knowing: an OTBR that loses its dataset comes back `state: disabled`
+with an empty child table, and then every device looks out of range. Check
+`ot-ctl state` before suspecting hardware. Recovery is in
+[field-notes.md](field-notes.md) section 6.
+
 ## Home Assistant Voice Preview Edition (Nabu Casa NC-VK-9727)
 
 - ESP32-S3, 16MB flash, 8MB octal PSRAM; XMOS XU316 audio DSP (echo
