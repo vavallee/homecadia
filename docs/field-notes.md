@@ -213,31 +213,56 @@ Two consequences worth carrying:
 
 ### Ruled out: bounds
 
-The only difference between the two creation paths in the SDK is one line:
+The only difference between the two creation paths in the SDK is one line —
+`create_bat_voltage()` calls `attribute::add_bounds()` and
+`create_measured_value()` does not. Applying bounds to both MeasuredValue
+attributes applied cleanly and did not fix the read. Bounds are not the cause.
 
-```c
-create_measured_value(...)  ->  attribute::create(cluster, id, ATTRIBUTE_FLAG_NULLABLE, val);
+### Resolved: reads and writes go to different objects (esp-matter v1.6)
 
-create_bat_voltage(...)     ->  attribute::create(cluster, id, ATTRIBUTE_FLAG_NULLABLE, val);
-                                attribute::add_bounds(attribute, min, max);
+Following the read path end to end: the path-based `attribute::get_val()` is
+not a struct read. It runs a full simulated Matter read through
+`data_model::provider::ReadAttribute()`, which is why the device-side read-back
+and the wire read always agreed. That function checks, in order:
+
+1. `mRegistry.Get(path)` — a registered code-driven server-cluster object
+2. an `AttributeAccessInterface` for the cluster
+3. `get_val_internal()` — esp-matter's own attribute store
+
+`attribute::update()` writes store 3 only. esp-matter v1.6 registers a
+code-driven `TemperatureMeasurementCluster` / `RelativeHumidityMeasurementCluster`
+per endpoint (`data_model_provider/clusters/<cluster>/integration.cpp`), so
+reads stop at step 1 and return that object's own `mMeasuredValue`, which is
+never seeded — its `StartupConfiguration` carries min, max and tolerance only —
+and never synced, because `temperature_measurement` has `function_list = NULL`
+so `set_val_internal()`'s attribute-changed hook never fires. Min/Max survive
+because the object reads them from the store at startup via `GetDefault()`.
+PowerSource is exempt because esp-matter keeps it AAI-based ("uses AAI (not
+SCI)" in its integration.cpp), so BatVoltage reads fall through to step 3.
+
+**Espressif's own `examples/sensors/main/app_main.cpp` uses the same
+`attribute::update()` call and is broken the same way on v1.6.** The same
+applies to every measurement cluster with a registered SCI: pressure, flow,
+illuminance, soil, air quality, occupancy, boolean state.
+
+Fix (`sensor_loop.cpp`): set the value on the registered object.
+`provider::registry()` is public, so
+
+```cpp
+auto *iface = esp_matter::data_model::provider::get_instance().registry().Get(
+    chip::app::ConcreteClusterPath(endpoint_id, TemperatureMeasurement::Id));
+static_cast<TemperatureMeasurementCluster *>(iface)->SetMeasuredValue(MakeNullable(v));
 ```
 
-`add_bounds()` sets `ATTRIBUTE_FLAG_MIN_MAX`, which `set_val()` checks. Calling
-it on both MeasuredValue attributes after endpoint creation applied cleanly —
-no errors, attributes found — and **did not fix the read**. Bounds are not the
-difference. Reverted rather than left in.
+under the Matter stack lock. esp-matter's humidity integration already exports
+exactly this as `RelativeHumidityMeasurement::SetMeasuredValue(EndpointId, ...)`
+in its `integration.h`; the temperature integration has no header. Verified
+over Thread: `1/1026/0 = 2463`, `2/1029/0 = 4952`, matching the device log.
 
-Remaining difference: the battery attributes are created by the application
-*after* `endpoint::power_source::create()` returns, whereas MeasuredValue is
-created *inside* `endpoint::temperature_sensor::create()`. Whether attributes
-registered after endpoint creation are served from a different store is the
-next thing to test.
-
-Build is esp-matter v1.6, `CONFIG_ESP_MATTER_ENABLE_DATA_MODEL=y`,
-`ENABLE_GENERATED_DATA_MODEL` unset. This is worth raising with Espressif with
-the repro above rather than guessing further: an endpoint helper that silently
-produces a write-only attribute, where every `update()` returns `ESP_OK` and
-every controller read returns null, is a bug whichever layer owns it.
+Rule to keep: **`attribute::update()` is only correct for attributes esp-matter
+actually serves.** For any cluster with a local SCI integration, the served
+value lives on the registered object and must be set there. Check
+`data_model_provider/clusters/<name>/integration.cpp` for `registry().Register`.
 
 ## 10. Measuring sleep current: suspect the meter first
 

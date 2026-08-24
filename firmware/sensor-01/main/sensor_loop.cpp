@@ -9,6 +9,10 @@
 #include <esp_matter_attribute_utils.h>
 #include <app-common/zap-generated/ids/Attributes.h>
 #include <app-common/zap-generated/ids/Clusters.h>
+#include <app/ConcreteClusterPath.h>
+#include <app/clusters/relative-humidity-measurement-server/RelativeHumidityMeasurementCluster.h>
+#include <app/clusters/temperature-measurement-server/TemperatureMeasurementCluster.h>
+#include <data_model_provider/esp_matter_data_model_provider.h>
 
 #include "app_config.h"
 #include "battery.h"
@@ -45,6 +49,36 @@ static void log_update(const char *what, uint16_t endpoint_id, esp_err_t err)
     }
 }
 
+/* MeasuredValue on the measurement clusters must NOT go through attribute::update().
+ *
+ * esp-matter v1.6 serves TemperatureMeasurement and RelativeHumidityMeasurement from
+ * code-driven cluster objects it registers in the data-model provider
+ * (data_model_provider/clusters/<cluster>/integration.cpp). Reads hit that object
+ * first, and it keeps its own copy of MeasuredValue. attribute::update() writes only
+ * esp-matter's attribute store, returns ESP_OK, and nothing forwards the value — so a
+ * controller reads null forever while the device logs healthy readings. Espressif's own
+ * examples/sensors is affected the same way. Min/Max survive because the object seeds
+ * them from the store at startup; MeasuredValue is never seeded.
+ *
+ * The served value lives on the registered object, so set it there. The cast is safe
+ * because esp-matter's integration registers exactly this class for this cluster id.
+ * Caller must hold the Matter stack lock. See docs/field-notes.md section 9. */
+template <typename ClusterT, typename ValueT>
+static void set_measured_value(const char *what, uint16_t endpoint_id, chip::ClusterId cluster_id, ValueT value)
+{
+    chip::app::ServerClusterInterface *iface = esp_matter::data_model::provider::get_instance().registry().Get(
+        chip::app::ConcreteClusterPath(endpoint_id, cluster_id));
+    if (!iface) {
+        ESP_LOGE(TAG, "%s: no server cluster registered on endpoint %u", what, (unsigned)endpoint_id);
+        return;
+    }
+    CHIP_ERROR err = static_cast<ClusterT *>(iface)->SetMeasuredValue(chip::app::DataModel::MakeNullable(value));
+    if (err != CHIP_NO_ERROR) {
+        ESP_LOGE(TAG, "%s: SetMeasuredValue failed on endpoint %u: %" CHIP_ERROR_FORMAT, what,
+                 (unsigned)endpoint_id, err.Format());
+    }
+}
+
 static void report_matter(float temp_c, float rh, uint32_t bat_mv, uint8_t bat_pct)
 {
     /* Attribute updates must run under the Matter stack lock; this runs in the
@@ -52,21 +86,19 @@ static void report_matter(float temp_c, float rh, uint32_t bat_mv, uint8_t bat_p
      * With portMAX_DELAY the scoped lock only ever proceeds locked. */
     esp_matter::lock::ScopedChipStackLock stack_lock(portMAX_DELAY);
 
-    /* A failed update leaves the attribute at its previous value — null on a fresh
-     * boot — while the sensor log still shows a good reading, so the device looks
-     * healthy locally and reads as null to a controller. Never drop these codes. */
-    esp_matter_attr_val_t val = esp_matter_nullable_int16((int16_t)lroundf(temp_c * 100.0f));
-    log_update("temperature", s_eps.temperature_endpoint_id,
-               update(s_eps.temperature_endpoint_id, TemperatureMeasurement::Id,
-                      TemperatureMeasurement::Attributes::MeasuredValue::Id, &val));
+    set_measured_value<chip::app::Clusters::TemperatureMeasurementCluster>(
+        "temperature", s_eps.temperature_endpoint_id, TemperatureMeasurement::Id,
+        (int16_t)lroundf(temp_c * 100.0f));
+    set_measured_value<chip::app::Clusters::RelativeHumidityMeasurementCluster>(
+        "humidity", s_eps.humidity_endpoint_id, RelativeHumidityMeasurement::Id,
+        (uint16_t)lroundf(rh * 100.0f));
 
-    val = esp_matter_nullable_uint16((uint16_t)lroundf(rh * 100.0f));
-    log_update("humidity", s_eps.humidity_endpoint_id,
-               update(s_eps.humidity_endpoint_id, RelativeHumidityMeasurement::Id,
-                      RelativeHumidityMeasurement::Attributes::MeasuredValue::Id, &val));
-
-    /* BatPercentRemaining is in half-percent units (0..200). */
-    val = esp_matter_nullable_uint8(bat_pct * 2);
+    /* PowerSource is still served from esp-matter's own attribute store (its upstream
+     * implementation is AAI-based, not a registered cluster object), so update() is
+     * the right call here. A failed update leaves the attribute at its previous value
+     * while the sensor log still shows a good reading — never drop these codes.
+     * BatPercentRemaining is in half-percent units (0..200). */
+    esp_matter_attr_val_t val = esp_matter_nullable_uint8(bat_pct * 2);
     log_update("battery pct", s_eps.power_source_endpoint_id,
                update(s_eps.power_source_endpoint_id, PowerSource::Id,
                       PowerSource::Attributes::BatPercentRemaining::Id, &val));
