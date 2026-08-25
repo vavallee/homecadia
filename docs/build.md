@@ -146,6 +146,35 @@ Gotchas, all hit in practice:
 
 ## CI
 
-`.github/workflows/build-sensor-01.yml` builds on every push touching
-`firmware/**` using the same Docker image and uploads the flash images
-(app, bootloader, partition table, `flasher_args.json`) as an artifact.
+`.github/workflows/build-sensor-01.yml` runs on every push touching
+`firmware/**`, in one job using the same Docker image as above. The image pull
+dominates the runtime, so extra steps are near-free but a second *job* would
+pay that cost again — append steps, do not split.
+
+| Step | Catches |
+|---|---|
+| Build, shipping profile | ordinary breakage |
+| Build, bench profile | code behind `#if CONFIG_PM_ENABLE` that compiles in one profile and not the other |
+| `tools/check-profiles.sh` | the bench profile silently no longer disabling sleep |
+| `tools/check-version.sh` | a `SoftwareVersion` that is stale, untagged, or fails to increase |
+
+Flash images (app, bootloader, partition table, `flasher_args.json`) are
+uploaded as an artifact.
+
+Both check scripts run locally too, and both fail on a missing or malformed
+input rather than passing vacuously — a guard that quietly does nothing is
+worse than no guard, because it manufactures confidence
+([field-notes.md](field-notes.md) §12).
+
+### What is deliberately not tested
+
+No unit tests. Nearly everything here is I/O — SPI to the panel, I2C to the
+sensor, the Matter stack, the ADC — and the small amount of pure logic (the
+EC11 Gray-code table, the settings clamp) has not been where the bugs were.
+The defects that actually cost days on this project were a reversed FPC, a
+`busy_wait()` that could not tell a working panel from a silent one, a stale
+container tag, `attribute::update()` writing to a store nothing reads, and BLE
+memory being reclaimed after commissioning. No unit test finds any of those.
+
+Hardware-in-the-loop is the right answer eventually and the wrong one now:
+there is one working panel and one bench board.
