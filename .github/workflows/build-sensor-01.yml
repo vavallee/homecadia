@@ -32,11 +32,30 @@ jobs:
           sudo docker image prune --all --force
           df -h /
 
-      - name: Build (esp32c6)
+      - name: Build (esp32c6, shipping profile)
         run: |
           docker run --rm -v "$PWD":/work \
             espressif/esp-matter:release-v1.6_idf_v5.5.5 \
             bash -c 'cd /work/firmware/sensor-01 && idf.py set-target esp32c6 build'
+
+      # sdkconfig.bench turns light sleep off so the USB console survives. It is
+      # a genuinely different configuration -- anything behind #if CONFIG_PM_ENABLE
+      # compiles in one profile and not the other -- and it is the profile used
+      # for hands-on bring-up, so a break here blocks bench work while the
+      # shipping build stays green. Same container, already pulled.
+      - name: Build (esp32c6, bench profile)
+        run: |
+          docker run --rm -v "$PWD":/work \
+            espressif/esp-matter:release-v1.6_idf_v5.5.5 \
+            bash -c 'cd /work/firmware/sensor-01 && \
+              idf.py -B build-bench -DSDKCONFIG=build-bench/sdkconfig \
+                     -DSDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.bench" build'
+
+      # Confirms the two profiles actually differ on sleep -- positively on both
+      # sides, so a missing or truncated sdkconfig fails instead of passing
+      # vacuously. Same script runs locally: tools/check-profiles.sh
+      - name: Verify profiles differ on sleep
+        run: ./tools/check-profiles.sh
 
       # A SoftwareVersion that fails to increase makes OTA decline the update
       # with no error -- the device just never updates. Catch it here instead.
