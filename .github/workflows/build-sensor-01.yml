@@ -14,7 +14,12 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      # fetch-depth: 0 -- version.cmake derives PROJECT_VER and the Matter
+      # SoftwareVersion from `git describe`. A shallow checkout has no tags,
+      # which would silently build 0.0.0-untagged / SoftwareVersion 0.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       # The esp-matter image unpacks to more than the runner's free space
       # (~14GB); a job-level `container:` pulls before any step can clean up,
@@ -32,6 +37,12 @@ jobs:
           docker run --rm -v "$PWD":/work \
             espressif/esp-matter:release-v1.6_idf_v5.5.5 \
             bash -c 'cd /work/firmware/sensor-01 && idf.py set-target esp32c6 build'
+
+      # A SoftwareVersion that fails to increase makes OTA decline the update
+      # with no error -- the device just never updates. Catch it here instead.
+      # Same script runs locally: tools/check-version.sh
+      - name: Check version is derived, carried and monotonic
+        run: ./tools/check-version.sh
 
       - name: Collect flash images
         run: |
