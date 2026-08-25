@@ -68,6 +68,15 @@ Bench wiring diagrams and the no-solder connectivity procedure live in
       high 1790ms, partial 540ms; readings render with `LOW BATT` (no cell
       fitted, 824mV on the divider reads as 0%). Image upright with
       `DISPLAY_FLIP_LONG_AXIS 1`, short axis 0.
+- [x] **FPC seating is the least reliable joint — re-verified 2026-08-25.** A
+      misseated ribbon put a panel supply rail onto the MOSI net: D10 sat at
+      3.1V and could not be driven low, so every byte clocked to the panel was
+      `0xFF` and it went deaf. It read as a dead panel, and the stale QR left on
+      the glass read as an unpaired device; neither was true. **Check the
+      connection before the firmware** — see [field-notes.md](field-notes.md)
+      section 15. `ssd1680_init()` now scans and drive-tests every panel signal
+      at boot; `drive hi=1 lo=0 follows the driver` on all five outputs is the
+      precondition for anything else being worth investigating.
 - [ ] Panel deep-sleep current measured (panel + driver board leakage).
 - [ ] Partial refresh charge cost measured; full refresh cost measured.
 - [ ] Ghosting acceptable with chosen full-refresh-every-N policy.

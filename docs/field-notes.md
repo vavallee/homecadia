@@ -481,3 +481,65 @@ WebSocket error response (interview_node) 1 [aborted] Operation aborted
 Practical rule: **get device identity right before commissioning**, and treat
 identity changes as requiring a re-pair. Per-unit naming belongs in NodeLabel,
 set by the controller, not in VendorName/ProductName — all units share a model.
+
+## 15. The panel FPC is the least reliable joint in the build — check it first
+
+**2026-08-25.** Half a bench session went into a display that would not draw. It
+presented as a dead panel and, for a while, as a firmware fault. It was neither:
+the FPC was not seated correctly.
+
+The symptom chain, in the order it appeared:
+
+1. `BUSY never rose within 200ms of MASTER_ACTIVATE` on every refresh. The
+   readings themselves were fine — `sensor_loop` reported real values every
+   poll, so the whole software path ran and only the last step failed.
+2. The panel kept showing an old commissioning QR. That is **not** evidence of
+   an unpaired device: e-ink holds its last successfully drawn frame with no
+   power, and every refresh after it had failed. The device was commissioned
+   the whole time (`Fabric index 0x4 ... NodeId 0x17`). See also section 14.
+3. MOSI (D10/GPIO18) could not be pulled low — it sat at **3.1 V** while the C6
+   drove it low. Something was hard-driving it, not pulling it.
+
+Bisecting by substitution found it, one variable at a time:
+
+| Configuration | MOSI | Meaning |
+|---|---|---|
+| XIAO alone on USB | follows driver | GPIO18 healthy, no bridge on the XIAO |
+| XIAO + driver board #2, no panel | follows driver | not normal behaviour for these boards |
+| XIAO + driver board #1, no panel | follows driver | board #1 is fine |
+| XIAO + board #1 + panel | **stuck at 3.1 V** | the panel was driving it |
+
+MOSI is an *input* to the SSD1680 and should never drive that line. A misseated
+FPC explains it: the ribbon carries supply rails (VDD, VGH, VGL) directly
+alongside the signals, so a ribbon that is skewed or not fully home puts a rail
+onto a signal net. That also explains why D10-to-3V3 measured **open** with the
+board unpowered — the path only exists once the panel's rails come up.
+
+Two things that would have saved the time:
+
+- **A short is not always a bridge.** The unpowered continuity check said "no
+  short" and was believed for too long. Anything gated behind a supply reads
+  open until the board is powered.
+- **A logic-level readback is not a voltage.** `gpio_get_level()` returning 1
+  cannot distinguish a hard 3.3 V from an intermediate voltage above V_IH. The
+  meter is what turned "stuck high" into "hard-driven by a supply".
+
+After reseating, the fault became *intermittent* before it became fixed —
+`BUSY` read high at rest on failing boots and low on working ones, and one boot
+got a single command through before dying. Intermittent contact looks like a
+flaky driver. It is not: it is a joint.
+
+**Practical rules:**
+
+- **Contacts face UP**, away from the driver board. That is the orientation
+  this board expects — confirmed 2026-08-22 and again here. Full detail and the
+  insertion-force cross-check are in [assembly.md](assembly.md).
+- Reseat the FPC deliberately, once, and inspect it. Latch open before moving
+  the ribbon, fully home, square at both edges, equal backing visible each side.
+  Repeated blind reseating wears the contacts and is how board #2's connector
+  died.
+- Suspect the connection before the firmware. Every measurement in this session
+  pointed at hardware, and every hour spent on the driver was wasted.
+- `ssd1680_init()` now scans and drives each signal at boot and logs the result.
+  Read those lines first — `drive hi=1 lo=0 follows the driver` on all five
+  outputs is the precondition for anything else being worth investigating.
