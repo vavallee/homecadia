@@ -1,9 +1,14 @@
 # Commissioning — sensor-01 → Home Assistant
 
-Verified end to end on 2026-08-23: node 20 on the fabric, attached as a sleepy
-child of the ZBT-2, temperature/humidity/battery readable over Thread and
-visible in Home Assistant. Commissioning itself took 15 seconds once the three
-preconditions below were true; getting them true was the hard part.
+Verified end to end, most recently **2026-08-24 on matter-server 1.4.0**: the
+device commissions over BLE through **Home Assistant's own proxy** in 18-19
+seconds, attaches as a sleepy child of the ZBT-2, and serves
+temperature/humidity/battery over Thread.
+
+The 2026-08-23 run needed a separate Node/noble proxy pod because HA's proxy
+could not complete the BTP handshake. **That is fixed** — it was
+matter-js/matterjs-server#1006, resolved upstream in v0.8.0, and this deployment
+was three months behind. The noble pod and the disable/enable dance are gone.
 
 ## What is deployed
 
@@ -12,7 +17,7 @@ store, so the Matter server and the border router are separate workloads.
 
 | | |
 |---|---|
-| Matter server | `ghcr.io/matter-js/matterjs-server:0.7.1` (matter.js 0.17.0) — **not** python-matter-server |
+| Matter server | `ghcr.io/matter-js/matterjs-server:1.4.0` (matter.js 0.17.9) — **not** python-matter-server |
 | Runs on | the node holding the ZBT-2 (`zbt2` label), `hostNetwork`, port 5580 |
 | Key env | `BLE_PROXY=true`, `ENABLE_TEST_NET_DCL=true`, `PRIMARY_INTERFACE` pinned |
 | Border router | `otbr`, same node, ZBT-2 passed through as a char device |
@@ -21,6 +26,11 @@ store, so the Matter server and the border router are separate workloads.
 
 HA's Matter integration points at `ws://<matter-server-host>:5580/ws`. The
 manifests live in the homelab repo under `kubernetes/apps/default/`.
+
+**Keep the image current.** This deployment sat on 0.7.1 for months against a
+then-current 1.4.0, and the cost was two evenings chasing a BLE bug that had
+been fixed upstream twelve days after the pinned tag. See
+[field-notes.md](field-notes.md) §12.
 
 ## Three preconditions
 
@@ -44,22 +54,36 @@ store on boot (179 certificates rather than 74).
 ### 2. A working BLE proxy, and only one
 
 The server accepts **exactly one** `/ble` client, and Home Assistant takes it
-automatically whenever its Matter integration is enabled.
+automatically whenever its Matter integration is enabled. On 1.4.0 that is all
+you need — leave HA's Matter integration on and do nothing else.
 
-HA's proxy cannot currently complete the BTP handshake — the server receives the
-device's handshake response and then reports that it never arrived
-(matter-js/matterjs-server#1006). The Node/noble client works. So:
+Confirm the proxy is attached:
 
-1. **Disable** HA's Matter integration (Settings → Devices & Services → Matter →
-   ⋮ → Disable) to free the slot. Confirm it actually released — it has been
-   observed holding the socket after being disabled, in which case restart HA.
-2. Start the noble proxy from `ble-proxy-pod.yaml` in this directory. It needs
-   two patches to the published client until
-   matter-js/matterjs-server#1005 / #1003 land — both are described in that file.
-3. Re-enable HA's Matter integration afterwards.
+```
+BleProxyConnection   [ble0] BLE proxy handshake complete (version 1)
+```
+
+That is the *proxy protocol* handshake between the server and the client. It is
+not the BTP handshake with the device, and it is not evidence that the device
+will commission.
+
+On releases before v0.8.0 this needed a separate Node/noble pod, because HA's
+bleak/BlueZ client dropped the device's BTP handshake response
+(matter-js/matterjs-server#1006 — `ProxyBleChannel.openChannel` awaited the
+`write_and_subscribe` command before registering the binary-frame observer, so
+on BlueZ the indication arrived with no listener attached). `ble-proxy-pod.yaml`
+in this directory is kept only for that case.
 
 The proxy runs on the node with the Bluetooth adapter, so **the device must be
 within BLE range of that node**, not of the border router.
+
+One live defect remains, and it costs throughput rather than blocking: bleak
+reports the ATT MTU as 23, so BTP fragments are capped at 20 bytes instead of
+244. The server logs it plainly:
+
+```
+ProxyBleChannel  Connected to <addr>, handle=1, BTP segment size=20 bytes (peripheral ATT_MTU up to 23)
+```
 
 ### 3. BLE and Thread must both reach the device at the same time
 
@@ -83,12 +107,15 @@ Recovery, and how to restore it, is in [field-notes.md](field-notes.md) §6.
 
 ## Procedure
 
-1. **Power-cycle the sensor.** The commissioning window is time-limited from
-   boot. **The QR staying on the e-ink is not evidence the window is open** — it
-   is drawn once and the panel simply holds the image.
+1. **Get the sensor into its commissioning window.** It is time-limited from
+   boot. A device that has never been paired is already advertising; one that
+   was un-paired with `remove_node` reboots itself and comes back advertising
+   (see Factory reset below). Otherwise power-cycle it.
+   **The QR staying on the e-ink is not evidence the window is open** — it is
+   drawn once and the panel simply holds the image.
 2. Confirm it is advertising. From the Bluetooth host, look for service data
    under UUID `fff6`; the payload encodes discriminator 3840 and VID `0xFFF1`.
-3. Start the noble BLE proxy pod (precondition 2).
+3. Confirm HA's BLE proxy is attached (precondition 2). Nothing to start.
 4. Drive commissioning against the server's WebSocket API — **not** the HA UI,
    which gates Matter commissioning behind the mobile companion app:
 
@@ -97,10 +124,7 @@ Recovery, and how to restore it, is in [field-notes.md](field-notes.md) §6.
     "args":{"code":"34970112332","network_only":false}}
    ```
 
-   on `ws://<matter-server-host>:5580/ws`. Expect ~15 seconds.
-5. Re-enable HA's Matter integration. If the device does not appear, **reload**
-   the integration — after a disable/enable cycle HA has been seen reconnecting
-   its BLE proxy without re-running node discovery.
+   on `ws://<matter-server-host>:5580/ws`. Expect 18-19 seconds.
 
 ## Verify
 
@@ -108,10 +132,16 @@ Recovery, and how to restore it, is in [field-notes.md](field-notes.md) §6.
 ot-ctl child table          # the device should appear as a child, age near 0
 ```
 
-and read attributes over Thread via `read_attribute`:
+and read attributes over Thread. `read_attribute` is **not** a command this
+server implements — it is silently dropped, with no error and no log line. Use
+`get_nodes` and read from the returned `attributes` map:
 `1/1026/0` temperature (centi-°C), `2/1029/0` humidity (centi-%RH),
-`3/47/11` battery millivolts. In HA the device appears as `TEST_PRODUCT` with
-temperature, humidity, battery, uptime and Thread diagnostic entities.
+`3/47/11` battery millivolts.
+
+Identity should read `homecadia` / `sensor-01` / `xiao-c6/driver-v2`
+(`0/40/1`, `0/40/3`, `0/40/8`). If it reads `TEST_VENDOR` / `TEST_PRODUCT`, the
+device was commissioned before `main/chip_project_config.h` existed — see
+**Device identity is fixed at commissioning time** below.
 
 If temperature and humidity read null while battery reads fine, that is the
 esp-matter defect in [field-notes.md](field-notes.md) §9 — the fix is in
@@ -130,21 +160,70 @@ codes, once generated, must **not** be committed — this repo is public.
 
 ## Factory reset / re-commissioning
 
-The encoder is not soldered yet, so the 10-second button hold is not available.
-Over USB, erasing the NVS partition wipes the fabric and settings while leaving
-the app image intact:
+**Preferred: `remove_node`.** As of `7895168` the device handles the rest itself:
+
+```json
+{"message_id":"1","command":"remove_node","args":{"node_id":<id>}}
+```
+
+The server sends `removeFabric`, the device reboots 3 seconds later, and it
+comes back advertising over BLE with no physical access. Verified 2026-08-24.
+This also clears the server-side node, so there is no ghost to tidy up.
+
+Before that fix the device went **silent** after `remove_node` and needed a
+power cycle. Two causes, both real:
+
+- `kFabricRemoved` reopened the window with `kDnssdOnly`, advertising over
+  DNS-SD on a network the device had just left.
+- With `CONFIG_USE_BLE_ONLY_FOR_COMMISSIONING=y` the stack tears BLE down after
+  commissioning and hands its RAM back to the heap
+  (`BLEManagerImpl::DeinitESPBleLayer` → `ClaimBLEMemory`), so **no**
+  advertisement mode could have worked. Hence the reboot.
+
+**Fallback: erase NVS over USB.** Needed if the device is unreachable, or to
+wipe user settings as well as the fabric:
 
 ```sh
 esptool --chip esp32c6 -p <port> --before default_reset --after hard_reset \
         erase_region 0x10000 0xC000      # nvs, per partitions.csv
 ```
 
-The device then boots uncommissioned and advertises again. Remove the stale node
-from the server with `remove_node` so it does not linger as a ghost, and delete
-the corresponding device in HA.
+This is only possible from a host whose kernel will drive the C6's native USB
+control lines. On the k3s nodes here it fails at `pyserial`'s `open()` with
+`OSError: [Errno 71] Protocol error` on the `TIOCMBIC/TIOCM_RTS` ioctl, on both
+esptool 4.7.0 and 5.3.1 — the reset sequence *is* DTR/RTS, so there is nothing
+to route around. Flash and erase from the bench over usbipd instead.
 
 **A plain reflash does not decommission.** The fabric lives in NVS and survives
 `write_flash`, so firmware can be iterated without re-pairing — verified.
+
+## Device identity is fixed at commissioning time
+
+`VendorName`, `ProductName` and `HardwareVersionString` come from
+`main/chip_project_config.h` at compile time (`CONFIG_CHIP_PROJECT_CONFIG`;
+`CONFIG_ENABLE_ESP32_FACTORY_DATA_PROVIDER` is **not** set, so nothing is read
+from the `fctry` partition).
+
+The controller caches BasicInformation from the commissioning interview and does
+not refresh it. **A reflash alone does not change what the controller shows** —
+verified 2026-08-24: after flashing the corrected strings the device still
+appeared as `TEST_VENDOR` / `TEST_PRODUCT`, and only read `homecadia` /
+`sensor-01` after a decommission and re-commission.
+
+Forcing it with `interview_node` does not work either. A complete read against a
+sleepy end device on a 5-second poll exceeds the interview budget:
+
+```
+Controller~ndHandler  Interview requested for node @1:16 - do a complete read
+WebSocketC~erHandler  [a] WebSocket error response (interview_node) 1 [aborted] Operation aborted
+    at abort.timeoutHandler (@matter/protocol/src/peer/Peer.ts:447:27)
+```
+
+**Get identity right before commissioning the remaining units**, or plan to
+decommission and re-commission each one.
+
+Per-unit naming does *not* belong here — all three units share a model. Use
+**NodeLabel**, set by the controller.
 
 ## Expected warning: uncertified vendor ID
 
@@ -174,19 +253,21 @@ Symptoms actually seen during milestone 2, with what each one meant:
 |---|---|
 | `PAA not found in trust store` | `ENABLE_TEST_NET_DCL` not set |
 | `Only one BLE proxy client allowed` | HA holds the `/ble` slot, or an orphaned client does |
-| `BTP handshake response not received` | HA's bleak-based proxy; use the noble client |
-| `No commissionable device was discovered` | window closed (power-cycle), or out of BLE range of the Bluetooth host |
+| `BTP handshake response not received` | matter-server older than v0.8.0 — upgrade, do not chase it |
+| `No commissionable device was discovered` | window closed, or out of BLE range of the Bluetooth host. Confirm with `btmon` before assuming range: look for `Service Data: Matter Profile ID (0xfff6)` |
+| Device silent after `remove_node` | firmware older than `7895168`; power-cycle it |
+| Controller shows `TEST_VENDOR` after a reflash | cached interview — see **Device identity is fixed at commissioning time** |
 | Reaches `connectNetwork`, then CASE fails | device out of Thread range, or the OTBR is not running |
 | Commissions, then goes unavailable | sleepy ICD — normal between polls; if permanent, check the child table |
 | Temperature/humidity null, battery fine | esp-matter defect, [field-notes.md](field-notes.md) §9 |
 
-## What changes when upstream lands
+## Upstream status
 
-- matter-js/matterjs-server#1005 / #1003 — removes the need to patch the noble
-  client by hand.
-- matter-js/matterjs-server#1006 — would make HA's own proxy work, removing the
-  disable/enable dance and the separate pod entirely.
-- espressif/esp-matter#1798 — `attribute::update()` routing to code-driven
-  clusters would let `sensor_loop.cpp` drop its registry workaround.
+| Issue | State |
+|---|---|
+| matter-js/matterjs-server#1006 | **resolved** — fixed in #710, released v0.8.0. Retested on 1.4.0 2026-08-24; HA's own proxy commissions in 18.8s. The noble pod and disable/enable dance are gone from this document. |
+| matter-js/matterjs-server#1003 | open — consolidates the `write_and_subscribe` gap and the connect race from our #1005. Only affects the noble client, which is no longer on the critical path. |
+| ATT MTU reported as 23 | open, being split out of #1006. Throughput only: 20-byte BTP fragments instead of 244. Upstream's fix is `char.max_write_without_response_size + 3`, which reads the cached D-Bus property (`bleak/backends/bluezdbus/manager.py:162`) and does **not** go through the `_acquire_mtu()`/`AcquireWrite` path that Matter's characteristics cannot satisfy. |
+| espressif/esp-matter#1798 | open — `attribute::update()` routing to code-driven clusters would let `sensor_loop.cpp` drop its registry workaround. |
 
 Re-test this procedure after any of them, and simplify it here.

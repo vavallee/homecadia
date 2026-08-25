@@ -1,15 +1,27 @@
+# NO LONGER REQUIRED as of matter-server v0.8.0. Kept for older deployments and
+# as a fallback. On 1.4.0, Home Assistant's own bleak/BlueZ proxy commissions
+# fine (verified 2026-08-24, 18.8s) -- leave HA's Matter integration enabled and
+# ignore this file.
+#
 # Temporary BLE proxy host for Matter commissioning.
 #
 # matter-server drives BLE commissioning through a proxy client on a machine with
-# a Bluetooth adapter. Home Assistant's own proxy (bleak on BlueZ) cannot complete
-# the BTP handshake -- bleak reports the default 23-byte ATT MTU because BlueZ will
-# not expose the negotiated value for Matter's characteristic set, and forcing a
-# larger value still yields "BTP handshake response not received"
-# (matter-js/matterjs-server#1006).
+# a Bluetooth adapter. On builds before v0.8.0, Home Assistant's own proxy could
+# not complete the BTP handshake (matter-js/matterjs-server#1006).
 #
-# The Node/noble client works, because noble drives HCI directly and negotiates its
-# own ATT MTU. This pod runs it on the node holding the Bluetooth adapter. noble
-# coexists with BlueZ here -- HA does not lose Bluetooth.
+# NOTE: the original diagnosis in this file was WRONG and is corrected here.
+# The cause was not the ATT MTU. ProxyBleChannel.openChannel awaited the
+# write_and_subscribe command BEFORE registering the binary-frame observer; on
+# BlueZ the command response only returns after CCCD is enabled, and the device
+# indicates the moment it is, so the handshake response arrived with no listener
+# attached and was dropped. Fixed in matter-js/matterjs-server#710.
+#
+# The MTU is a real but SEPARATE defect, and not a blocker: bleak reports 23, so
+# BTP fragments cap at 20 bytes instead of 244. Throughput only.
+#
+# The Node/noble client worked because its ordering differs. This pod runs it on
+# the node holding the Bluetooth adapter. noble coexists with BlueZ here -- HA
+# does not lose Bluetooth.
 #
 # The upstream reference client needs two fixes before it can commission at all
 # (matter-js/matterjs-server#1005); apply them to the installed dist after npm

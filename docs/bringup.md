@@ -139,12 +139,24 @@ Blocker: **2 of 3 panels are gone and there is no spare.** Reorder Seeed SKU
 
 ## Radio / Matter
 
-- [x] Commissions to HA via ZBT-2 OTBR — **2026-08-23**, node 20, 14.8s once
-      the preconditions held: `ENABLE_TEST_NET_DCL=true` on matter-server, the
-      noble BLE proxy (`docs/ble-proxy-pod.yaml`), and the device in range of
-      the border router. Readings visible in HA as `sensor.test_product_temperature`
-      / `_humidity` after the MeasuredValue fix ([field-notes.md](field-notes.md) §9).
-      Commissioning survives a reflash (NVS retains the fabric).
+- [x] Commissions to HA via ZBT-2 OTBR — **re-verified 2026-08-24 on
+      matter-server 1.4.0**, node 23, 17.7-19.0s across three runs, through
+      **Home Assistant's own BLE proxy**. The separate noble pod is no longer
+      needed: the BTP-handshake failure was matter-js/matterjs-server#1006,
+      fixed upstream in v0.8.0, and this deployment had been pinned to 0.7.1.
+      Remaining precondition is `ENABLE_TEST_NET_DCL=true`, plus BLE and Thread
+      both reaching the device. Commissioning survives a reflash (NVS retains
+      the fabric). Readings verified over Thread after the MeasuredValue fix
+      ([field-notes.md](field-notes.md) §9).
+- [x] Device identity correct on the controller — **2026-08-24**: reads
+      `homecadia` / `sensor-01` / `xiao-c6/driver-v2`. Note this only took
+      effect after a re-commission; a reflash alone does not update it, because
+      the controller caches BasicInformation from the interview
+      ([commissioning.md](commissioning.md)).
+- [x] Un-pairing recovers without physical access — **2026-08-24**, `7895168`.
+      `remove_node` makes the device reboot itself and re-advertise (2884 FFF6
+      reports on the controller's adapter, unattended). Before the fix the same
+      operation left it silent, twice ([field-notes.md](field-notes.md) §12).
 - [ ] Survives HA restart / OTBR restart without falling off the fabric.
 - [ ] ICD: HA shows fresh readings at the configured report cadence. Partial
       **2026-08-23**: on the shipping profile (light sleep on) the device stays

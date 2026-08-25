@@ -1,6 +1,6 @@
 # Field notes: traps that cost real time
 
-Hard-won during sensor-01 bring-up (2026-08-17 → 23). Ordered by how much time
+Hard-won during sensor-01 bring-up (2026-08-17 → 24). Ordered by how much time
 each one burned. Read this before bringing up units 2 and 3 — most of these
 cost hours the first time and minutes once you know them.
 
@@ -72,11 +72,11 @@ nothing works and nothing looks wrong.
    `PAA not found in trust store`. The server downloads test roots either way;
    the flag is what makes it *trust* them.
 2. **A working BLE proxy.** matter-server allows exactly **one** `/ble` client,
-   and Home Assistant grabs it. Disable HA's Matter integration to free the slot.
-   The Python/bleak client cannot complete the BTP handshake (see
-   matter-js/matterjs-server#1006); use the Node/noble client from
-   `docs/ble-proxy-pod.yaml`, which needs two local patches until
-   matter-js/matterjs-server#1005 and #1003 land.
+   and Home Assistant grabs it. On matter-server >= v0.8.0 that is fine — leave
+   it alone and let HA's own proxy do the work. On older builds the bleak client
+   could not complete the BTP handshake (matter-js/matterjs-server#1006) and the
+   Node/noble client from `docs/ble-proxy-pod.yaml` was needed instead. See §12
+   for why that was chased for two evenings rather than fixed in five minutes.
 3. **Thread in range.** BLE and Thread must both reach the device *at the same
    time* — `connectNetwork` has to succeed inside the fail-safe window.
 
@@ -375,3 +375,109 @@ diff against, so budget for first-principles debugging and keep instrumenting.
 One independent confirmation did turn up — the same light-sleep serial symptom
 in section 2, reported verbatim ("device reports readiness to read but returned
 no data") by another XIAO C6 user.
+
+## 12. A version number in someone else's manifest is not a container tag
+
+The manifest for matter-server was written on 2026-08-19 pinning
+`ghcr.io/matter-js/matterjs-server:0.7.1`. That tag was released 2026-05-21 and
+was already three months and twenty-plus releases stale on the day it was
+written; current was 1.4.0.
+
+The `0.7.1` came from the right-hand side of this line in
+`kubernetes/apps/default/matter-server/README.md`:
+
+> HA 2026.8.1's `manifest.json` requires `matter-python-client==1.3.0` and
+> **`matter-ble-proxy==0.7.1`**
+
+`matter-ble-proxy` is a **PyPI package** on its own numbering. The container
+image is a different artefact with different versioning. The number was carried
+across because it was sitting on the same line of the same file.
+
+Cost: two evenings debugging a BLE commissioning failure, an upstream bug report
+(matter-js/matterjs-server#1006), and a PR that was half redundant — for a
+defect fixed upstream **twelve days after** the pinned tag. The maintainer
+identified the build from the log format before we thought to check it.
+
+Two things would each have caught it:
+
+- **Ask "is this current?" when pinning anything.** One API call. The version
+  was correctly stated in the bug report; nobody compared it to the latest
+  release.
+- **A working dependency bot.** Renovate was configured and running, had already
+  detected the update, and had queued PRs for `v0.8.0` and `v1` — but six
+  branches had errored on a `403` (`GET /commits/<sha>/statuses`, missing
+  **Commit statuses: Read** on the token) and were holding all six
+  `prConcurrentLimit` slots. Nothing new could be proposed. The backlog was
+  visible only as unticked checkboxes on the dependency dashboard issue, which
+  nobody opens.
+
+Second-order lesson: **a guard that fails silently is worse than no guard**,
+because it produces the feeling of coverage. Check that the bot is actually
+opening PRs, not merely scheduled.
+
+## 13. BLE is gone after commissioning, so reopening a window is not enough
+
+`kFabricRemoved` reopened the commissioning window so an un-paired device could
+be re-adopted without a physical factory reset. It never worked, for two
+independent reasons, and the second one is the interesting one.
+
+First: the window was opened with `kDnssdOnly`. Removing the last fabric also
+takes the device off Thread, so it advertised on a network it had just left.
+
+Fixing that to `kAllSupported` changed nothing. The device still advertised
+**nothing at all** — `removeFabric` returned `statusCode: 0`, the `Leave` event
+arrived, and `btmon` on the controller's own adapter saw zero `FFF6` reports.
+
+The reason is in the SDK. With `CONFIG_USE_BLE_ONLY_FOR_COMMISSIONING=y`:
+
+```cpp
+void BLEManagerImpl::DeinitESPBleLayer()
+{
+    VerifyOrReturn(DeinitBLE() == CHIP_NO_ERROR);
+#ifdef CONFIG_USE_BLE_ONLY_FOR_COMMISSIONING
+    BLEManagerImpl::ClaimBLEMemory(nullptr, nullptr);
+#endif
+}
+```
+
+— `connectedhomeip/src/platform/ESP32/nimble/BLEManagerImpl.cpp:1004`
+
+`ClaimBLEMemory` hands the BLE controller's RAM back to the general heap once
+commissioning finishes. That cannot be undone in place. **No advertisement mode
+could have worked, because there was no BLE stack left to advertise on.**
+
+The fix is to reboot (3-second delay, so the RemoveFabric response and Leave
+event get out first). A fresh boot with zero fabrics initialises BLE and
+advertises the way first boot does. Verified: 2884 advertisement reports after
+`remove_node`, unattended, where the same operation previously produced zero.
+
+The general lesson: **a fix that is not tested on hardware is a hypothesis.**
+The first fix was committed with a confident comment explaining reasoning that
+turned out to be only half the story, and only failed testing revealed the rest.
+
+## 14. Controllers cache device identity from the commissioning interview
+
+`VendorName` / `ProductName` / `HardwareVersionString` are compile-time strings
+(`CONFIG_CHIP_PROJECT_CONFIG` → `main/chip_project_config.h`), and the
+controller reads them **once**, during the commissioning interview.
+
+Reflashing corrected strings does not update what the controller shows. Verified:
+after flashing, `strings` on the image confirmed `homecadia` present and
+`TEST_VENDOR` absent, the flash hash-verified, the device rebooted and rejoined
+Thread — and matter-server still reported `TEST_VENDOR` / `TEST_PRODUCT`. Only a
+decommission and re-commission changed it.
+
+Forcing a refresh does not work either. `read_attribute` is not a command
+matter-server implements — it is silently dropped, no error, no log line. And
+`interview_node` times out, because a complete read against a sleepy end device
+on a 5-second poll exceeds the interview budget:
+
+```
+Interview requested for node @1:16 - do a complete read
+WebSocket error response (interview_node) 1 [aborted] Operation aborted
+    at abort.timeoutHandler (@matter/protocol/src/peer/Peer.ts:447:27)
+```
+
+Practical rule: **get device identity right before commissioning**, and treat
+identity changes as requiring a re-pair. Per-unit naming belongs in NodeLabel,
+set by the controller, not in VendorName/ProductName — all units share a model.
