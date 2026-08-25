@@ -75,6 +75,42 @@ idf.py -p /dev/ttyACM0 flash monitor
 Expect the first esp-matter build to take a long time (it compiles
 connectedhomeip) and the native clone step to download several GB.
 
+## Versioning
+
+`PROJECT_VER` (Matter `SoftwareVersionString`) and `PROJECT_VER_NUMBER` (the
+`SoftwareVersion` integer OTA compares) are both derived from the git tag in
+`firmware/sensor-01/version.cmake`. Do not set them by hand — they were
+hand-set once and drifted to `0.1` / `1` while the repo was tagged `v0.6.0`.
+
+Encoding is `MAJOR*10000 + MINOR*100 + PATCH`, so `v1.2.3` is `10203`.
+
+| Tree state | String | Number |
+|---|---|---|
+| exactly at `v0.6.0` | `0.6.0` | 600 |
+| 63 commits past it, dirty | `0.6.0-dev.63+ebc14cd-dirty` | 600 |
+| no tags reachable | `0.0.0-untagged` | 0 |
+
+**The number moves only at tags.** Dev builds keep the tag's number because
+they are flashed over USB and never OTA'd, so releasing is `git tag v0.7.0`
+and rebuilding — nothing else to remember.
+
+Commits-since-tag is deliberately *not* folded into PATCH. `v0.6.0` plus 63
+commits would be 663, and a later real `v0.6.1` would be 601 — lower than what
+is already on the device. OTA would then decline the update silently, forever.
+
+Check it after a build, locally or in CI:
+
+```sh
+tools/check-version.sh
+```
+
+It verifies the tag parses, that the built image actually carries that version
+(read from `esp_app_desc_t` at offset 0x30, which catches a stale build
+directory), and that the number exceeds the previous tag's.
+
+**CI needs `fetch-depth: 0`.** A shallow checkout has no tags and would build
+`0.0.0-untagged` without failing.
+
 ## Flashing from WSL2
 
 USB devices reach WSL through usbipd-win. Field-tested sequence (unit 1):

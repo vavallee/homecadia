@@ -5,8 +5,13 @@ if(NOT DEFINED ENV{ESP_MATTER_PATH})
     message(FATAL_ERROR "Please set ESP_MATTER_PATH to the path of the esp-matter repo (source esp-matter/export.sh)")
 endif()
 
-set(PROJECT_VER "0.1")
-set(PROJECT_VER_NUMBER 1)
+# PROJECT_VER -> Matter SoftwareVersionString, PROJECT_VER_NUMBER -> the
+# SoftwareVersion integer OTA compares. Both come from the git tag so they
+# cannot drift; see version.cmake for the encoding and why dev builds do not
+# move the number.
+include(${CMAKE_CURRENT_LIST_DIR}/version.cmake)
+homecadia_derive_version(PROJECT_VER PROJECT_VER_NUMBER)
+message(STATUS "homecadia version: ${PROJECT_VER} (SoftwareVersion=${PROJECT_VER_NUMBER})")
 
 set(ESP_MATTER_PATH $ENV{ESP_MATTER_PATH})
 set(MATTER_SDK_PATH ${ESP_MATTER_PATH}/connectedhomeip/connectedhomeip)
