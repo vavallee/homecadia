@@ -60,9 +60,15 @@ is inside the housing** (not merely "as far as it will go" — a ribbon stopped
 short still latches and makes intermittent contact), press the latch closed.
 Insert and remove only with the power off.
 
-On this batch the working orientation puts the copper contacts facing **up**,
-away from the driver board — observed on the bench, not vendor-confirmed, so
-use the insertion-force rule as the check.
+**The driver board expects the panel's copper contacts facing UP**, away from
+the board. Confirmed on the bench twice: 2026-08-22 (first successful refresh)
+and 2026-08-25 (recovery from a misseated ribbon). Get this wrong and the
+symptoms do not say "wrong orientation" — see [field-notes.md](field-notes.md)
+section 15, where a misseated ribbon put a panel supply rail onto MOSI and
+presented as a dead panel and then as a firmware bug.
+
+Still use the insertion-force rule as the working check: it holds whichever way
+you happen to be holding the board, and "up" does not.
 
 **Handle the bare flex as an ESD-sensitive part.** One panel failed after a
 successful refresh with nothing electrically suspicious in between; ESD from
