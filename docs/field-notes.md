@@ -598,3 +598,27 @@ nine SCL clocks followed by a STOP. `bench_selftest()` issues that recovery
 after probing the I2C pins (`i2c_bus_recover()`, `bench_selftest.cpp:19-47`),
 and `sht40_init()` calls `i2c_master_bus_reset()` before its own probe
 (`sht40.c:78`) for the same reason.
+
+### Addendum, 2026-08-26 — three more from the encoder bring-up
+
+- **A probe that reconfigures a pin kills whatever driver owns it.** The
+  init-step bisect that found the SCL fault (`bench_probe_i2c()`) was left
+  wired in after `ui_init()`. Each call ran `gpio_config()` on the encoder pins
+  with interrupts disabled and pulls off, so the quadrature ISR never fired
+  again and A/B floated. Two rounds of "the encoder produces no events" were
+  the instrumentation, not the encoder. The function stays, with a warning in
+  its header; the call sites are gone.
+- **"Wired as in the diagram" is only right if the diagram is.** The diagram
+  had the original D7/D9/D6 assignment; firmware had moved A to D6 and the LED
+  to D7 an hour earlier. The drawing is now updated, but the rule is: after a
+  pin move, the diagram, `pinmap.md`, `app_config.h` and the breadboard change
+  in the same sitting or one of them lies.
+- **EC11 blades do not seat.** Breadboard springs and Dupont sockets both
+  grip a 0.64 mm square pin; the encoder's flat ~0.6 mm blades sit loose in
+  either. Symptom: one line toggles cleanly while the other is stuck, and which
+  one changes between runs. Soldered leads fixed it in one go.
+- **D7 anomaly, open.** On both driver boards GPIO17/D7 reads 0 V once
+  `display_init()` brings up SPI — 45 k pull-up cannot lift it, meter reads it
+  open unpowered (XIAO in or out), schematic has nothing on it. The coupling
+  scan reports it following SCK. Routed around (LED took D7), not understood.
+  The PPK2's logic port time-aligned with a refresh is the next tool for it.

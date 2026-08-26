@@ -17,13 +17,18 @@
 #define SHT40_I2C_SCL      23   // D5
 #define SHT40_I2C_ADDR     0x44
 
-// EC11 encoder
-#define ENC_PIN_A          17   // D7 — no deep-sleep wake (not an LP pad)
-#define ENC_PIN_B          20   // D9
+// EC11 encoder. A/B assignment chosen so that clockwise = +1 = view advances;
+// verified on the bench 2026-08-26 (with A on D6 clockwise read -1, so the two
+// were swapped here rather than on the board). Neither is an LP pad: no
+// deep-sleep wake from rotation.
+#define ENC_PIN_A          20   // D9
+#define ENC_PIN_B          16   // D6 -- was D7/GPIO17: on both driver boards D7 sits at
+                                //      0V once the SPI bus is up (2026-08-25, unexplained;
+                                //      field-notes.md s16). D6's only neighbour is SCL.
 #define ENC_PIN_SW         6    // MTCK underside pad; LP GPIO, deep-sleep wake source
 
 // LED (commissioning state + low battery only)
-#define LED_PIN            16   // D6
+#define LED_PIN            17   // D7 — an output; does not care what its neighbour does
 
 // Battery divider 2x1M + 100nF on MTDI underside pad (NOT A0 — see docs/pinmap.md;
 // schematic-verified: no divider is populated on the board). GPIO5 is in Seeed's
