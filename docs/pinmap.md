@@ -72,10 +72,10 @@ debug both run over the C6's native USB Serial/JTAG.
 | ePaper DC | D3 | 21 | driver board routing | |
 | SHT40 SDA | D4 | 22 | our wiring | Grove cable, I2C addr 0x44 |
 | SHT40 SCL | D5 | 23 | our wiring | |
-| LED | D6 | 16 | our wiring (veltoc) | |
-| Encoder A | D7 | 17 | our wiring (veltoc) | no deep-sleep wake (not an LP pad) |
+| LED | D7 | 17 | our wiring | swapped with encoder A 2026-08-25; see bringup.md Encoder & LED |
+| Encoder A | D9 | 20 | our wiring | no deep-sleep wake (not an LP pad). A/B chosen so clockwise = view advances (bench 2026-08-26) |
 | ePaper SCK | D8 | 19 | driver board routing | |
-| Encoder B | D9 | 20 | our wiring (veltoc) | |
+| Encoder B | D6 | 16 | our wiring | was D7, which reads 0V once SPI is up (field-notes s16); D6 neighbours only SCL |
 | ePaper MOSI | D10 | 18 | driver board routing | |
 | Encoder push | MTCK pad (underside) | 6 | our wiring (veltoc) | LP GPIO → deep-sleep wake source |
 | Battery divider | **MTDI pad (underside)** | **5** | our wiring (veltoc) | ADC1_CH5; 2×1M + 100nF |
@@ -99,3 +99,12 @@ in an undefined logic region while the panel is supposed to be sleeping.
   V2-specific; probe BUSY/RST if the display misbehaves).
 - GPIO6 (MTCK) wakes from deep sleep with the encoder switch wiring.
 - ADC reading on GPIO5 with the 2×1M divider: settling behavior and calibration.
+
+## Driver board schematic
+
+Seeed publishes the ePaper Driver Board for XIAO schematic at
+<https://files.seeedstudio.com/wiki/xiao_075inch_epaper_panel/ePaper_Driver_Board.pdf>
+(rev 1.0, 2024-12-09, one sheet). The wiki page for the board is
+<https://wiki.seeedstudio.com/xiao_eink_expansion_board_v2/>. Note the older
+"ePaper Breakout Board" page (`XIAO-eInk-Expansion-Board`) documents a
+*different* board with BUSY on D5 — not this one.

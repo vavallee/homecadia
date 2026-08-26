@@ -133,18 +133,30 @@ Blocker: **2 of 3 panels are gone and there is no spare.** Reorder Seeed SKU
 
 ## Encoder & LED
 
-- [x] LED on D6/GPIO16 through 330 Ω drives: harness-scan drive test reads
-      hi=1 lo=0 and the low-battery pulse (`firmware/sensor-01/main/led.cpp`,
-      100 ms on / 10 s gap while the battery reads 0% with no divider fitted)
-      is visible. 2026-08-25.
-- [ ] Encoder rotation: zero `on_rotate` events over 25s with the knob
-      untouched (common pin at GND, both A/B wires fully in).
-- [ ] Clockwise = view advances (READINGS -> DIAG). If reversed, swap
-      `ENC_PIN_A`/`ENC_PIN_B` in `firmware/sensor-01/main/app_config.h` and
-      mirror [pinmap.md](pinmap.md); do not touch `ec11.c`.
+- [x] **LED drives — verified 2026-08-25/26** on D7/GPIO16→17 (see below),
+      330 Ω, harness-scan drive test `hi=1 lo=0`; the low-battery pulse
+      (`firmware/sensor-01/main/led.cpp`, 100 ms on / 10 s gap while the battery
+      reads 0 % with no divider fitted) is visible.
+- [x] **Encoder rotation — verified 2026-08-26.** Clean quadrature on both
+      lines (`(1,0)→(0,0)→(0,1)→(1,1)`), 11 decoded events in one back-and-forth
+      run, zero phantom events with the knob still. Only after the three encoder
+      pins were **soldered to leads**: EC11 blades are ~0.6 mm and seat in
+      neither breadboard springs nor Dupont sockets — every earlier run had one
+      line dead or intermittent.
+- [x] **Clockwise = view advances — verified 2026-08-26.** With A on D6 it read
+      `dir=-1`, so A/B were swapped in `app_config.h` (A=D9, B=D6), not on the
+      board. About 1 detent in 4 is dropped on a slow turn — one lost quadrature
+      transition per run; acceptable for a view selector, noted for later.
+- [x] **Pin move: encoder off D7.** On both driver boards D7/GPIO17 reads 0 V
+      from the moment `display_init()` brings the SPI bus up, and a 45 k
+      internal pull-up cannot lift it; the meter reads it open with no power
+      and the schematic has nothing on it. Unexplained. The LED (an output) now
+      lives on D7 and the encoder input on D6, whose only neighbour is SCL.
+- [ ] Encoder events during a panel refresh — 0 expected. The harness coupling
+      scan flags D7↔D8 (SCK); the LED is now on D7, so the encoder is clear of
+      it, but this row is what proves it.
 - [ ] GPIO6 (MTCK) push switch — deferred until the underside pad is
-      soldered; the existing deep-sleep-wake row under "## Power & sleep"
-      stays open.
+      soldered; the deep-sleep-wake row under "## Power & sleep" stays open.
 - [x] Harness scan: `firmware/sensor-01/main/bench_selftest.cpp` logs every
       pin's electrical state at boot in the bench profile. Read it first
       after any wiring change; all six outputs must say "follows the driver"
