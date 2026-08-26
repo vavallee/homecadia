@@ -543,3 +543,58 @@ flaky driver. It is not: it is a joint.
 - `ssd1680_init()` now scans and drives each signal at boot and logs the result.
   Read those lines first — `drive hi=1 lo=0 follows the driver` on all five
   outputs is the precondition for anything else being worth investigating.
+
+## 16. A diagnostic that runs after the driver owns the pin measures the driver
+
+**2026-08-25.** Four traps from one bench session, all downstream of
+instrumentation that ran too late or looked too shallow.
+
+**The SHT40 probe was measuring the controller, not the wire.** The first I2C
+line-state check in `sht40.c` ran *after* `i2c_new_master_bus()` on a failed
+probe. It returned byte-identical readings — SDA held HIGH, SCL held LOW —
+across every wiring change: sensor connected, sensor disconnected, cable
+unplugged entirely. By the time it ran, the I2C peripheral already owned
+GPIO22/23, held them with its own internal pull-ups, and was parked in a
+stuck-bus state. Several wiring changes were requested on the strength of a
+reading that could not have changed no matter what was on the bus.
+
+Rule: **sample a pin before any driver claims it.** That is why the boot-time
+harness scan (`firmware/sensor-01/main/bench_selftest.cpp`, gated by
+`CONFIG_HOMECADIA_BENCH_SELFTEST`, set in `firmware/sensor-01/sdkconfig.bench`)
+is the first call in `app_main()` (`app_main.cpp:199`), ahead of
+`board_rf_switch_init()` (`:200`) — nothing has touched a pin yet. The probe
+helpers were previously duplicated in `ssd1680.c` and `sht40.c`; they now live
+once in `firmware/components/pinprobe/` (`pinprobe_line_state`,
+`pinprobe_drive_test`), and `sht40_init()` calls `pinprobe_line_state()` on
+SDA/SCL (`sht40.c:59-60`) before the bus is created two lines later.
+
+**"Disconnected" means both ends out.** Same day, second lesson: encoder
+jumpers pulled from the encoder end but left plugged into D7/D9 at the XIAO
+end are unterminated antennas on two interrupt-enabled pins. The quadrature
+ISR (`firmware/components/ec11_encoder/ec11.c` — the Gray table at lines
+20–25, the 4-steps-per-detent accumulator at line 37) logged 411 valid-looking
+detents in 25s with nobody touching the knob — each one a panel refresh,
+~4,900 refreshes/hour against a panel rated for 1,000,000 cycles. Removing the
+wires entirely dropped it to 0. An "isolation" test that leaves a wire in the
+pin isolates nothing.
+
+**The short that killed the SHT40 was in the breadboard, not on the board or
+the panel.** The driver board's header pins sit in breadboard rows, so every
+row it occupies is on a signal net — SCL was shorted to ground through the
+breadboard itself, not through anything on the board or the FPC. Lifting the
+board straight out of the breadboard (USB only) made SCL read floating at
+boot. The timeline is the evidence: the sensor read fine through one capture
+and failed on the next, and the only change between the two captures was
+pulling encoder wires *on the breadboard* — the FPC was not touched. Bisect by
+substitution, one reset per step, and read the timeline before touching the
+ribbon.
+
+**A line probe on a live bus is itself a fault injector.** A pull-up/pull-down
+probe on a live I2C bus is itself a START condition — SDA falling while SCL is
+high — so the probe can wedge an attached slave mid-transaction; afterwards
+both lines read held LOW, which looks exactly like the dead-bus symptom the
+probe was trying to characterise in the first place. Recovery is the standard
+nine SCL clocks followed by a STOP. `bench_selftest()` issues that recovery
+after probing the I2C pins (`i2c_bus_recover()`, `bench_selftest.cpp:19-47`),
+and `sht40_init()` calls `i2c_master_bus_reset()` before its own probe
+(`sht40.c:78`) for the same reason.

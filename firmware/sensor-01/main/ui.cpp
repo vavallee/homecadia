@@ -1,6 +1,8 @@
 #include "ui.h"
 
 #include "button_gpio.h"
+#include "driver/gpio.h"
+#include "sdkconfig.h"
 #include "esp_app_desc.h"
 #include "esp_log.h"
 #include "esp_matter.h"
@@ -11,6 +13,7 @@
 #include "openthread/thread.h"
 
 #include "app_config.h"
+#include "bench_selftest.h"
 #include "battery.h"
 #include "display.h"
 #include "ec11.h"
@@ -76,6 +79,9 @@ static void reset_idle_timer(void)
 
 static void idle_cb(void *arg)
 {
+#if CONFIG_HOMECADIA_BENCH_SELFTEST
+    ESP_LOGW(TAG, "idle_cb fired");
+#endif
     s_mode = MODE_NAV;
     if (s_view != VIEW_READINGS) {
         s_view = VIEW_READINGS;
@@ -107,6 +113,10 @@ static void adjust_edited_value(int dir)
 
 static void on_rotate(int dir, void *arg)
 {
+#if CONFIG_HOMECADIA_BENCH_SELFTEST
+    ESP_LOGW(TAG, "on_rotate dir=%d (A=%d B=%d)", dir, gpio_get_level((gpio_num_t)ENC_PIN_A),
+             gpio_get_level((gpio_num_t)ENC_PIN_B));
+#endif
     reset_idle_timer();
     switch (s_mode) {
     case MODE_NAV:
@@ -128,6 +138,9 @@ static void on_rotate(int dir, void *arg)
 
 static void on_push(void *button_handle, void *usr_data)
 {
+#if CONFIG_HOMECADIA_BENCH_SELFTEST
+    ESP_LOGW(TAG, "on_push (SW=%d)", gpio_get_level((gpio_num_t)ENC_PIN_SW));
+#endif
     reset_idle_timer();
     if (s_view != VIEW_SETTINGS) {
         /* wake/keep-alive only; in M5 this is also the deep-sleep wake pin */
@@ -194,5 +207,6 @@ esp_err_t ui_init(void)
     reset_args.long_press.press_time = FACTORY_RESET_HOLD_S * 1000;
     iot_button_register_cb(btn, BUTTON_LONG_PRESS_START, &reset_args, on_factory_reset, nullptr);
 
+    bench_encoder_monitor_start(); /* no-op outside the bench profile */
     return ESP_OK;
 }

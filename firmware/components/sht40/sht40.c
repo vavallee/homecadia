@@ -1,9 +1,13 @@
 #include "sht40.h"
+#include "esp_log.h"
+#include "pinprobe.h"
 
 #include <stdlib.h>
 #include "driver/i2c_master.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+
+static const char *TAG = "sht40";
 
 #define SHT40_CMD_MEASURE_HIGH_PRECISION 0xFD
 #define SHT40_MEASURE_DURATION_MS        10 /* datasheet: 8.3ms max, high precision */
@@ -26,12 +30,34 @@ static uint8_t crc8(const uint8_t *data, int len)
     return crc;
 }
 
+
+/* Sweep every 7-bit address: a device answering somewhere unexpected is a
+ * wiring swap or a wrong address constant, not a dead sensor. */
+static void scan_addresses(i2c_master_bus_handle_t bus)
+{
+    int found = 0;
+    for (uint8_t a = 0x08; a <= 0x77; a++) {
+        if (i2c_master_probe(bus, a, 20) == ESP_OK) {
+            ESP_LOGE(TAG, "  device answering at 0x%02X", a);
+            found++;
+        }
+    }
+    if (found == 0) {
+        ESP_LOGE(TAG, "  no device answered on any address 0x08-0x77");
+    }
+}
+
 esp_err_t sht40_init(int sda_gpio, int scl_gpio, uint8_t i2c_addr, sht40_handle_t *out)
 {
     struct sht40 *h = calloc(1, sizeof(*h));
     if (!h) {
         return ESP_ERR_NO_MEM;
     }
+
+    /* Sample the lines first: once the bus exists, the peripheral owns these
+     * pins and any reading describes the controller, not the wiring. */
+    pinprobe_line_t sda_state = pinprobe_line_state(sda_gpio);
+    pinprobe_line_t scl_state = pinprobe_line_state(scl_gpio);
 
     i2c_master_bus_config_t bus_cfg = {
         .i2c_port = -1, /* auto-select */
@@ -47,8 +73,18 @@ esp_err_t sht40_init(int sda_gpio, int scl_gpio, uint8_t i2c_addr, sht40_handle_
         return err;
     }
 
+    /* The line probe above pulled SDA low with SCL high -- a START -- so a
+     * present sensor may now be mid-transaction. Recover before asking. */
+    i2c_master_bus_reset(h->bus);
+
     err = i2c_master_probe(h->bus, i2c_addr, 50);
     if (err != ESP_OK) {
+        ESP_LOGE(TAG, "no SHT40 at 0x%02X on SDA=GPIO%d SCL=GPIO%d; bus diagnosis:",
+                 i2c_addr, sda_gpio, scl_gpio);
+        ESP_LOGE(TAG, "  SDA GPIO%-2d %s", sda_gpio, pinprobe_line_name(sda_state));
+        ESP_LOGE(TAG, "  SCL GPIO%-2d %s (held LOW = no clock possible)", scl_gpio,
+                 pinprobe_line_name(scl_state));
+        scan_addresses(h->bus);
         i2c_del_master_bus(h->bus);
         free(h);
         return ESP_ERR_NOT_FOUND;

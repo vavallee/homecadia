@@ -44,6 +44,15 @@ Bench wiring diagrams and the no-solder connectivity procedure live in
       with these assignments. Bonus: the board breaks out D4/D5 as
       labelled through-holes — a candidate solder point for the SHT40 in
       final assembly instead of the XIAO pins.
+- [x] **Driver board is a pure pass-through on every data line — schematic-
+      verified 2026-08-25** (`ePaper_Driver_Board.pdf`, Seeed, rev 1.0,
+      2024-12-09): CN1/CN2/CN4 route D0–D10 straight to the FPC or to the
+      header pins with no pull-ups, series resistors, buffer or level shifter.
+      D4/D5/D6/D7/D9 reach nothing on the board except the header. The slide
+      switch (CN6) is in the **battery** path only — it does not gate 3V3 or
+      the panel. So any pull-up seen on D3/D8/D10 is the panel's, and a
+      "held HIGH" on D4/D5 is coupling from a neighbour, not a board pull-up
+      (an earlier row here claimed I2C pull-ups on D4/D5; it was wrong).
 - [ ] BAT+/BAT− underside pad markings confirmed on this XIAO revision.
 - [ ] EEMB battery lead polarity measured with multimeter — **all 3 cells,
       before first connection** ([assembly.md](assembly.md) warning).
@@ -121,6 +130,25 @@ useful measurement was the BUSY timing above.
 
 Blocker: **2 of 3 panels are gone and there is no spare.** Reorder Seeed SKU
 104990853 before the next two units are assembled.
+
+## Encoder & LED
+
+- [x] LED on D6/GPIO16 through 330 Ω drives: harness-scan drive test reads
+      hi=1 lo=0 and the low-battery pulse (`firmware/sensor-01/main/led.cpp`,
+      100 ms on / 10 s gap while the battery reads 0% with no divider fitted)
+      is visible. 2026-08-25.
+- [ ] Encoder rotation: zero `on_rotate` events over 25s with the knob
+      untouched (common pin at GND, both A/B wires fully in).
+- [ ] Clockwise = view advances (READINGS -> DIAG). If reversed, swap
+      `ENC_PIN_A`/`ENC_PIN_B` in `firmware/sensor-01/main/app_config.h` and
+      mirror [pinmap.md](pinmap.md); do not touch `ec11.c`.
+- [ ] GPIO6 (MTCK) push switch — deferred until the underside pad is
+      soldered; the existing deep-sleep-wake row under "## Power & sleep"
+      stays open.
+- [x] Harness scan: `firmware/sensor-01/main/bench_selftest.cpp` logs every
+      pin's electrical state at boot in the bench profile. Read it first
+      after any wiring change; all six outputs must say "follows the driver"
+      before anything else is worth investigating.
 
 ## Case & mechanical
 

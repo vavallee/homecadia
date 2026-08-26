@@ -72,6 +72,33 @@ for k in "${KEYS[@]}"; do
   printf '  %-38s shipping=%-4s bench=%s\n' "$k" "$ship" "$bench"
 done
 
+# The reverse case: bench-only features that must NOT reach a shipping image.
+# The harness scan adds boot time and log noise; a shipping build that carries
+# it is a shipping build nobody re-validated on the default profile.
+BENCH_ONLY=(CONFIG_HOMECADIA_BENCH_SELFTEST)
+for k in "${BENCH_ONLY[@]}"; do
+  if grep -qx "$k=y" "$SHIPPING"; then
+    ship="ON"
+    echo "::error::$k is enabled in the shipping profile ($SHIPPING); bench-only"
+    rc=1
+  elif grep -qx "# $k is not set" "$SHIPPING"; then
+    ship="off"
+  else
+    ship="ABSENT"
+    echo "::error::$k is absent from $SHIPPING -- Kconfig.projbuild not picked up?"
+    rc=1
+  fi
+
+  if grep -qx "$k=y" "$BENCH"; then
+    bench="on"
+  else
+    bench="OFF"
+    echo "::error::$k is not enabled in the bench profile ($BENCH)"
+    rc=1
+  fi
+  printf '  %-38s shipping=%-4s bench=%s\n' "$k" "$ship" "$bench"
+done
+
 [ "$rc" -eq 0 ] || exit 1
 echo
 echo "OK - profiles differ as intended"

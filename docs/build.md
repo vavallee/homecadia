@@ -154,8 +154,8 @@ pay that cost again — append steps, do not split.
 | Step | Catches |
 |---|---|
 | Build, shipping profile | ordinary breakage |
-| Build, bench profile | code behind `#if CONFIG_PM_ENABLE` that compiles in one profile and not the other |
-| `tools/check-profiles.sh` | the bench profile silently no longer disabling sleep |
+| Build, bench profile | code behind `#if CONFIG_PM_ENABLE` that compiles in one profile and not the other; `sdkconfig.bench` also enables the boot-time harness scan (`CONFIG_HOMECADIA_BENCH_SELFTEST`) |
+| `tools/check-profiles.sh` | the bench profile silently no longer disabling sleep, and `CONFIG_HOMECADIA_BENCH_SELFTEST` reaching a shipping image — it asserts `# CONFIG_HOMECADIA_BENCH_SELFTEST is not set` in the shipping sdkconfig and `=y` in the bench one, since bench-only diagnostics must not reach a shipping image |
 | `tools/check-version.sh` | a `SoftwareVersion` that is stale, untagged, or fails to increase |
 
 Flash images (app, bootloader, partition table, `flasher_args.json`) are

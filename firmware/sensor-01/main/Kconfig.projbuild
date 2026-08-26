@@ -1,0 +1,16 @@
+menu "homecadia sensor-01"
+
+config HOMECADIA_BENCH_SELFTEST
+    bool "Bench harness self-test at boot"
+    default n
+    help
+        Before any driver initialises, probe every pin in app_config.h and log
+        its electrical state: drive-test the outputs (ePaper command lines, LED)
+        and read the line state of the inputs (BUSY, I2C, encoder, battery ADC).
+        Also enables verbose UI/display event logging.
+
+        One reset after any wiring change tells you whether the harness is
+        right. Bench profile only (sdkconfig.bench): it adds boot time and log
+        noise and has no place in a shipping image.
+
+endmenu
