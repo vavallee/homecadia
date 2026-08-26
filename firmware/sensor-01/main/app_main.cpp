@@ -20,6 +20,7 @@
 
 #include <common_macros.h>
 #include <app_config.h>
+#include <bench_selftest.h>
 #include <display.h>
 #include <led.h>
 #include <sensor_loop.h>
@@ -194,6 +195,8 @@ static void board_rf_switch_init(void)
 
 extern "C" void app_main()
 {
+    /* Before anything claims a pin: a pin a driver owns reports the driver. */
+    bench_selftest();
     board_rf_switch_init();
 
     esp_err_t err = nvs_flash_init();
@@ -263,7 +266,6 @@ extern "C" void app_main()
     };
     set_openthread_platform_config(&config);
 #endif
-
     err = settings_init();
     if (err != ESP_OK) {
         ESP_LOGW(TAG, "Settings load failed (%s), using defaults", esp_err_to_name(err));
@@ -273,17 +275,14 @@ extern "C" void app_main()
     if (err != ESP_OK) {
         ESP_LOGW(TAG, "LED init failed: %s", esp_err_to_name(err));
     }
-
     err = display_init();
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Display init failed: %s — continuing headless", esp_err_to_name(err));
     }
-
     err = ui_init();
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "UI init failed: %s — continuing without input", esp_err_to_name(err));
     }
-
     err = esp_matter::start(app_event_cb);
     ABORT_APP_ON_FAILURE(err == ESP_OK, ESP_LOGE(TAG, "Failed to start Matter, err:%d", err));
 
@@ -291,7 +290,6 @@ extern "C" void app_main()
     if (chip::Server::GetInstance().GetFabricTable().FabricCount() == 0) {
         show_commissioning_screen();
     }
-
     sensor_loop_endpoints_t eps = {
         .temperature_endpoint_id = endpoint::get_id(temp_ep),
         .humidity_endpoint_id = endpoint::get_id(hum_ep),
@@ -302,7 +300,6 @@ extern "C" void app_main()
         /* Keep the node up for commissioning/bench tests without the sensor wired. */
         ESP_LOGE(TAG, "Sensor loop not running (%s)", esp_err_to_name(err));
     }
-
     ESP_LOGI(TAG, "homecadia sensor-01 up (poll %ds, report on ≥%.1f°C / ≥%.0f%%RH delta)",
              SENSOR_POLL_INTERVAL_S, REPORT_DELTA_TEMP_C, REPORT_DELTA_RH_PCT);
 }

@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "esp_log.h"
+#include "sdkconfig.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "freertos/task.h"
@@ -213,6 +214,12 @@ static void display_task(void *arg)
         if (xQueueReceive(s_queue, &msg, portMAX_DELAY) != pdTRUE) {
             continue;
         }
+#if CONFIG_HOMECADIA_BENCH_SELFTEST
+        static const char *kNames[] = {"READINGS", "COMMISSIONING", "COMMISSIONED", "DIAG",
+                                       "SETTINGS"};
+        ESP_LOGW(TAG, "queued msg: %s", kNames[msg.type]);
+#endif
+
         switch (msg.type) {
         case display_msg_t::MSG_READINGS:
             if (s_awaiting_commissioning) {

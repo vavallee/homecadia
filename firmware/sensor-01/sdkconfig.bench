@@ -16,3 +16,6 @@
 CONFIG_PM_ENABLE=n
 CONFIG_FREERTOS_USE_TICKLESS_IDLE=n
 CONFIG_BT_LE_SLEEP_ENABLE=n
+
+# Boot-time harness scan + UI event logging. Bench only; see Kconfig help.
+CONFIG_HOMECADIA_BENCH_SELFTEST=y
