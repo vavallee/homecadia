@@ -80,8 +80,23 @@ Artwork lives in [`artwork/`](artwork/):
 
 | File | Purpose |
 |---|---|
-| `wordmark-homecadia-1200dpi.png` | black-on-white, sized to exactly 36.72 × 5.64mm at 1200 dpi |
-| `wordmark-placement.png` | dimensioned drawing, datum = lower-left corner of the outer face |
+| `wordmark-homecadia.svg` | **vector, send this one.** Glyphs outlined (no live text, no font needed), 36.72 × 5.70mm, 1 user unit = 1mm, filled black = material to remove |
+| `wordmark-placement.svg` | vector placement drawing: panel outline, datum lines, wordmark in position. Reference geometry is stroked grey; only the filled wordmark is engraved |
+| `wordmark-homecadia-1200dpi.png` | the original raster, black-on-white at 1200 dpi. Superseded by the SVG; kept because it is what the 2026-08-13 quote was based on |
+| `wordmark-placement.png` | original dimensioned drawing, datum = lower-left corner of the outer face |
+
+The SVGs are generated from `Ubuntu-B.ttf` at 5.00mm cap height with 0.098mm of
+letter-spacing, chosen so the ink box matches the 36.72mm width the raster
+artwork and the quote were built around. Two independent renderers (fontTools
+and PIL) put untracked Ubuntu Bold at 35.94mm, so the spacing in the original
+PNG was deliberate and is reproduced rather than discarded.
+
+**The height is 5.70mm, not the 5.64mm quoted above.** 5.70mm is the true ink
+height of `homecadia` in Ubuntu Bold at a 5.00mm cap height — the ascenders of
+`h` and `d` rise above the cap line, and there are no descenders. The 5.64
+figure appears to be a measurement artifact; the 0.06mm difference is far below
+engraving tolerance and does not move the placement datum, which is the
+lower-left corner.
 
 Placement: 54.09mm from the left edge, 3.07mm up from the bottom edge, 36.72 ×
 5.64mm, Ubuntu Bold, 5.00mm cap height, engraved 0.3–0.5mm deep. That sits in
