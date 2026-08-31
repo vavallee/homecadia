@@ -18,6 +18,7 @@ meter (e.g. Nordic PPK2 or a µCurrent) between battery and XIAO.
 | Display partial refresh | ~? mC per refresh | | measure in M3: charge per refresh event |
 | Display full refresh | ~? mC per refresh | | every N partials for ghosting |
 | LED blink | avoided | | commissioning + low-battery only |
+| Inter-pin leakage (post-wash) | <1µA | | flux residue washed 2026-08-31; a 100kΩ path would add ~0.2µA at 0.5% refresh duty — re-scan if refresh behaviour changes |
 | **Average (no display)** | **≤300µA target** | | |
 
 ## Months-of-battery calculator

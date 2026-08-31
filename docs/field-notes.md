@@ -617,8 +617,87 @@ and `sht40_init()` calls `i2c_master_bus_reset()` before its own probe
   grip a 0.64 mm square pin; the encoder's flat ~0.6 mm blades sit loose in
   either. Symptom: one line toggles cleanly while the other is stuck, and which
   one changes between runs. Soldered leads fixed it in one go.
-- **D7 anomaly, open.** On both driver boards GPIO17/D7 reads 0 V once
-  `display_init()` brings up SPI — 45 k pull-up cannot lift it, meter reads it
-  open unpowered (XIAO in or out), schematic has nothing on it. The coupling
-  scan reports it following SCK. Routed around (LED took D7), not understood.
-  The PPK2's logic port time-aligned with a refresh is the next tool for it.
+- **D7 anomaly — closed 2026-08-31.** On both driver boards GPIO17/D7 read 0 V
+  once `display_init()` brought up SPI; the meter read it open unpowered and
+  the schematic has nothing on it. Cause found: plumbing-flux residue between
+  the adjacent D7/D8 socket joints — see section 17. D7 followed SCK because
+  they are neighbours, not because of anything electrical.
+
+
+## 17. An ohmmeter cannot clear a powered-only path — and plumbing flux makes them
+
+**2026-08-31.** Driver boards #1 and #2 both had 4–8 kΩ conduction between
+*adjacent* socket pins (D2↔D3, D3↔D4, D7↔D8, D8↔D9, D9↔D10 — pairs with
+nothing electrical in common, only physical adjacency). Every multimeter
+resistance measurement of those pairs, on every range, powered off, read
+open. Days went into substitution tests that could not succeed: both boards
+were soldered with the same flux, so swapping boards was never an independent
+trial, and the meter kept "clearing" the true fault.
+
+**Why the meter lies:** a DMM's resistance test drives ~0.3 V. Ionic
+contamination conducts electrochemically — it needs bias to move ions and
+grow filaments. At 0.3 V: open. At 3.3 V: kΩ. The conduction also *drifts*
+under sustained DC (watched live: 0.2–1.0 V wandering, pinning near 0, then
+recovering — a fixed resistor cannot do that; ionic residue does).
+
+**Root cause:** the flux was AIM **Nitro Flux — "a plumbing solder paste
+flux"** per its own TDS, ASTM B-813 (copper *pipe* flux, water-flushable,
+ionic by design). It is not an electronics flux. Every joint made with it
+carries corrosive, hygroscopic residue that conducts under bias and keeps
+corroding. IPA alone made it *worse* — it dissolves the binder and spreads
+the ionic salts over more pads (observed: coupling count rose after an IPA
+wipe).
+
+**The measurement that works — pin-hold + voltmeter:**
+`CONFIG_HOMECADIA_BENCH_PIN_HOLD` parks the pins with internal pull-ups on
+and one neighbour driven low; a 10 MΩ DMM on DC volts reads the divider:
+
+    V = 3.3 · R / (45k + R)
+    3.3 V none · 2.3 V ≈ 100k · 1.65 V ≈ 45k · 0.33 V ≈ 5k · 0.03 V ≈ 450R
+
+(The C6 pull-up is specified 10–80 kΩ — read order of magnitude, not value.)
+
+**The clean that works — two stages, matching the two-component residue:**
+1. IPA flood + brush, *drained off the board edge* (never wiped in place),
+   to strip the rosin/binder.
+2. Hot water + drop of dish soap, brush, then a distilled-water rinse, to
+   dissolve the ionic salts (B-813 flux is water-flushable by design).
+3. Dry hard: shake out socket bores, hair dryer low 10 min, an hour warm.
+
+Verified on board #3: pre-wash 0.2–1.0 V drifting on D9; post-wash flat
+3.1 V through every phase, and the first fully clean coupling scan ever
+recorded on the assembled stack.
+
+**Decoder rows:**
+- *Uniform kΩ between many adjacent pins, resistance growing with distance*
+  = a conductive sheet or joint contamination, not a circuit.
+- *Coupling that only registers in one direction* = the follower's other
+  loads (panel input leakage on MOSI/SCK) moved its threshold — not a diode.
+- *Resistance that drifts under steady DC bias* = ionic/electrochemical, and
+  no amount of solvent-wiping fixes it; wash the chemistry it matches.
+
+**Standing rule:** electronics joints get rosin-core wire or a no-clean
+electronics flux (J-STD-004). The plumbing paste stays with the plumbing.
+After soldering headers: two-stage clean, dry, and one bench boot — the scan
+must print `coupling scan: no pin follows any other` before anything else is
+attached. New parts need that one 30-second scan, not days.
+
+## 18. Never inject from a stiff source into a live GPIO
+
+**2026-08-31.** XIAO #1 died measuring the leak. PPK2 source meter at 3.3 V
+(1 A capability) clipped to D9 while the board ran — but the boot-time
+coupling scan *drives* every pin, so within milliseconds of reset the C6
+pulled D9 low against the source: a direct short through an output
+transistor rated 40 mA. The PPK2 logged 0.68 A bursts. The smoke came out at
+the opposite corner, by D0 — injected current also forward-biases the pin's
+ESD clamp into the 3V3 rail, and the regulator (which lives by the USB end)
+ate the rest.
+
+Rules, in order of preference:
+1. Measure **voltage** with the firmware holding the pins (pin-hold + DMM).
+   Nothing external sources current; nothing can be harmed.
+2. If current must be injected, put **≥1 kΩ in series** — caps any mishap at
+   ~3 mA — and only into a pin the firmware provably holds as an input for
+   the whole window, including reboots.
+3. PPK2 source-meter mode is for **supply substitution** (battery pads, USB
+   out, single supply) — never for signal pins on a powered board.

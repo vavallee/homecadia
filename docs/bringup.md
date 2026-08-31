@@ -147,11 +147,22 @@ Blocker: **2 of 3 panels are gone and there is no spare.** Reorder Seeed SKU
       `dir=-1`, so A/B were swapped in `app_config.h` (A=D9, B=D6), not on the
       board. About 1 detent in 4 is dropped on a slow turn — one lost quadrature
       transition per run; acceptable for a view selector, noted for later.
-- [x] **Pin move: encoder off D7.** On both driver boards D7/GPIO17 reads 0 V
-      from the moment `display_init()` brings the SPI bus up, and a 45 k
-      internal pull-up cannot lift it; the meter reads it open with no power
-      and the schematic has nothing on it. Unexplained. The LED (an output) now
-      lives on D7 and the encoder input on D6, whose only neighbour is SCL.
+- [x] **Pin move: encoder off D7.** On both driver boards D7/GPIO17 read 0 V
+      from the moment `display_init()` brought the SPI bus up, and a 45 k
+      internal pull-up could not lift it; the meter read it open with no power.
+      **Explained 2026-08-31:** plumbing-flux residue conducting between the
+      adjacent D7/D8 socket joints under bias — field-notes.md section 17. The
+      pin assignment stays (LED on D7, encoder A/B on D9/D6): it is verified
+      and there is no reason to churn it.
+- [x] **Boards #1/#2 retired; board #3 washed and clean — 2026-08-31.** Flux
+      residue (AIM Nitro, a plumbing flux) put drifting kΩ paths between
+      adjacent socket pins on every board soldered with it. Two-stage wash
+      (IPA, then hot soapy water + distilled rinse) on board #3: pin-hold
+      metered flat 3.1 V on D9 through every phase and the full stack scanned
+      `no pin follows any other` — panel, SHT40 (0x44, readings on the loop),
+      encoder (one detent CW `dir=+1`, CCW `dir=-1`, zero idle events) and LED
+      all on one reset. XIAO #1 died to a source-meter injection during the
+      hunt (field-notes.md section 18); XIAO #2 is in service.
 - [ ] Encoder events during a panel refresh — 0 expected. The harness coupling
       scan flags D7↔D8 (SCK); the LED is now on D7, so the encoder is clear of
       it, but this row is what proves it.
