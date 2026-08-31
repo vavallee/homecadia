@@ -117,6 +117,14 @@ resets, and two USB brownouts severe enough that Windows reported
 
 - Solder the headers **before** any further bring-up. Required for the final
   build regardless.
+- **Electronics flux only** — rosin-core wire or a no-clean (J-STD-004) pen.
+  Plumbing paste flux (ASTM B-813, e.g. AIM Nitro) left ionic residue on
+  driver boards #1 and #2 that conducted kΩ between adjacent pins under bias
+  and cost days ([field-notes.md](field-notes.md) section 17).
+- **After soldering: two-stage clean, dry, scan.** IPA flood drained off the
+  edge, then hot soapy water + distilled rinse, dry hard (bores hold water).
+  Then one bench-profile boot: the harness scan must print
+  `coupling scan: no pin follows any other` before anything else is attached.
 - **Confirm which face the XIAO seats on before soldering** — desoldering 14
   pins is the worst job in this build.
 - Preferred bench topology afterwards is the final-build one: XIAO seated
