@@ -13,4 +13,17 @@ config HOMECADIA_BENCH_SELFTEST
         right. Bench profile only (sdkconfig.bench): it adds boot time and log
         noise and has no place in a shipping image.
 
+config HOMECADIA_BENCH_PIN_HOLD
+    bool "Hold MOSI/SCK/D9/D7 at boot for multimeter readings"
+    depends on HOMECADIA_BENCH_SELFTEST
+    default n
+    help
+        Adds 150s to boot: parks the four adjacent driver-board breakout pins
+        (EPD MOSI, EPD SCK, ENC A, LED) with internal pull-ups on, driving one
+        neighbour low per phase, so a multimeter can read each pin to GND.
+
+        The pull-up forms a calibrated divider: 3.3 * R / (45k + R). That sizes
+        a leak that only conducts under power, which an unpowered ohmmeter
+        cannot detect. Turn this off once the path is identified.
+
 endmenu
