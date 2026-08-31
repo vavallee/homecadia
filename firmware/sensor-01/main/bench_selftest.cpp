@@ -7,6 +7,7 @@
 #include "esp_rom_sys.h"
 #include "esp_timer.h"
 #include "esp_adc/adc_oneshot.h"
+#include "driver/i2c_master.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
@@ -287,7 +288,11 @@ void bench_selftest(void)
     }
 
     coupling_scan();
+#if CONFIG_HOMECADIA_BENCH_PIN_HOLD
+    bench_pin_hold();
+#endif
     i2c_bus_recover(SHT40_I2C_SDA, SHT40_I2C_SCL);
+    bench_i2c_scan_both_orders();
 
     if (faults) {
         ESP_LOGE(TAG, "%d output(s) cannot be driven -- fix the wiring before reading anything else", faults);
@@ -295,6 +300,64 @@ void bench_selftest(void)
         ESP_LOGW(TAG, "all outputs follow the driver");
     }
 }
+
+#if CONFIG_HOMECADIA_BENCH_PIN_HOLD
+/* Park the adjacent breakout pins in a known state long enough to meter them.
+ * coupling_scan() drives each pin for 500us, far too short for a multimeter,
+ * and a path that only conducts under power cannot be found with an ohmmeter
+ * at all -- verified 2026-08-31: every pair among MOSI/D9/SCK/D7 reads open at
+ * 200k unpowered, while the powered scan reports all four following each other.
+ *
+ * So measure voltage instead. With the C6's internal pull-up (nominal 45k)
+ * holding a pin up and one neighbour driven low, the pin settles at
+ * 3.3 * R / (45k + R), where R is the path between them:
+ *
+ *   3.30 V  no path      1.65 V  ~45k      0.33 V  ~5k
+ *   0.66 V  ~11k         0.10 V  ~1.4k     0.03 V  ~450R
+ *
+ * The pull-up is specified 10k-80k, so read the result as an order of
+ * magnitude, not a value. A 10M-input meter perturbs the divider by <0.5%. */
+static void hold_phase(const char *what, int aggressor, int seconds)
+{
+    const int group[] = {EPD_PIN_MOSI, EPD_PIN_SCK, ENC_PIN_A, LED_PIN};
+    for (int i = 0; i < 4; i++) {
+        gpio_config_t io = {
+            .pin_bit_mask = 1ULL << group[i],
+            .mode = GPIO_MODE_INPUT,
+            .pull_up_en = GPIO_PULLUP_ENABLE,
+        };
+        gpio_config(&io);
+    }
+    if (aggressor >= 0) {
+        gpio_config_t io = {
+            .pin_bit_mask = 1ULL << aggressor,
+            .mode = GPIO_MODE_INPUT_OUTPUT,
+        };
+        gpio_config(&io);
+        gpio_set_level((gpio_num_t)aggressor, 0);
+    }
+    ESP_LOGW(TAG, "HOLD: %s -- meter DC volts, each pin to GND, %ds", what, seconds);
+    for (int t = seconds; t > 0; t -= 10) {
+        ESP_LOGW(TAG, "HOLD: %s  %ds left", what, t);
+        vTaskDelay(pdMS_TO_TICKS(10000));
+    }
+}
+
+void bench_pin_hold(void)
+{
+    ESP_LOGE(TAG, "== PIN HOLD: MOSI=GPIO%d SCK=GPIO%d D9=GPIO%d D7=GPIO%d ==",
+             EPD_PIN_MOSI, EPD_PIN_SCK, ENC_PIN_A, LED_PIN);
+    hold_phase("baseline, nothing driven (all four should read 3.3V)", -1, 30);
+    hold_phase("MOSI driven LOW (read SCK, D9, D7)", EPD_PIN_MOSI, 60);
+    hold_phase("SCK driven LOW (read MOSI, D9, D7)", EPD_PIN_SCK, 60);
+    const int group[] = {EPD_PIN_MOSI, EPD_PIN_SCK, ENC_PIN_A, LED_PIN};
+    for (int i = 0; i < 4; i++) {
+        gpio_config_t io = {.pin_bit_mask = 1ULL << group[i], .mode = GPIO_MODE_INPUT};
+        gpio_config(&io);
+    }
+    ESP_LOGE(TAG, "== PIN HOLD done, continuing boot ==");
+}
+#endif /* CONFIG_HOMECADIA_BENCH_PIN_HOLD */
 
 void bench_probe_i2c(const char *when)
 {
@@ -331,6 +394,48 @@ static void enc_raw_task(void *)
 void bench_encoder_monitor_start(void)
 {
     xTaskCreate(enc_raw_task, "enc_raw", 2048, nullptr, 2, nullptr);
+}
+
+static int scan_one(int sda, int scl)
+{
+    i2c_master_bus_config_t cfg = {};
+    cfg.i2c_port = -1;
+    cfg.sda_io_num = (gpio_num_t)sda;
+    cfg.scl_io_num = (gpio_num_t)scl;
+    cfg.clk_source = I2C_CLK_SRC_DEFAULT;
+    cfg.glitch_ignore_cnt = 7;
+    cfg.flags.enable_internal_pullup = true;
+    i2c_master_bus_handle_t bus = nullptr;
+    if (i2c_new_master_bus(&cfg, &bus) != ESP_OK) {
+        ESP_LOGE(TAG, "  SDA=GPIO%d SCL=GPIO%d: bus create failed", sda, scl);
+        return 0;
+    }
+    i2c_master_bus_reset(bus);
+    int found = 0;
+    for (uint8_t a = 0x08; a <= 0x77; a++) {
+        if (i2c_master_probe(bus, a, 20) == ESP_OK) {
+            ESP_LOGW(TAG, "  SDA=GPIO%d SCL=GPIO%d: device at 0x%02X", sda, scl, a);
+            found++;
+        }
+    }
+    if (!found) {
+        ESP_LOGI(TAG, "  SDA=GPIO%d SCL=GPIO%d: nothing answered", sda, scl);
+    }
+    i2c_del_master_bus(bus);
+    return found;
+}
+
+void bench_i2c_scan_both_orders(void)
+{
+    ESP_LOGW(TAG, "I2C scan, both pin orders:");
+    int as_wired = scan_one(SHT40_I2C_SDA, SHT40_I2C_SCL);
+    int swapped = scan_one(SHT40_I2C_SCL, SHT40_I2C_SDA);
+    if (!as_wired && swapped) {
+        ESP_LOGE(TAG, "  SDA and SCL are SWAPPED: the bus works with GPIO%d as SDA.",
+                 (int)SHT40_I2C_SCL);
+    } else if (!as_wired && !swapped) {
+        ESP_LOGE(TAG, "  no device either way: sensor unpowered, dead, or a wire is open");
+    }
 }
 
 #endif /* CONFIG_HOMECADIA_BENCH_SELFTEST */

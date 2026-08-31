@@ -19,3 +19,7 @@ CONFIG_BT_LE_SLEEP_ENABLE=n
 
 # Boot-time harness scan + UI event logging. Bench only; see Kconfig help.
 CONFIG_HOMECADIA_BENCH_SELFTEST=y
+
+# 150s pin-hold for metering the MOSI/D9/SCK/D7 coupling with a multimeter.
+# Off by default: it adds 150s to every boot. Turn on only to size a coupling.
+CONFIG_HOMECADIA_BENCH_PIN_HOLD=n
