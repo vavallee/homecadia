@@ -163,9 +163,13 @@ Blocker: **2 of 3 panels are gone and there is no spare.** Reorder Seeed SKU
       encoder (one detent CW `dir=+1`, CCW `dir=-1`, zero idle events) and LED
       all on one reset. XIAO #1 died to a source-meter injection during the
       hunt (field-notes.md section 18); XIAO #2 is in service.
-- [ ] Encoder events during a panel refresh — 0 expected. The harness coupling
-      scan flags D7↔D8 (SCK); the LED is now on D7, so the encoder is clear of
-      it, but this row is what proves it.
+- [x] **Encoder events during a panel refresh — 0, verified 2026-08-31.**
+      Three refreshes across ~30 min of monitoring on washed board #3, knob
+      untouched, zero `on_rotate` (the only events all session were the two
+      deliberate detents). Backed by the direct measurement: post-wash, D9
+      metered a flat 3.1 V with MOSI and SCK each driven low — no path left
+      to fake an edge. (The pre-wash D7↔D8 flag was flux residue,
+      field-notes.md section 17.)
 - [ ] GPIO6 (MTCK) push switch — deferred until the underside pad is
       soldered; the deep-sleep-wake row under "## Power & sleep" stays open.
 - [x] Harness scan: `firmware/sensor-01/main/bench_selftest.cpp` logs every
