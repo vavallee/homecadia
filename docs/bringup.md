@@ -170,6 +170,15 @@ Blocker: **2 of 3 panels are gone and there is no spare.** Reorder Seeed SKU
       metered a flat 3.1 V with MOSI and SCK each driven low — no path left
       to fake an edge. (The pre-wash D7↔D8 flag was flux residue,
       field-notes.md section 17.)
+- [x] **Battery divider reads correctly — verified 2026-09-02.** 2×1M + 100nF
+      on **MTMS/GPIO4** (moved from MTDI/GPIO5 after that pad lifted on
+      XIAO #2). Multimeter 1570mV at the pin vs 1551mV computed by
+      `battery_read_mv()` — 1.2% apart, inside the ±5% the code asks for.
+      Measured with BAT+ at ~3.1V from the charge IC with no cell fitted, so
+      `bat 0%` is the correct answer, not a fault.
+- [ ] Divider against a real cell — needs the EEMB LiPo soldered to BAT+/BAT−
+      (polarity check first, [assembly.md](assembly.md)). Until then BAT+ has
+      no meaningful voltage and the percent curve is untested.
 - [ ] GPIO6 (MTCK) push switch — deferred until the underside pad is
       soldered; the deep-sleep-wake row under "## Power & sleep" stays open.
 - [x] Harness scan: `firmware/sensor-01/main/bench_selftest.cpp` logs every

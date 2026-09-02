@@ -36,8 +36,9 @@ sheet numbers cited). Rows still open on hardware are in
 
 ### Strapping on the battery-sense pin — resolved, not a risk
 
-GPIO5 (MTDI) is in Seeed's avoid list, and the permanently-connected 2×1M
-divider holds it at ~Vbat/2 ≈ 1.9V — inside the undefined logic band
+**Either MTMS/GPIO4 or MTDI/GPIO5 works; sensor-01 uses GPIO4.** Both are in
+Seeed's avoid list, and the permanently-connected 2×1M divider holds the pin at
+~Vbat/2 ≈ 1.9V — inside the undefined logic band
 (V<sub>IL</sub> ≲ 0.8V, V<sub>IH</sub> ≳ 2.3V) while straps are sampled. So the
 strap latches unpredictably.
 
@@ -78,7 +79,7 @@ debug both run over the C6's native USB Serial/JTAG.
 | Encoder B | D6 | 16 | our wiring | was D7, which reads 0V once SPI is up (field-notes s16); D6 neighbours only SCL |
 | ePaper MOSI | D10 | 18 | driver board routing | |
 | Encoder push | MTCK pad (underside) | 6 | our wiring (veltoc) | LP GPIO → deep-sleep wake source |
-| Battery divider | **MTDI pad (underside)** | **5** | our wiring (veltoc) | ADC1_CH5; 2×1M + 100nF |
+| Battery divider | **MTMS pad (underside)** | **4** | our wiring | ADC1_CH4; 2×1M + 100nF. Verified 2026-09-02 (±1.2% vs meter). Moved from MTDI/GPIO5 after a pad lifted on XIAO #2; the two are interchangeable here — see below |
 | Battery + / − | battery pads (underside) | — | XIAO charge IC | ⚠️ polarity check first — [assembly.md](assembly.md) |
 
 ## Resolved conflict: battery ADC is NOT on A0
