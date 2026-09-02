@@ -19,9 +19,12 @@ Reversed polarity destroys the XIAO's charge circuit instantly.
 
 ## Order of operations (draft)
 
-1. Solder the battery divider: 1MΩ from BAT+ to the **MTDI underside pad**
-   (GPIO5), 1MΩ from that pad to GND, 100nF from the pad to GND. Not A0 —
-   A0 is the ePaper reset line ([pinmap.md](pinmap.md)).
+1. Solder the battery divider: 1MΩ from BAT+ to the **MTMS underside pad**
+   (GPIO4), 1MΩ from that pad to GND, 100nF from the pad to GND. Not A0 —
+   A0 is the ePaper reset line ([pinmap.md](pinmap.md)). MTDI/GPIO5 is
+   equivalent if MTMS is unusable; both strap only the SDIO clock edge.
+   **Low iron temperature, ~1s per touch** — a pad lifted on XIAO #2 here,
+   and pad lift is heat-time, not heat-level.
    Schematic and connection table:
    [diagrams/battery-divider.html](diagrams/battery-divider.html).
    Two ways to physically carry it: a small perfboard offcut (tidier, needs
