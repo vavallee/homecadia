@@ -237,6 +237,15 @@ Blocker: **2 of 3 panels are gone and there is no spare.** Reorder Seeed SKU
       both reaching the device. Commissioning survives a reflash (NVS retains
       the fabric). Readings verified over Thread after the MeasuredValue fix
       ([field-notes.md](field-notes.md) §9).
+- [x] XIAO #2 commissions the same way — **2026-09-12**, node 25, about 4s
+      from `commission_with_code` to first interview. Device on USB from
+      `k8sn1-master` (power + BLE range in one plug), the API driven from the
+      office over the LAN; one trip to the basement. First read over Thread:
+      21.72°C / 48.39%RH / 3968mV reported (charge-IC output on USB with no
+      cell, through the uncorrected ADC — not a cell voltage). Child table:
+      RLOC16 0x681d, LQ In 3. The iOS companion-app route was tried first the
+      same evening and failed exactly as [commissioning.md](commissioning.md)
+      predicts — see its troubleshooting table for the two dialog texts.
 - [x] Device identity correct on the controller — **2026-08-24**: reads
       `homecadia` / `sensor-01` / `xiao-c6/driver-v2`. Note this only took
       effect after a re-commission; a reflash alone does not update it, because
