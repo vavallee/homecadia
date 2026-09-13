@@ -56,7 +56,8 @@ Bench wiring diagrams and the no-solder connectivity procedure live in
 - [ ] BAT+/BAT− underside pad markings confirmed on this XIAO revision.
 - [ ] EEMB battery lead polarity measured with multimeter — **all 3 cells,
       before first connection** ([assembly.md](assembly.md) warning).
-- [ ] Battery divider on MTDI/GPIO5 reads plausible voltage (Vbat/2 ±5%).
+- [x] Battery divider reads Vbat/2 — on **MTMS/GPIO4**, not MTDI (see the
+      Encoder & LED section rows dated 2026-09-02 and 2026-09-12).
 - [ ] USB A-to-C cable charges the battery through the panel pigtail;
       charge LED on XIAO behaves as documented.
 
@@ -67,8 +68,15 @@ Bench wiring diagrams and the no-solder connectivity procedure live in
       [power-budget.md](power-budget.md)). Seeed's ~15µA figure is optimistic
       and regulator-dependent — treat as unverified
       ([source-reliability.md](source-reliability.md)).
-- [ ] ADC settling: reading stable with 2×1M + 100nF divider; calibrate
-      against multimeter at 2–3 battery voltages.
+- [x] **ADC calibration at two voltages — 2026-09-12.** PPK2 as the cell
+      (Source Meter, USB out). True BAT+ 3.36 V → firmware 3.02 V; true
+      3.97 V → firmware 3.64 V. Same 0.33–0.34 V short at both points, slope
+      1.02: a **constant offset, not a gain error**. ~0.17 V at the pin across
+      the divider's 500 kΩ source impedance = ~0.34 µA of ADC input current.
+      Divider itself is exact (SENSE tracks the source at 0.476× on a 10 MΩ
+      meter, the correct number for 1M+1M). Fix is `+340 mV` in
+      `battery_read_mv()` — not yet applied; until then percent reads ~15
+      points low and `LOW_BATTERY_PCT` trips near a real 3.5 V.
 
 ## Display
 
@@ -170,15 +178,23 @@ Blocker: **2 of 3 panels are gone and there is no spare.** Reorder Seeed SKU
       metered a flat 3.1 V with MOSI and SCK each driven low — no path left
       to fake an edge. (The pre-wash D7↔D8 flag was flux residue,
       field-notes.md section 17.)
-- [x] **Battery divider reads correctly — verified 2026-09-02.** 2×1M + 100nF
-      on **MTMS/GPIO4** (moved from MTDI/GPIO5 after that pad lifted on
-      XIAO #2). Multimeter 1570mV at the pin vs 1551mV computed by
-      `battery_read_mv()` — 1.2% apart, inside the ±5% the code asks for.
-      Measured with BAT+ at ~3.1V from the charge IC with no cell fitted, so
-      `bat 0%` is the correct answer, not a fault.
-- [ ] Divider against a real cell — needs the EEMB LiPo soldered to BAT+/BAT−
-      (polarity check first, [assembly.md](assembly.md)). Until then BAT+ has
-      no meaningful voltage and the percent curve is untested.
+- [x] **Battery divider wiring — 2026-09-02, re-verified 2026-09-12.** 2×1M +
+      100nF on **MTMS/GPIO4** (moved from MTDI/GPIO5 after that pad lifted on
+      XIAO #2). The 2026-09-02 check (meter 1570mV at the pin vs 1551mV from
+      `battery_read_mv()`, "1.2% apart") was a **false pass**: 1.57 V on a
+      10 MΩ meter is 3.30 V at the top of the divider, while BAT+ was
+      recorded at ~3.1 V that day — the meter and the ADC were both reading
+      low, by different amounts, and happened to agree. A single-point check
+      cannot tell a correct divider from one landed on the 3V3 rail when both
+      nodes sit near 3.3 V. The sweep below can.
+- [x] **Divider against a battery voltage — 2026-09-12.** PPK2 substituted
+      for the cell (Source Meter into BAT+/BAT−, USB out). In-circuit, black
+      on PPK2 GND: source 4000 → BAT+ pad 3.97, SENSE 1.87; source 3400 →
+      SENSE 1.60. SENSE follows the source at 0.476× (10 MΩ meter across the
+      lower 1M) — the divider is on BAT+ and exact. Firmware offset is the
+      separate row under Power & sleep. Encoder confirmed changing views in
+      both directions during the same session. Wiring reference:
+      [diagrams/bench-verify.html](diagrams/bench-verify.html).
 - [ ] GPIO6 (MTCK) push switch — deferred until the underside pad is
       soldered; the deep-sleep-wake row under "## Power & sleep" stays open.
 - [x] Harness scan: `firmware/sensor-01/main/bench_selftest.cpp` logs every

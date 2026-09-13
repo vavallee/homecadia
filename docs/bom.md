@@ -51,7 +51,17 @@ bring-up cannot proceed past the display.
 
 - **EEMB LiPo polarity is frequently reversed** vs the Seeed/Adafruit
   convention. Multimeter-check every cell before connecting anything.
-  Reversed polarity kills the XIAO.
+  Reversed polarity kills the XIAO. (Pack #1 in this batch was standard:
+  red = +, measured 3.87 V on 2026-09-03.)
+- **A pack reading 0 V is usually not dead.** The JST-PH crimp contacts sit
+  below the housing rim — a probe on the connector reads nothing in both
+  polarities. And the pack's protection board latches on over-discharge:
+  terminals read 0 V while it still accepts charge, and it stays at 0 V for
+  hours after charging starts. Pack #1 did this twice (2026-09-05 and
+  2026-09-09) after the sleep-disabled bench profile drained it at ~41 mA;
+  it recovered to 3.97 V both times. Cross-project rule in the homelab
+  `battery-bringup` skill. **Disconnect the cell at the end of every bench
+  session until the shipping profile is flashed.**
 - Battery solders to the **XIAO's underside battery pads** (its charge IC),
   NOT the ePaper driver board's JST — that path does not charge.
 - **SHT40 sits in the case airflow path, external to MCU heat** —
