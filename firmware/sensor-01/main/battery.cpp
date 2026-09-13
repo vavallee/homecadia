@@ -13,6 +13,14 @@ static const char *TAG = "battery";
 #define DIVIDER_RATIO 2  /* 1M : 1M */
 #define SAMPLES       8
 
+/* The computed battery voltage sits a constant ~340mV below BAT+. Measured
+ * 2026-09-12 against a PPK2 source, BAT+ metered in-circuit, DIAG view read
+ * after a full poll:  BAT+ 3.36V -> 3020mV,  BAT+ 3.97V -> 3640mV  (slope 1.02,
+ * so an offset, not a gain error). Cause inferred, not measured: ~0.34uA into
+ * the ADC input across the divider's 500k source impedance. docs/bringup.md,
+ * ADC calibration row. */
+#define VBAT_OFFSET_MV 340
+
 static adc_oneshot_unit_handle_t s_adc;
 static adc_cali_handle_t s_cali;
 static adc_channel_t s_channel;
@@ -63,8 +71,8 @@ esp_err_t battery_read_mv(uint32_t *out_mv)
 {
     /* The 100nF cap holds the divider node steady (source is always connected),
      * but give the ADC input a moment after (re)config before sampling.
-     * Verified 2026-09-02 on GPIO4/MTMS: multimeter 1570mV at the pin against
-     * 1551mV computed by this function (reported 3102mV / 2) -- 1.2% apart. */
+     * The 2026-09-02 "within 1.2%" check once cited here was a false pass
+     * (docs/bringup.md, divider row); the real error is VBAT_OFFSET_MV. */
     vTaskDelay(pdMS_TO_TICKS(VBAT_ADC_SETTLE_MS));
 
     int sum = 0;
@@ -88,7 +96,8 @@ esp_err_t battery_read_mv(uint32_t *out_mv)
         mv_at_pin = raw_avg * 3300 / 4095;
     }
 
-    *out_mv = (uint32_t)mv_at_pin * DIVIDER_RATIO;
+    /* 0 means no divider / open input: report 0 rather than a phantom 340mV. */
+    *out_mv = mv_at_pin > 0 ? (uint32_t)mv_at_pin * DIVIDER_RATIO + VBAT_OFFSET_MV : 0;
     return ESP_OK;
 }
 

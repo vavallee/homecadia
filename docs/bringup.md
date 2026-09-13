@@ -75,8 +75,11 @@ Bench wiring diagrams and the no-solder connectivity procedure live in
       the divider's 500 kΩ source impedance = ~0.34 µA of ADC input current.
       Divider itself is exact (SENSE tracks the source at 0.476× on a 10 MΩ
       meter, the correct number for 1M+1M). Fix is `+340 mV` in
-      `battery_read_mv()` — not yet applied; until then percent reads ~15
-      points low and `LOW_BATTERY_PCT` trips near a real 3.5 V.
+      `battery_read_mv()` — **applied 2026-09-13** as `VBAT_OFFSET_MV`
+      (bench image, flashed from Windows, fabric kept). The same USB-no-cell
+      source read 3972 mV before the flash and 4308 mV after, a +336 mV step:
+      proof the offset is in the image, not a third calibration point — the
+      charge chip's no-cell output was never metered. A 0 reading stays 0.
 
 ## Display
 
@@ -246,13 +249,16 @@ Blocker: **2 of 3 panels are gone and there is no spare.** Reorder Seeed SKU
       RLOC16 0x681d, LQ In 3. The iOS companion-app route was tried first the
       same evening and failed exactly as [commissioning.md](commissioning.md)
       predicts — see its troubleshooting table for the two dialog texts.
-- [x] Office reaches the basement ZBT-2 without a router — **2026-09-13**,
-      node 25 re-attached on its own after moving from the rack to the 2nd
-      floor office (bench profile, USB power, bare breadboard). Neighbour
-      table: RSSI −83 dBm, LQ In 2 (was 3 at the rack). Fresh readings served
-      from the office. Marginal, not blocking; a 1st-floor Thread router would
-      lift it to LQ 3. Re-measure in the enclosure at the final position and on
-      the shipping profile.
+- [ ] Office link to the basement ZBT-2 is reliable — **no, not without a
+      router (2026-09-13)**. Node 25 attaches from the 2nd-floor office with
+      nothing in between (bench profile, USB, bare breadboard): RSSI −83 dBm /
+      LQ In 2 at first, −89 to −90 dBm / LQ In 1 after the reflash (was LQ 3 at
+      the rack). At LQ 1 the controller lost it twice in six minutes — a
+      subscribe that never completed (`peer-unresponsive`, node marked
+      unavailable) and a subscription timeout two minutes later. Both recovered
+      unattended. Most likely the link: the device is a sleepy end device, so
+      one missed check-in drops the subscription. A Thread router on the 1st
+      floor comes before the sensor lives here; re-measure with it in place.
 - [x] Device identity correct on the controller — **2026-08-24**: reads
       `homecadia` / `sensor-01` / `xiao-c6/driver-v2`. Note this only took
       effect after a re-commission; a reflash alone does not update it, because
