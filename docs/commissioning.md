@@ -107,6 +107,11 @@ Recovery, and how to restore it, is in [field-notes.md](field-notes.md) §6.
 
 ## Procedure
 
+0. **Put the device on USB from the Bluetooth host** (`k8sn1-master`). That
+   is power, BLE range and the commissioning-window reset in one plug, and
+   the rest of the procedure runs from anywhere on the LAN — one trip to the
+   rack. It does not need to be near the border router's node; the ZBT-2 on
+   `k8sn3-agent` reaches across the same room.
 1. **Get the sensor into its commissioning window.** It is time-limited from
    boot. A device that has never been paired is already advertising; one that
    was un-paired with `remove_node` reboots itself and comes back advertising
@@ -258,6 +263,7 @@ Symptoms actually seen during milestone 2, with what each one meant:
 | Device silent after `remove_node` | firmware older than `7895168`; power-cycle it |
 | Controller shows `TEST_VENDOR` after a reflash | cached interview — see **Device identity is fixed at commissioning time** |
 | Reaches `connectNetwork`, then CASE fails | device out of Thread range, or the OTBR is not running |
+| iOS companion app: `Thread network credentials does not match with any of the active thread networks around`, then `Home couldn't connect to this accessory` at "Setting Up…" | the app handed off to Apple's MatterSupport sheet (see **Apple Home: not available here**). Nothing reaches the Matter server — its log stays empty. Seen 2026-09-12 from the 2nd floor; use the API path instead |
 | Commissions, then goes unavailable | sleepy ICD — normal between polls; if permanent, check the child table |
 | Temperature/humidity null, battery fine | esp-matter defect, [field-notes.md](field-notes.md) §9 |
 
