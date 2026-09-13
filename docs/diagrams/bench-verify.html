@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sensor-01 Bench Verify</title>
+<style>
+  :root {
+    --bg: #f4f6f8;
+    --surface: #ffffff;
+    --ink: #1b2733;
+    --ink-soft: #55636f;
+    --line: #d5dce2;
+    --accent: #0e7c7b;
+    --accent-soft: #e0efee;
+    --warn-bg: #fdf3e4;
+    --warn-edge: #c77e1f;
+    --bad: #c8382a;
+    --bad-bg: #fbeae7;
+    --ok-bg: #e8f3ec;
+    --ok-edge: #2e7d4f;
+    --board: #f3efe2;
+    --board-edge: #cfc7ae;
+    --board-white: #fbfbf9;
+    --board-white-edge: #cfd3d6;
+    --hole: #8f8a7a;
+    --chip: #2b3440;
+    --chip-ink: #e8edf2;
+    --pcb: #1d4e89;
+    --pcb-ink: #dfe9f5;
+    --wire-red: #d33f2e;
+    --wire-black-core: #26282b;
+    --wire-yellow: #e0ac14;
+    --wire-white-core: #f2f1ec;
+    --wire-brown: #8b5a2b;
+    --wire-signal: #4a7fa5;
+    --wire-purple: #8256b0;
+    --wire-green: #3f8f4f;
+    --wire-casing: #98a0a8;
+    --rail-red: #d33f2e;
+    --rail-blue: #3d6fb4;
+    --res-body: #6fb3d9;
+    --cap-body: #3a86c9;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14181d; --surface: #1c2229; --ink: #e7ebee; --ink-soft: #9aa6b0;
+      --line: #333c45; --accent: #3aa8a4; --accent-soft: #17332f;
+      --warn-bg: #2c2413; --warn-edge: #d99a3d; --bad: #e4614f; --bad-bg: #3a1f1b;
+      --ok-bg: #17301f; --ok-edge: #4f9c6f;
+      --board: #3a3628; --board-edge: #5a553f; --board-white: #2c3136; --board-white-edge: #4a5259;
+      --hole: #6c675a; --chip: #0e1216; --chip-ink: #dbe2e8; --pcb: #163a66; --pcb-ink: #cfdcec;
+      --wire-red: #e05a48; --wire-black-core: #111315; --wire-yellow: #e8bc32;
+      --wire-white-core: #eeede7; --wire-brown: #a8713c; --wire-signal: #6ea3c9;
+      --wire-purple: #a887cf; --wire-green: #64ad74; --wire-casing: #6b747d;
+      --rail-red: #e05a48; --rail-blue: #5e8fd0; --res-body: #5c9dc4; --cap-body: #4b95d6;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14181d; --surface: #1c2229; --ink: #e7ebee; --ink-soft: #9aa6b0;
+    --line: #333c45; --accent: #3aa8a4; --accent-soft: #17332f;
+    --warn-bg: #2c2413; --warn-edge: #d99a3d; --bad: #e4614f; --bad-bg: #3a1f1b;
+    --ok-bg: #17301f; --ok-edge: #4f9c6f;
+    --board: #3a3628; --board-edge: #5a553f; --board-white: #2c3136; --board-white-edge: #4a5259;
+    --hole: #6c675a; --chip: #0e1216; --chip-ink: #dbe2e8; --pcb: #163a66; --pcb-ink: #cfdcec;
+    --wire-red: #e05a48; --wire-black-core: #111315; --wire-yellow: #e8bc32;
+    --wire-white-core: #eeede7; --wire-brown: #a8713c; --wire-signal: #6ea3c9;
+    --wire-purple: #a887cf; --wire-green: #64ad74; --wire-casing: #6b747d;
+    --rail-red: #e05a48; --rail-blue: #5e8fd0; --res-body: #5c9dc4; --cap-body: #4b95d6;
+  }
+  body {
+    background: var(--bg); color: var(--ink);
+    font: 16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
+    margin: 0; padding: 2rem 1rem 4rem;
+  }
+  code, td.pin, .num { font-family: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace; }
+  main { max-width: 64rem; margin: 0 auto; display: grid; gap: 1.4rem; }
+  header .eyebrow { text-transform: uppercase; letter-spacing: 0.14em; font-size: 0.72rem; color: var(--accent); font-weight: 600; }
+  h1 { font-size: 1.7rem; margin: 0.15rem 0 0.3rem; text-wrap: balance; }
+  header p { color: var(--ink-soft); margin: 0; max-width: 48rem; }
+  section { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 1.1rem 1.3rem; }
+  h2 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-soft); margin: 0 0 0.7rem; }
+  .warn { background: var(--warn-bg); border-left: 3px solid var(--warn-edge); border-radius: 6px; padding: 0.7rem 0.9rem; font-size: 0.92rem; }
+  .bad-note { background: var(--bad-bg); border-left: 3px solid var(--bad); border-radius: 6px; padding: 0.7rem 0.9rem; font-size: 0.92rem; }
+  .rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 0.8rem 1.4rem; margin: 0; padding: 0; list-style: none; font-size: 0.92rem; }
+  .rules li { padding-left: 1.1rem; position: relative; }
+  .rules li::before { content: ""; position: absolute; left: 0; top: 0.55em; width: 0.45rem; height: 0.45rem; border-radius: 50%; background: var(--accent); }
+  figure { margin: 0; overflow-x: auto; }
+  figure svg { max-width: 100%; height: auto; min-width: 720px; display: block; margin: 0 auto; }
+  figcaption { color: var(--ink-soft); font-size: 0.85rem; margin-top: 0.6rem; max-width: 54rem; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+  th, td { text-align: left; padding: 0.45rem 0.6rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); font-weight: 600; }
+  td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  tr.node-bat td:first-child { border-left: 3px solid var(--wire-red); }
+  tr.node-sense td:first-child { border-left: 3px solid var(--accent); }
+  tr.node-gnd td:first-child { border-left: 3px solid var(--wire-black-core); }
+  tr.node-3v3 td:first-child { border-left: 3px solid var(--warn-edge); }
+  .tag { display: inline-block; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; padding: 0.1rem 0.45rem; border-radius: 999px; border: 1px solid var(--line); color: var(--ink-soft); }
+  .tag.bad { color: var(--bad); border-color: var(--bad); }
+  .tag.ok { color: var(--ok-edge); border-color: var(--ok-edge); }
+  .svg-ink { fill: var(--ink); }
+  .svg-soft { fill: var(--ink-soft); }
+  .svg-bad { fill: var(--bad); }
+  .bb { fill: var(--board); stroke: var(--board-edge); }
+  .bb-white { fill: var(--board-white); stroke: var(--board-white-edge); }
+  .hole { fill: var(--hole); }
+  .rail-r { stroke: var(--rail-red); stroke-width: 1.6; }
+  .rail-b { stroke: var(--rail-blue); stroke-width: 1.6; }
+  .chip { fill: var(--chip); stroke: var(--board-edge); }
+  .chip-ink { fill: var(--chip-ink); }
+  .pcb { fill: var(--pcb); stroke: var(--board-edge); }
+  .pcb-ink { fill: var(--pcb-ink); }
+  .pad { fill: #d9b46a; stroke: #8a6d2a; stroke-width: 0.8; }
+  .casing { fill: none; stroke: var(--wire-casing); stroke-width: 6; stroke-linejoin: round; stroke-linecap: round; }
+  .core { fill: none; stroke-width: 3.2; stroke-linejoin: round; stroke-linecap: round; }
+  .w-red { stroke: var(--wire-red); }
+  .w-black { stroke: var(--wire-black-core); }
+  .w-yellow { stroke: var(--wire-yellow); }
+  .w-white { stroke: var(--wire-white-core); }
+  .w-brown { stroke: var(--wire-brown); }
+  .w-sig { stroke: var(--wire-signal); }
+  .w-purple { stroke: var(--wire-purple); }
+  .w-green { stroke: var(--wire-green); }
+  .lead { fill: none; stroke: var(--ink-soft); stroke-width: 1.6; stroke-linecap: round; }
+  .lead-bad { fill: none; stroke: var(--bad); stroke-width: 1.6; stroke-dasharray: 5 4; stroke-linecap: round; }
+  .res { fill: var(--res-body); stroke: var(--ink-soft); stroke-width: 0.8; }
+  .cap { fill: var(--cap-body); stroke: var(--ink-soft); stroke-width: 0.8; }
+  .mono { font-family: ui-monospace, Menlo, Consolas, monospace; }
+  .node-lbl { font-size: 11px; font-weight: 700; }
+  .expect { font-size: 11px; font-family: ui-monospace, Menlo, Consolas, monospace; }
+  .ghost { opacity: 0.55; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="eyebrow">homecadia · sensor-01 · bench state 2026-09-12</div>
+    <h1>Sensor-01 Bench Verify</h1>
+    <p>What every wire on the bench is supposed to connect, and what a meter should read at each node with the PPK2 as the battery. Pins come from <code>firmware/sensor-01/main/app_config.h</code>, the file that is actually flashed — not from <code>assembly.md</code>, whose encoder/LED and divider pins are stale.</p>
+  </header>
+
+  <section>
+    <h2>How to use this page</h2>
+    <ul class="rules">
+      <li><strong>Match by node, not by row number.</strong> Row numbers in the drawings are the drawing's own; your board's rows differ. A node is "everything that must read the same voltage".</li>
+      <li><strong>Measure in-circuit.</strong> DC volts, black probe on the PPK2 <code>GND</code> terminal, red on the metal of the lead or pad. Never unplug a wire to read it — a floating wire reads whatever charge is trapped on it.</li>
+      <li><strong>PPK2 is the battery.</strong> Source Meter, 4000 mV, <code>VOUT</code> → BAT+, <code>GND</code> → BAT−, <code>VIN</code> unused. USB out of the XIAO. No cell anywhere.</li>
+      <li><strong>Expected values assume 4000 mV.</strong> SENSE reads 1.90 V on a 10 MΩ meter (0.476 × source) — the meter loads the 1 MΩ lower leg. The ADC sees 2.00 V.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>1 · Power and battery divider — the node under investigation</h2>
+    <div class="bad-note"><strong>The one confirmed fault (2026-09-09):</strong> BAT+ pad read 3.97 V while the divider top read 3.36 V with the source at 4000 mV. At 2 µA through the divider no joint drops 0.61 V, so those are two different nodes: R1's top leg is on the 3V3 rail (regulator output, held at 3.3 V) instead of BAT+. Every reading of "battery voltage" this session has been the rail.</div>
+    <figure>
+      <svg viewBox="0 0 980 560" role="img" xmlns="http://www.w3.org/2000/svg"
+           aria-label="Breadboard wiring for the battery divider with the PPK2 substituting for the cell. The PPK2 terminal block on the left has GND, VIN, VOUT, GND. A red wire from VOUT lands in breadboard row 4, the BAT+ node. A black wire from PPK2 GND lands on the breadboard's negative rail. The XIAO's underside BAT+ pad has a soldered flying lead into row 4; its BAT minus pad lead goes to the negative rail; its MTMS pad lead goes to row 8, the SENSE node. Resistor R1, one megohm, spans row 4 to row 8. Resistor R2, one megohm, spans row 8 to row 12. Capacitor C1, 100 nanofarad, also spans row 8 to row 12. Row 12 is jumpered to the negative rail. A separate row carrying 3V3 from the XIAO header is drawn ghosted and marked: if R1's top leg is here, that is the fault. Expected readings at 4000 millivolts: row 4 and the BAT+ pad 4.00 volts, row 8 1.90 volts on the meter, row 12 and the rail 0 volts, the 3V3 row 3.3 volts.">
+        <defs>
+          <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+          </marker>
+        </defs>
+
+        <!-- PPK2 terminal block -->
+        <g transform="translate(30,120)">
+          <rect x="0" y="0" width="120" height="200" rx="6" class="pcb"/>
+          <text x="60" y="22" text-anchor="middle" class="pcb-ink" font-size="12" font-weight="700">PPK2</text>
+          <text x="60" y="38" text-anchor="middle" class="pcb-ink" font-size="10">Source Meter · 4000 mV</text>
+          <g class="pcb-ink mono" font-size="10.5">
+            <rect x="84" y="56" width="22" height="22" rx="3" fill="#0b0d10" stroke="#7d8790"/><text x="16" y="71">1 GND</text>
+            <rect x="84" y="92" width="22" height="22" rx="3" fill="#0b0d10" stroke="#7d8790"/><text x="16" y="107">2 VIN</text>
+            <rect x="84" y="128" width="22" height="22" rx="3" fill="#0b0d10" stroke="#7d8790"/><text x="16" y="143" font-weight="700">3 VOUT</text>
+            <rect x="84" y="164" width="22" height="22" rx="3" fill="#0b0d10" stroke="#7d8790"/><text x="16" y="179">4 GND</text>
+          </g>
+          <text x="60" y="196" text-anchor="middle" class="pcb-ink" font-size="9">VIN: nothing</text>
+        </g>
+
+        <!-- breadboard (white) -->
+        <g transform="translate(250,60)">
+          <rect x="0" y="0" width="330" height="440" rx="8" class="bb-white"/>
+          <!-- rails -->
+          <g>
+            <line x1="22" y1="30" x2="22" y2="410" class="rail-r"/><text x="22" y="22" text-anchor="middle" class="svg-ink" font-size="10">+</text>
+            <line x1="40" y1="30" x2="40" y2="410" class="rail-b"/><text x="40" y="22" text-anchor="middle" class="svg-ink" font-size="10">−</text>
+            <line x1="290" y1="30" x2="290" y2="410" class="rail-r"/><text x="290" y="22" text-anchor="middle" class="svg-ink" font-size="10">+</text>
+            <line x1="308" y1="30" x2="308" y2="410" class="rail-b"/><text x="308" y="22" text-anchor="middle" class="svg-ink" font-size="10">−</text>
+          </g>
+          <!-- column letters -->
+          <g class="svg-soft" font-size="9" text-anchor="middle">
+            <text x="80" y="22">a</text><text x="98" y="22">b</text><text x="116" y="22">c</text><text x="134" y="22">d</text><text x="152" y="22">e</text>
+            <text x="190" y="22">f</text><text x="208" y="22">g</text><text x="226" y="22">h</text><text x="244" y="22">i</text><text x="262" y="22">j</text>
+          </g>
+          <!-- centre channel -->
+          <rect x="164" y="26" width="14" height="390" fill="none" stroke="var(--board-white-edge)" stroke-dasharray="2 3"/>
+          <!-- tie points: rows 1..20, pitch 19 -->
+          <g class="hole">
+            <!-- row y = 40 + (row-1)*19 -->
+            <g id="rowdots">
+              <circle cx="80" cy="0" r="2.2"/><circle cx="98" cy="0" r="2.2"/><circle cx="116" cy="0" r="2.2"/><circle cx="134" cy="0" r="2.2"/><circle cx="152" cy="0" r="2.2"/>
+              <circle cx="190" cy="0" r="2.2"/><circle cx="208" cy="0" r="2.2"/><circle cx="226" cy="0" r="2.2"/><circle cx="244" cy="0" r="2.2"/><circle cx="262" cy="0" r="2.2"/>
+              <circle cx="22" cy="0" r="2.2"/><circle cx="40" cy="0" r="2.2"/><circle cx="290" cy="0" r="2.2"/><circle cx="308" cy="0" r="2.2"/>
+            </g>
+            <use href="#rowdots" y="40"/><use href="#rowdots" y="59"/><use href="#rowdots" y="78"/><use href="#rowdots" y="97"/><use href="#rowdots" y="116"/>
+            <use href="#rowdots" y="135"/><use href="#rowdots" y="154"/><use href="#rowdots" y="173"/><use href="#rowdots" y="192"/><use href="#rowdots" y="211"/>
+            <use href="#rowdots" y="230"/><use href="#rowdots" y="249"/><use href="#rowdots" y="268"/><use href="#rowdots" y="287"/><use href="#rowdots" y="306"/>
+            <use href="#rowdots" y="325"/><use href="#rowdots" y="344"/><use href="#rowdots" y="363"/><use href="#rowdots" y="382"/><use href="#rowdots" y="401"/>
+          </g>
+          <!-- row numbers -->
+          <g class="svg-soft" font-size="9" text-anchor="end">
+            <text x="64" y="43">1</text><text x="64" y="100">4</text><text x="64" y="176">8</text><text x="64" y="252">12</text><text x="64" y="328">16</text><text x="64" y="404">20</text>
+          </g>
+
+          <!-- node highlight strips (a-e) -->
+          <rect x="72" y="90" width="88" height="14" rx="3" fill="var(--wire-red)" opacity="0.14"/>
+          <rect x="72" y="166" width="88" height="14" rx="3" fill="var(--accent)" opacity="0.18"/>
+          <rect x="72" y="242" width="88" height="14" rx="3" fill="var(--ink)" opacity="0.10"/>
+          <!-- ghost 3V3 row (f-j, row 2) -->
+          <rect x="182" y="52" width="88" height="14" rx="3" fill="var(--warn-edge)" opacity="0.18"/>
+
+          <!-- R1: row4 -> row8, column c -->
+          <line x1="116" y1="97" x2="116" y2="118" class="lead"/>
+          <rect x="108" y="118" width="16" height="38" rx="4" class="res"/>
+          <line x1="116" y1="156" x2="116" y2="173" class="lead"/>
+          <text x="128" y="141" class="svg-ink" font-size="10" font-weight="700">R1 1 MΩ</text>
+
+          <!-- R2: row8 -> row12, column b -->
+          <line x1="98" y1="173" x2="98" y2="194" class="lead"/>
+          <rect x="90" y="194" width="16" height="38" rx="4" class="res"/>
+          <line x1="98" y1="232" x2="98" y2="249" class="lead"/>
+          <text x="60" y="217" class="svg-ink" font-size="10" font-weight="700" text-anchor="end">R2 1 MΩ</text>
+
+          <!-- C1: row8 -> row12, column d (disc) -->
+          <line x1="134" y1="173" x2="134" y2="196" class="lead"/>
+          <ellipse cx="134" cy="212" rx="12" ry="10" class="cap"/>
+          <line x1="134" y1="222" x2="134" y2="249" class="lead"/>
+          <text x="150" y="216" class="svg-ink" font-size="10" font-weight="700">C1 100 nF</text>
+
+          <!-- row12 e -> − rail (black jumper) -->
+          <path d="M152,249 C152,275 40,265 40,287" class="casing"/>
+          <path d="M152,249 C152,275 40,265 40,287" class="core w-black"/>
+
+          <!-- ghost: 3V3 from header into row 2 f -->
+          <g class="ghost">
+            <path d="M262,59 C300,59 330,20 360,20" class="core w-red"/>
+            <text x="182" y="47" class="svg-soft" font-size="9.5">3V3 row (XIAO header) — 3.3 V regardless of BAT+</text>
+          </g>
+          <!-- fault marker: R1 top drawn dashed into 3V3 row -->
+          <path d="M116,97 C116,80 160,75 190,62" class="lead-bad"/>
+          <text x="182" y="80" class="svg-bad" font-size="9.5" font-weight="700">✗ R1 top leg here = 3.36 V = the fault</text>
+
+          <!-- − rails bridged: right − rail to left − rail, row 20 -->
+          <path d="M308,401 C308,428 40,428 40,401" class="casing"/>
+          <path d="M308,401 C308,428 40,428 40,401" class="core w-black"/>
+          <text x="174" y="437" text-anchor="middle" class="svg-ink" font-size="10" font-weight="700">− rails bridged (black jumper) — one GND node</text>
+
+          <!-- node labels + expectations -->
+          <text x="182" y="116" class="node-lbl" fill="var(--wire-red)">BAT+ node</text><text x="250" y="116" class="expect svg-ink">4.00 V</text>
+          <text x="182" y="192" class="node-lbl" fill="var(--accent)">SENSE node</text><text x="256" y="192" class="expect svg-ink">1.90 V</text>
+          <text x="166" y="253" class="node-lbl svg-ink">GND node</text><text x="234" y="253" class="expect svg-ink">0.00 V</text>
+        </g>
+
+        <!-- PPK2 VOUT -> row 4 a (red) -->
+        <path d="M146,261 C200,261 220,157 330,157" class="casing"/>
+        <path d="M146,261 C200,261 220,157 330,157" class="core w-red"/>
+        <!-- PPK2 GND(4) -> − rail (black) -->
+        <path d="M146,297 C200,297 240,420 290,420" class="casing"/>
+        <path d="M146,297 C200,297 240,420 290,420" class="core w-black"/>
+
+        <!-- XIAO underside (right) -->
+        <g transform="translate(700,90)">
+          <rect x="0" y="0" width="150" height="260" rx="8" class="chip"/>
+          <text x="75" y="22" text-anchor="middle" class="chip-ink" font-size="12" font-weight="700">XIAO ESP32-C6</text>
+          <text x="75" y="38" text-anchor="middle" class="chip-ink" font-size="10">underside, seated in driver board</text>
+          <!-- pads -->
+          <g font-size="10" class="chip-ink mono">
+            <rect x="18" y="62" width="26" height="16" rx="2" class="pad"/><text x="52" y="74">BAT+</text>
+            <rect x="18" y="98" width="26" height="16" rx="2" class="pad"/><text x="52" y="110">BAT−</text>
+            <rect x="18" y="146" width="26" height="16" rx="2" class="pad"/><text x="52" y="158">TP4 · MTMS · GPIO4</text>
+            <rect x="18" y="182" width="26" height="16" rx="2" class="pad"/><text x="52" y="194">TP6 · MTCK · GPIO6</text>
+            <text x="52" y="208" class="chip-ink" font-size="9" opacity="0.75">encoder push — NOT soldered yet</text>
+          </g>
+          <text x="75" y="244" text-anchor="middle" class="chip-ink" font-size="9.5">3 flying leads soldered (BAT+, BAT−, MTMS)</text>
+        </g>
+
+        <!-- XIAO BAT+ lead -> row 4 e (red) -->
+        <path d="M718,160 C640,160 620,157 402,157" class="casing"/>
+        <path d="M718,160 C640,160 620,157 402,157" class="core w-red"/>
+        <text x="560" y="142" class="expect svg-ink">BAT+ pad → BAT+ node · 4.00 V</text>
+        <!-- XIAO BAT− lead -> − rail right (black) -->
+        <path d="M718,196 C660,196 600,420 558,420" class="casing"/>
+        <path d="M718,196 C660,196 600,420 558,420" class="core w-black"/>
+        <text x="590" y="392" class="expect svg-ink">BAT− pad → − rail · 0 V</text>
+        <!-- XIAO MTMS lead -> row 8 e (white) -->
+        <path d="M718,244 C640,244 560,233 402,233" class="casing"/>
+        <path d="M718,244 C640,244 560,233 402,233" class="core w-white"/>
+        <text x="560" y="226" class="expect svg-ink">MTMS pad → SENSE node · 1.90 V</text>
+
+        <!-- captions on left -->
+        <text x="30" y="360" class="svg-ink" font-size="11" font-weight="700">VOUT → BAT+ node</text>
+        <text x="30" y="376" class="svg-soft" font-size="10">red · terminal 3</text>
+        <text x="30" y="400" class="svg-ink" font-size="11" font-weight="700">GND → − rail</text>
+        <text x="30" y="416" class="svg-soft" font-size="10">black · terminal 1 or 4</text>
+        <text x="30" y="440" class="svg-soft" font-size="10">USB out of the XIAO · no cell fitted</text>
+
+        <!-- footer legend -->
+        <text x="30" y="520" class="svg-soft" font-size="10">Colours identify runs in this drawing only. Match your bench by node, not by colour or row.</text>
+        <text x="30" y="538" class="svg-soft" font-size="10">Rows 4 / 8 / 12 are placeholders — what matters is that everything drawn on one strip reads the same voltage.</text>
+      </svg>
+      <figcaption>Three nodes, three readings. Everything on the BAT+ strip — the <code>VOUT</code> jumper, the XIAO's BAT+ flying lead, and R1's top leg — must read 4.00 V. Everything on the SENSE strip — R1's bottom leg, R2's top leg, one C1 leg, and the MTMS flying lead — reads 1.90 V on the meter. The GND strip, both C1/R2 bottom legs, the BAT− lead, and both PPK2 <code>GND</code> terminals read 0. The ghosted 3V3 row is the trap: it sits at 3.3 V whatever the source does, and a resistor leg landed there instead of the BAT+ strip reads 3.36 V — the number measured on 2026-09-09.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>2 · Encoder and status LED</h2>
+    <figure>
+      <svg viewBox="0 0 980 400" role="img" xmlns="http://www.w3.org/2000/svg"
+           aria-label="Breadboard wiring for the rotary encoder and status LED. The driver board's breakout holes for D9, D6, D7 and GND are on the left. Encoder terminal A connects to D9, terminal B to D6, common C to ground. The encoder's push-switch terminal is drawn dashed to the XIAO's MTCK pad and labelled not yet soldered. D7 goes through a 330 ohm resistor to the LED anode; the LED cathode goes to ground. Expected idle readings: D9 and D6 about 3.3 volts from the firmware's internal pull-ups, dropping to 0 when that contact closes; D7 at 0 volts idle, 3.3 volts when the LED is lit.">
+        <defs>
+          <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+          </marker>
+        </defs>
+
+        <!-- driver board breakout (left) -->
+        <g transform="translate(30,60)">
+          <rect x="0" y="0" width="150" height="280" rx="8" class="pcb"/>
+          <text x="75" y="22" text-anchor="middle" class="pcb-ink" font-size="12" font-weight="700">Driver board</text>
+          <text x="75" y="38" text-anchor="middle" class="pcb-ink" font-size="10">breakout holes (XIAO seated)</text>
+          <g font-size="10.5" class="pcb-ink mono">
+            <circle cx="30" cy="80" r="4" class="pad"/><text x="44" y="84" font-weight="700">D9 · GPIO20</text><text x="44" y="97" font-size="9" opacity="0.8">encoder A</text>
+            <circle cx="30" cy="124" r="4" class="pad"/><text x="44" y="128" font-weight="700">D6 · GPIO16</text><text x="44" y="141" font-size="9" opacity="0.8">encoder B</text>
+            <circle cx="30" cy="168" r="4" class="pad"/><text x="44" y="172" font-weight="700">D7 · GPIO17</text><text x="44" y="185" font-size="9" opacity="0.8">LED</text>
+            <circle cx="30" cy="212" r="4" class="pad"/><text x="44" y="216" font-weight="700">GND</text>
+            <circle cx="30" cy="256" r="4" class="pad"/><text x="44" y="260">D4 / D5</text><text x="44" y="273" font-size="9" opacity="0.8">SHT40 SDA / SCL</text>
+          </g>
+        </g>
+
+        <!-- breadboard (tan) -->
+        <g transform="translate(300,40)">
+          <rect x="0" y="0" width="330" height="330" rx="8" class="bb"/>
+          <line x1="22" y1="30" x2="22" y2="300" class="rail-r"/><line x1="40" y1="30" x2="40" y2="300" class="rail-b"/>
+          <text x="22" y="22" text-anchor="middle" class="svg-ink" font-size="10">+</text><text x="40" y="22" text-anchor="middle" class="svg-ink" font-size="10">−</text>
+          <rect x="164" y="26" width="14" height="280" fill="none" stroke="var(--board-edge)" stroke-dasharray="2 3"/>
+          <g class="hole">
+            <g id="rowdots2">
+              <circle cx="80" cy="0" r="2.2"/><circle cx="98" cy="0" r="2.2"/><circle cx="116" cy="0" r="2.2"/><circle cx="134" cy="0" r="2.2"/><circle cx="152" cy="0" r="2.2"/>
+              <circle cx="190" cy="0" r="2.2"/><circle cx="208" cy="0" r="2.2"/><circle cx="226" cy="0" r="2.2"/><circle cx="244" cy="0" r="2.2"/><circle cx="262" cy="0" r="2.2"/>
+              <circle cx="22" cy="0" r="2.2"/><circle cx="40" cy="0" r="2.2"/>
+            </g>
+            <use href="#rowdots2" y="40"/><use href="#rowdots2" y="59"/><use href="#rowdots2" y="78"/><use href="#rowdots2" y="97"/><use href="#rowdots2" y="116"/>
+            <use href="#rowdots2" y="135"/><use href="#rowdots2" y="154"/><use href="#rowdots2" y="173"/><use href="#rowdots2" y="192"/><use href="#rowdots2" y="211"/>
+            <use href="#rowdots2" y="230"/><use href="#rowdots2" y="249"/><use href="#rowdots2" y="268"/><use href="#rowdots2" y="287"/>
+          </g>
+          <!-- LED row strips -->
+          <rect x="72" y="166" width="88" height="14" rx="3" fill="var(--wire-yellow)" opacity="0.18"/>
+          <rect x="72" y="242" width="88" height="14" rx="3" fill="var(--ink)" opacity="0.10"/>
+          <!-- R3 330 across row8->row10 col c -->
+          <line x1="116" y1="173" x2="116" y2="186" class="lead"/>
+          <rect x="108" y="186" width="16" height="30" rx="4" class="res"/>
+          <line x1="116" y1="216" x2="116" y2="230" class="lead"/>
+          <text x="128" y="205" class="svg-ink" font-size="10" font-weight="700">R3 330 Ω</text>
+          <!-- LED row10 -> row12 col b : anode long leg at row10 -->
+          <line x1="98" y1="230" x2="98" y2="236" class="lead"/>
+          <path d="M90,236 h16 v14 a8,8 0 0 1 -16,0 z" fill="var(--wire-red)" opacity="0.85" stroke="var(--ink-soft)" stroke-width="0.8"/>
+          <line x1="98" y1="250" x2="98" y2="249" class="lead"/>
+          <text x="60" y="246" class="svg-ink" font-size="10" font-weight="700" text-anchor="end">LED</text>
+          <text x="60" y="258" class="svg-soft" font-size="9" text-anchor="end">anode ↑ long leg</text>
+          <!-- row12 -> − rail -->
+          <path d="M152,249 C152,270 40,262 40,282" class="casing"/><path d="M152,249 C152,270 40,262 40,282" class="core w-black"/>
+          <text x="166" y="177" class="node-lbl" fill="var(--wire-yellow)">D7 node</text><text x="220" y="177" class="expect svg-ink">0 V idle · 3.3 V lit</text>
+          <text x="166" y="253" class="node-lbl svg-ink">GND</text>
+        </g>
+
+        <!-- D7 -> row8 a (yellow) -->
+        <path d="M60,228 C200,228 240,207 372,207" class="casing"/><path d="M60,228 C200,228 240,207 372,207" class="core w-yellow"/>
+        <!-- GND -> − rail (black) -->
+        <path d="M60,272 C160,272 230,320 340,320" class="casing"/><path d="M60,272 C160,272 230,320 340,320" class="core w-black"/>
+
+        <!-- encoder (right) -->
+        <g transform="translate(720,70)">
+          <rect x="0" y="0" width="200" height="230" rx="8" class="chip"/>
+          <text x="100" y="22" text-anchor="middle" class="chip-ink" font-size="12" font-weight="700">EC11 encoder</text>
+          <text x="100" y="38" text-anchor="middle" class="chip-ink" font-size="10">soldered to leads — blades don't seat in springs</text>
+          <circle cx="100" cy="110" r="38" fill="none" stroke="var(--chip-ink)" stroke-width="2"/>
+          <circle cx="100" cy="110" r="10" fill="var(--chip-ink)" opacity="0.4"/>
+          <g class="chip-ink mono" font-size="10.5">
+            <circle cx="30" cy="170" r="4" class="pad"/><text x="22" y="190" text-anchor="middle">A</text>
+            <circle cx="100" cy="176" r="4" class="pad"/><text x="100" y="196" text-anchor="middle">C</text>
+            <circle cx="170" cy="170" r="4" class="pad"/><text x="178" y="190" text-anchor="middle">B</text>
+            <circle cx="60" cy="212" r="4" class="pad"/><text x="60" y="226" text-anchor="middle" font-size="9">SW</text>
+            <circle cx="140" cy="212" r="4" class="pad"/><text x="140" y="226" text-anchor="middle" font-size="9">SW</text>
+          </g>
+        </g>
+
+        <!-- A -> D9 (signal blue) -->
+        <path d="M750,240 C600,240 300,140 60,140" class="casing"/><path d="M750,240 C600,240 300,140 60,140" class="core w-sig"/>
+        <text x="420" y="118" class="expect" fill="var(--wire-signal)">A → D9 · 3.3 V idle, 0 V on contact</text>
+        <!-- B -> D6 (purple) -->
+        <path d="M890,240 C900,300 300,300 60,184" class="casing"/><path d="M890,240 C900,300 300,300 60,184" class="core w-purple"/>
+        <text x="560" y="300" class="expect" fill="var(--wire-purple)">B → D6 · 3.3 V idle, 0 V on contact</text>
+        <!-- C -> − rail (black) -->
+        <path d="M820,246 C820,330 500,350 340,338" class="casing"/><path d="M820,246 C820,330 500,350 340,338" class="core w-black"/>
+        <text x="600" y="356" class="expect svg-ink">C → − rail · 0 V</text>
+        <!-- SW -> MTCK dashed, not soldered -->
+        <path d="M780,282 C760,360 700,380 640,380" class="lead-bad"/>
+        <text x="640" y="392" class="svg-bad" font-size="10" text-anchor="end">SW → MTCK/GPIO6 pad — not yet soldered; leave</text>
+      </svg>
+      <figcaption>Encoder A → <code>D9</code> (GPIO20), B → <code>D6</code> (GPIO16), common → ground; LED from <code>D7</code> (GPIO17) through 330 Ω, cathode to ground — per <code>app_config.h:23–30</code>. No external pull-ups; firmware supplies them, so A and B idle at 3.3 V and drop to 0 when their contact closes. The push switch is the one lead that isn't done yet and isn't needed for anything in progress. <code>assembly.md</code> step 2–3 still lists the pre-2026-08-25 assignment (A→D7, LED→D6) — that is stale, not the wiring.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>3 · Display stack and SHT40 — routed by the board, nothing to jumper</h2>
+    <figure>
+      <svg viewBox="0 0 980 260" role="img" xmlns="http://www.w3.org/2000/svg"
+           aria-label="Side view of the display stack. The XIAO is seated in the driver board's female headers with its USB-C end pointing away from the flat cable connector. The driver board routes D0 reset, D1 chip select, D2 busy, D3 data-command, D8 clock and D10 MOSI to the 24-pin flat cable, which goes to the 2.9 inch ePaper panel. The SHT40 connects to the driver board's D4 and D5 breakout holes for I2C, plus 3V3 and ground. No jumpers are involved in any of these connections.">
+        <!-- driver board -->
+        <rect x="120" y="120" width="420" height="24" rx="4" class="pcb"/>
+        <text x="330" y="136" text-anchor="middle" class="pcb-ink" font-size="11" font-weight="700">Seeed ePaper Driver Board V2 (female headers fitted)</text>
+        <!-- XIAO seated -->
+        <rect x="200" y="80" width="150" height="40" rx="5" class="chip"/>
+        <text x="275" y="104" text-anchor="middle" class="chip-ink" font-size="11" font-weight="700">XIAO ESP32-C6</text>
+        <rect x="200" y="88" width="14" height="24" rx="2" fill="var(--chip-ink)" opacity="0.5"/>
+        <text x="190" y="72" class="svg-soft" font-size="10" text-anchor="end">USB-C end →</text>
+        <text x="60" y="72" class="svg-soft" font-size="10">points away from the FPC</text>
+        <!-- FPC -->
+        <path d="M540,132 C600,132 620,170 680,170" fill="none" stroke="var(--wire-casing)" stroke-width="12"/>
+        <text x="600" y="120" class="svg-ink" font-size="10.5" font-weight="700">24-pin FPC</text>
+        <text x="600" y="192" class="svg-soft" font-size="9.5">slides in with light finger pressure</text>
+        <!-- panel -->
+        <rect x="680" y="140" width="260" height="60" rx="4" fill="var(--board-white)" stroke="var(--board-white-edge)"/>
+        <text x="810" y="166" text-anchor="middle" class="svg-ink" font-size="11" font-weight="700">2.9″ ePaper panel</text>
+        <text x="810" y="184" text-anchor="middle" class="svg-soft" font-size="9.5">RST D0 · CS D1 · BUSY D2 · DC D3 · SCK D8 · MOSI D10</text>
+        <!-- SHT40 -->
+        <rect x="40" y="170" width="90" height="46" rx="5" class="chip"/>
+        <text x="85" y="190" text-anchor="middle" class="chip-ink" font-size="10.5" font-weight="700">SHT40</text>
+        <text x="85" y="206" text-anchor="middle" class="chip-ink" font-size="9">I2C 0x44</text>
+        <path d="M130,178 C150,178 160,144 180,144" class="casing"/><path d="M130,178 C150,178 160,144 180,144" class="core w-white"/>
+        <path d="M130,190 C160,190 170,144 192,144" class="casing"/><path d="M130,190 C160,190 170,144 192,144" class="core w-yellow"/>
+        <path d="M130,202 C170,202 180,144 204,144" class="casing"/><path d="M130,202 C170,202 180,144 204,144" class="core w-red"/>
+        <path d="M130,212 C180,212 190,144 216,144" class="casing"/><path d="M130,212 C180,212 190,144 216,144" class="core w-black"/>
+        <text x="40" y="240" class="svg-soft" font-size="9.5">SDA → D4 · SCL → D5 · VCC → 3V3 · GND → GND (breakout holes)</text>
+      </svg>
+      <figcaption>Nothing here is a breadboard jumper. The XIAO's six panel lines are traces on the driver board; the only checkable things are the seating orientation (USB-C end away from the FPC connector — seated 180° out, nothing works and nothing looks wrong) and the FPC insertion force. The SHT40, if fitted, uses the board's D4/D5 breakout holes, not the XIAO.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>Meter checklist — PPK2 at 4000 mV, black probe on PPK2 GND</h2>
+    <table>
+      <thead><tr><th>Node</th><th>Touch each of these (metal of the lead/pad, in-circuit)</th><th>Expect</th><th>If not</th></tr></thead>
+      <tbody>
+        <tr class="node-bat"><td><strong>BAT+</strong></td><td>PPK2 <code>VOUT</code> terminal · <code>VOUT</code> jumper far end · XIAO BAT+ pad lead · <strong>R1 top leg</strong></td><td class="num">4.00 V (all four)</td><td>A lead reading 3.3 V is on the 3V3 row; a lead reading ~0 V is in an empty row.</td></tr>
+        <tr class="node-sense"><td><strong>SENSE</strong></td><td>R1 bottom leg · R2 top leg · C1 leg · XIAO MTMS pad lead</td><td class="num">1.90 V (all four)</td><td>1.60 V = fed from 3.3 V, i.e. R1 top is on the rail. 0 V = R1 not landed. ~3.8 V = R2 missing.</td></tr>
+        <tr class="node-gnd"><td><strong>GND</strong></td><td>R2 bottom leg · C1 other leg · XIAO BAT− pad lead · − rail · PPK2 <code>GND</code> 1 and 4</td><td class="num">0.00 V</td><td>Anything else: the jumper from the GND strip to the − rail is missing.</td></tr>
+        <tr class="node-3v3"><td><strong>3V3</strong> <span class="tag">must be separate</span></td><td>XIAO 3V3 header pin, and any breadboard row jumpered to it</td><td class="num">~3.3 V</td><td>This node must contain <em>no</em> divider leg. It is the only node on the bench that reads ~3.3 V regardless of the PPK2 setting.</td></tr>
+        <tr><td>D9 / D6</td><td>encoder A / B at the breakout holes</td><td class="num">~3.3 V idle</td><td>0 V with the knob still: that contact is closed or shorted to ground.</td></tr>
+        <tr><td>D7</td><td>LED side of R3</td><td class="num">0 V idle</td><td>Rises to 3.3 V only while the LED is driven (commissioning blink / low-battery pulse).</td></tr>
+      </tbody>
+    </table>
+    <p class="warn" style="margin-top:0.9rem"><strong>The decisive test is the sweep, not any single point.</strong> Set 3400 → 3700 → 4000 (slider, not the number box) and re-read BAT+ and SENSE at each. BAT+ must follow the source; SENSE must follow at 0.476×. A node that stays at 3.3 V while the source moves is the regulator, and that is where a leg is wrongly landed. Two nodes within 0.2 V of each other are indistinguishable by a one-point check — that is how the 2026-09-02 "verified" reading was actually the rail.</p>
+  </section>
+
+  <section>
+    <h2>Soldered on the XIAO underside — do not touch</h2>
+    <table>
+      <thead><tr><th>Pad</th><th>Goes to</th><th>State</th></tr></thead>
+      <tbody>
+        <tr><td class="pin">BAT+</td><td>BAT+ node (breadboard) — the cell's + when one is fitted</td><td><span class="tag ok">soldered</span></td></tr>
+        <tr><td class="pin">BAT−</td><td>− rail / GND</td><td><span class="tag ok">soldered</span></td></tr>
+        <tr><td class="pin">TP4 · MTMS · GPIO4</td><td>SENSE node</td><td><span class="tag ok">soldered</span></td></tr>
+        <tr><td class="pin">TP6 · MTCK · GPIO6</td><td>encoder push switch</td><td><span class="tag">not yet — leave for now</span></td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:0.88rem;color:var(--ink-soft);margin:0.8rem 0 0">Sources: pins <code>firmware/sensor-01/main/app_config.h</code>; underside pad names <code>docs/pinmap.md:20–21</code> (XIAO ESP32-C6 schematic sheet 3/5); divider values <code>docs/diagrams/battery-divider.html</code>; meter-loading factor 0.476 = 909 kΩ ∥ (1 MΩ + 909 kΩ) with a 10 MΩ meter across the lower leg. Breadboard row numbers and wire colours are the drawing's, not the bench's.</p>
+  </section>
+</main>
+</body>
+</html>

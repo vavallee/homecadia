@@ -701,3 +701,56 @@ Rules, in order of preference:
    the whole window, including reboots.
 3. PPK2 source-meter mode is for **supply substitution** (battery pads, USB
    out, single supply) — never for signal pins on a powered board.
+
+## 19. Two nodes within 0.2 V are indistinguishable by a one-point check
+
+**2026-09-12.** The battery divider was "verified" on 2026-09-02 by one
+reading: meter 1.57 V at the ADC pin, firmware 1.55 V, 1.2% apart. Both
+numbers were wrong in the same direction. 1.57 V on a 10 MΩ meter across a
+1 MΩ lower leg is 3.30 V at the top of the divider (the meter makes the
+ratio 0.476, not 0.5) — while BAT+ was recorded at ~3.1 V the same day. The
+mismatch was in the data and was rationalised as ADC tolerance.
+
+The trap: with no cell fitted, BAT+ (charge IC output) and the 3V3 rail both
+sit near 3.3 V. A divider on either node reads the same at that one point.
+Ten days of "the battery always reads the same" followed.
+
+**What separates them is a sweep, not a better single reading.** With the
+PPK2 substituting for the cell (Source Meter, USB out), move the source
+3400 → 4000 mV and re-read the node. A node on BAT+ follows; a node on the
+rail stays at 3.3 V. Two points, in-circuit, ten minutes. That is now the
+standard for any "verified against a meter" row: two source voltages, or it
+is not verified.
+
+The same session produced six readings that looked like faults and were
+measurement artifacts, each of which triggered an intervention:
+
+| Looked like | Was |
+|---|---|
+| Two dead packs, 0 V both polarities | probe on the JST housing rim, not the recessed contact |
+| Dead pack after charging, 0 V | latched protection board; releases hours after charge starts |
+| XIAO won't charge (LED blinking) | charging normally at 106 mA (spec 100 mA) |
+| PPK2 reads 0.00 A | leads reversed; the PPK2 cannot read negative current |
+| Short on the board (cell to 0 V "fast") | 41 mA sleep-disabled draw over three days, then the latch |
+| Source not reaching BAT+ (0.6 V, decaying) | the wire had been unplugged to measure it |
+
+Rules that came out of it, all cheaper than the interventions they replace:
+
+- **Measure in-circuit.** DC volts with a 10 MΩ meter disturbs nothing. A
+  wire unplugged to be measured reads the charge trapped on it.
+- **One physical change, then measure-only until it is confirmed.** Two
+  matching readings before acting on a surprise.
+- **The PPK2 is the battery for bring-up.** It cannot latch, drain
+  overnight, or be reversed at a JST. A cell goes on for a bounded session
+  and comes off after — the bench profile draws ~41 mA and flattens a
+  2000 mAh pack in about two days.
+- **Read firmware from the glass.** The DIAG view shows `battery_mv`; no
+  USB, so no second supply and no charge IC in the loop. It is the last
+  poll's value (120 s), so wait a poll after changing the source.
+
+What the sweep then found, once the wiring was trusted: the ADC reports a
+constant 340 mV low at battery level (0.17 V at the pin), the same at 3.4 V
+and 4.0 V. That is ~0.34 µA of ADC input current across the divider's
+500 kΩ source impedance — the known cost of a high-value divider straight
+into an ESP32 ADC, and a firmware constant, not a wiring problem.
+

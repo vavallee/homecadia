@@ -11,6 +11,7 @@ Each follows the viewer's light/dark theme.
 | [encoder-led.html](encoder-led.html) | Step 4: the EC11 rotary encoder and status LED — including the push-switch lead that has to be soldered to an underside pad |
 | [internals.html](internals.html) | How the parts sit inside the enclosure — plan view and side elevation, dimensioned from the STLs |
 | [bringup-ladder.html](bringup-ladder.html) | The no-solder connectivity procedure: one thing added per rung, using only internal pull resistors and the ADC |
+| [bench-verify.html](bench-verify.html) | Current bench state (2026-09-12): every wire drawn on the breadboard by node, with the meter reading each node must give with the PPK2 as the battery. Pins from `app_config.h`, which is what is flashed — `assembly.md` steps 1–3 are stale |
 
 ## These are dated snapshots, not current state
 

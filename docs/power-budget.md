@@ -9,10 +9,11 @@ meter (e.g. Nordic PPK2 or a µCurrent) between battery and XIAO.
 
 | Item | Modeled | Measured | Notes |
 |---|---|---|---|
-| Deep/light sleep floor (Thread ICD idle) | ~15–40µA | | C6 light sleep + RTC; dominates the average |
+| Deep/light sleep floor (Thread ICD idle) | ~15–40µA | *open* | C6 light sleep + RTC; dominates the average. Needs the shipping profile — nothing measured under `sdkconfig.bench` (PM off) transfers |
+| Awake floor, bench profile | — | **41 mA avg @ 3.4 V** | PPK2 Source Meter 2026-09-09: ~40 mA baseline, radio bursts to ~190 mA, 424 mA one-sample inrush at power-on. Not a budget line — it is what a sleep-disabled build costs, and it flattens a 2000 mAh cell in ~2 days |
 | Battery divider bleed | 2.1µA | | 4.2V / 2MΩ, continuous |
 | SHT40 single-shot high-precision read | ~0.5ms·mA class, negligible avg | | ~8ms @ ~0.5mA every 120s |
-| ADC battery read (incl. settling) | negligible | | settle delay then one-shot |
+| ADC battery read (incl. settling) | negligible | | settle delay then one-shot. ADC input draws ~0.34 µA from the divider node while sampling (2026-09-12: constant −340 mV at battery level); correct in firmware, not with a stiffer divider |
 | Thread poll (ICD idle-mode poll) | ~10–30µA avg contribution | | depends on idle interval; radio rx window |
 | Matter report (attribute change tx) | spike, small avg | | only on delta ≥0.2°C / ≥1%RH |
 | Display partial refresh | ~? mC per refresh | | measure in M3: charge per refresh event |
