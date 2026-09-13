@@ -249,16 +249,33 @@ Blocker: **2 of 3 panels are gone and there is no spare.** Reorder Seeed SKU
       RLOC16 0x681d, LQ In 3. The iOS companion-app route was tried first the
       same evening and failed exactly as [commissioning.md](commissioning.md)
       predicts — see its troubleshooting table for the two dialog texts.
-- [ ] Office link to the basement ZBT-2 is reliable — **no, not without a
-      router (2026-09-13)**. Node 25 attaches from the 2nd-floor office with
-      nothing in between (bench profile, USB, bare breadboard): RSSI −83 dBm /
-      LQ In 2 at first, −89 to −90 dBm / LQ In 1 after the reflash (was LQ 3 at
-      the rack). At LQ 1 the controller lost it twice in six minutes — a
-      subscribe that never completed (`peer-unresponsive`, node marked
-      unavailable) and a subscription timeout two minutes later. Both recovered
-      unattended. Most likely the link: the device is a sleepy end device, so
-      one missed check-in drops the subscription. A Thread router on the 1st
-      floor comes before the sensor lives here; re-measure with it in place.
+- [x] Office link to the basement ZBT-2 is reliable — **yes, through a
+      Thread router (2026-09-13)**. Without one, node 25 attached from the
+      2nd-floor office (bench profile, USB, bare breadboard) at −83 dBm /
+      LQ In 2, then −89 to −90 dBm / LQ In 1 after the reflash, and the
+      controller lost it twice in six minutes (`peer-unresponsive`, then a
+      subscription timeout). The OTBR transmits at 5 dBm (`ot-ctl txpower`)
+      against the ESP32-C6's 20 dBm, so the border router's downlink is
+      probably the weak direction (inferred).
+      Fix: a bare XIAO ESP32-C6 as a Thread router (`~/src/xiao-thread-router`,
+      local repo), on a wall charger on the 1st floor directly below the
+      office. It joined by MeshCoP next to the ZBT-2 (at the office desk it
+      heard no reply to its discovery scan), then was moved and resumed from
+      NVS unattended. Router to BR: LQ 3/3. Node 25 to router: −74 to −80 dBm,
+      2.7–3.5% frame errors (`meshdiag childtable`). Evidence: 30-minute soak
+      17:52–18:22, node 25 the router's child throughout (connection time
+      never reset, BR child table empty); `kubectl logs deploy/matter-server
+      --since=30m | grep "@1:19"` at 18:23 returned nothing, so no `timed out`
+      and no `peer-unresponsive`. Control: the same grep over 35 min returns
+      the 17:51 resubscribe.
+      Placement matters. At the first 1st-floor spot (router hears the BR at
+      −71 dBm) node 25 reached the router at −90 to −103 dBm with up to 36%
+      frame errors, and its subscription still timed out. After a parent change
+      the controller stayed offline until the BR's stale child entry for node
+      25 expired (240 s timeout); it resubscribed about 50 s after that
+      (cause inferred). Open: the router went silent once, 7.5 min after its
+      first placement (BR saw `NoAck`, and it did not reboot back onto the
+      mesh). Not seen again in about 70 min of running since.
 - [x] Device identity correct on the controller — **2026-08-24**: reads
       `homecadia` / `sensor-01` / `xiao-c6/driver-v2`. Note this only took
       effect after a re-commission; a reflash alone does not update it, because
