@@ -246,6 +246,13 @@ Blocker: **2 of 3 panels are gone and there is no spare.** Reorder Seeed SKU
       RLOC16 0x681d, LQ In 3. The iOS companion-app route was tried first the
       same evening and failed exactly as [commissioning.md](commissioning.md)
       predicts — see its troubleshooting table for the two dialog texts.
+- [x] Office reaches the basement ZBT-2 without a router — **2026-09-13**,
+      node 25 re-attached on its own after moving from the rack to the 2nd
+      floor office (bench profile, USB power, bare breadboard). Neighbour
+      table: RSSI −83 dBm, LQ In 2 (was 3 at the rack). Fresh readings served
+      from the office. Marginal, not blocking; a 1st-floor Thread router would
+      lift it to LQ 3. Re-measure in the enclosure at the final position and on
+      the shipping profile.
 - [x] Device identity correct on the controller — **2026-08-24**: reads
       `homecadia` / `sensor-01` / `xiao-c6/driver-v2`. Note this only took
       effect after a re-commission; a reflash alone does not update it, because
