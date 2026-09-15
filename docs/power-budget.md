@@ -9,18 +9,18 @@ meter (e.g. Nordic PPK2 or a µCurrent) between battery and XIAO.
 
 | Item | Modeled | Measured | Notes |
 |---|---|---|---|
-| Deep/light sleep floor (Thread ICD idle) | ~15–40µA | *open* | C6 light sleep + RTC; dominates the average. Needs the shipping profile — nothing measured under `sdkconfig.bench` (PM off) transfers |
+| Deep/light sleep floor (Thread ICD idle) | ~15–40µA | **~376 µA** | 2026-09-15, PPK2 Source Meter 3700 mV, USB out, shipping image: median of radio-free seconds. ~10× the model; a ~1 kHz train of 50 µs pulses, origin unverified. Before the light-sleep fix the same floor was ~350 µA. See bringup.md, Power & sleep. |
 | Awake floor, bench profile | — | **41 mA avg @ 3.4 V** | PPK2 Source Meter 2026-09-09: ~40 mA baseline, radio bursts to ~190 mA, 424 mA one-sample inrush at power-on. Not a budget line — it is what a sleep-disabled build costs, and it flattens a 2000 mAh cell in ~2 days |
 | Battery divider bleed | 2.1µA | | 4.2V / 2MΩ, continuous |
 | SHT40 single-shot high-precision read | ~0.5ms·mA class, negligible avg | | ~8ms @ ~0.5mA every 120s |
 | ADC battery read (incl. settling) | negligible | | settle delay then one-shot. ADC input draws ~0.34 µA from the divider node while sampling (2026-09-12: constant −340 mV at battery level); correct in firmware, not with a stiffer divider |
-| Thread poll (ICD idle-mode poll) | ~10–30µA avg contribution | | depends on idle interval; radio rx window |
+| Thread poll (ICD idle-mode poll) | ~10–30µA avg contribution | **~300 µC per poll** | 2026-09-15: 5 ms at 250–330 mA peak, every 5.0 s idle ≈ 60 µA avg; every 0.5 s in active mode ≈ 600 µA while it lasts. | depends on idle interval; radio rx window |
 | Matter report (attribute change tx) | spike, small avg | | only on delta ≥0.2°C / ≥1%RH |
 | Display partial refresh | ~? mC per refresh | | measure in M3: charge per refresh event |
 | Display full refresh | ~? mC per refresh | | every N partials for ghosting |
 | LED blink | avoided | | commissioning + low-battery only |
 | Inter-pin leakage (post-wash) | <1µA | | flux residue washed 2026-08-31; a 100kΩ path would add ~0.2µA at 0.5% refresh duty — re-scan if refresh behaviour changes |
-| **Average (no display)** | **≤300µA target** | | |
+| **Average (no display)** | **≤300µA target** | **696 µA** (display included) | 2026-09-15, 38 min settled on the shipping image, ~5 display refreshes in the window. Fast-poll episodes every 20–40 s (cause open) plus the floor above. ≈3.3 months on 1700 mAh usable. |
 
 ## Months-of-battery calculator
 

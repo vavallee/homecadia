@@ -754,3 +754,74 @@ and 4.0 V. That is ~0.34 µA of ADC input current across the divider's
 500 kΩ source impedance — the known cost of a high-value divider straight
 into an ESP32 ADC, and a firmware constant, not a wiring problem.
 
+## 20. An experimental sleep option hung the sensor the first time it really slept
+
+**2026-09-15.** The shipping image had run for 40 minutes on USB without a
+fault. On the PPK2 (Source Meter 3700 mV, USB out) it stopped waking 8
+minutes after boot and never recovered: 10–33 µA, drifting, not one wake in
+two minutes where a healthy sensor polls its Thread parent every 5 s. The
+parent dropped it and the controller marked it unavailable.
+
+**USB hides it.** `CONFIG_USJ_NO_AUTO_LS_ON_CONNECTION=y` keeps the C6 out of
+automatic light sleep while a USB host is attached. A shipping-profile check
+on USB therefore proves nothing about sleep; the first real light-sleep run
+here was this one.
+
+Lining the PPK2 recording up with the Matter server log placed the stop at
+00:33:31 — two minutes after the previous sensor poll, i.e. at a poll (I2C
+read of the SHT40, one ADC read). Everything before it looked normal: 5 ms
+radio polls every 5.00 s, a report plus display refresh at 00:31:31, five
+seconds of 500 ms fast polls after it.
+
+Suspect: `CONFIG_PM_POWER_DOWN_PERIPHERAL_IN_LIGHT_SLEEP=y`. ESP-IDF v5.5.5
+labels it EXPERIMENTAL and defaults it to n (`components/esp_pm/Kconfig`), but
+it is not an oddity of this repo: both of Espressif's C6 sleepy-Thread
+references turn it on (esp-matter `examples/icd_app`, IDF
+`examples/openthread/ot_sleepy_device/light_sleep`), and the milestone-1
+scaffold copied `icd_app`'s defaults nearly line for line. Those references run
+on a DevKit-C with nothing attached. This build adds the XIAO — its antenna
+switch is powered from GPIO3 and selected by GPIO14, both driven by the app —
+plus SPI to the panel, I2C to the SHT40, the encoder GPIOs and an ADC read. So
+the finding is "hangs on this build", not "Espressif's reference is broken".
+One-variable test: a build with only that option off — the two sdkconfigs diffed to that
+single line — ran 38 minutes on the PPK2 with no poll gap over 5.0 s and no
+subscription loss.
+
+| Run | Option | On PPK2 | Result |
+|---|---|---|---|
+| 00:25 | on | ~8 min | stopped waking at a sensor poll |
+| 01:04 | off | 38 min | longest poll gap 5.0 s, no subscription loss |
+
+One run each: strong evidence, not proof. The option stays off.
+
+Wrong turns, each ruled out by reading the source before touching anything:
+
+- *The display BUSY wait blocks the poll timer.* No — `display_show_readings`
+  only queues; a separate task refreshes.
+- *A stuck timer task stops Thread.* No — OpenThread's alarm runs off its own
+  mainloop select timeout (`esp_openthread_alarm.c`), not esp_timer callbacks.
+- *The SHT40 read waits forever.* No — every I2C call has a 50 ms timeout.
+- *~900 "wakes" per second in the idle floor.* They are 50 µs pulses — too
+  short to be light-sleep wakes. Origin still unverified.
+
+**Save PPK2 sessions and parse them.** A `.ppk2` file is a zip:
+`metadata.json` (`samplesPerSecond`, `startSystemTime` in epoch ms) and
+`session.raw`, 6 bytes per sample — float32 current in µA, then a uint16 of
+digital channels. With the start time the trace lines up with any log to the
+millisecond; that is what placed the stop at a sensor poll.
+
+Side finding: the +340 mV battery offset calibrated on the bench image reads
+214–294 mV *high* on the shipping image. ADC error depends on the sleep
+profile; calibrate on the image that ships.
+
+Still open with the option off, and the reason the average is 696 µA against
+a 300 µA target: every 20–40 s a 30 ms transmission drops the sensor into ICD
+active mode for the 5 s threshold (500 ms fast polls). A bounded capture on the
+border router's `wpan0` (Python raw socket inside the OTBR container — the node
+has no tcpdump; 150 s, addresses and ports only) saw one Matter exchange in
+that window, the 2 min keepalive. So the episodes never leave the link to the
+parent, which reports a 20% frame error rate to the sensor at −77 dBm
+(`ot-ctl meshdiag childtable 0xa800`). Espressif's SIT table uses a 1 s
+threshold; ours is 5 s, inherited from their LIT table while the device runs as
+SIT (no check-in client registered, `0/70/8` = 0).
+

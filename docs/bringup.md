@@ -64,9 +64,35 @@ Bench wiring diagrams and the no-solder connectivity procedure live in
 ## Power & sleep
 
 - [ ] GPIO6 (MTCK) wakes the C6 from deep sleep on encoder press.
-- [ ] Sleep floor current measured (target table in
-      [power-budget.md](power-budget.md)). Seeed's ~15µA figure is optimistic
-      and regulator-dependent — treat as unverified
+- [x] Light sleep does not hang — **fixed 2026-09-15** by turning off
+      `CONFIG_PM_POWER_DOWN_PERIPHERAL_IN_LIGHT_SLEEP`. ESP-IDF v5.5.5 marks it
+      experimental (default n), but Espressif's own C6 sleepy references turn
+      it on — esp-matter `examples/icd_app`, IDF `ot_sleepy_device/light_sleep`
+      — and the milestone-1 scaffold copied `icd_app`. With it on,
+      the first real light-sleep run (PPK2 Source Meter, USB out) stopped
+      waking 8 min after boot, at a 120 s sensor poll: 10–33 µA, no wakes at
+      all, dropped by its Thread parent, marked unavailable by the controller.
+      With it off — the only difference, sdkconfigs diffed — 38 min on the
+      PPK2 with no radio-poll gap over 5.0 s and no subscription loss. A USB
+      run cannot show this: `CONFIG_USJ_NO_AUTO_LS_ON_CONNECTION=y` keeps the
+      chip out of light sleep while a host is attached
+      ([field-notes.md](field-notes.md) §20).
+- [x] Sleep current measured — **2026-09-15, over budget.** Shipping image
+      (with the fix above), PPK2 Source Meter 3700 mV, USB out, no cell, 38 min
+      settled: **696 µA average**, radio-free seconds **~376 µA** median.
+      Target ≤300 µA ([power-budget.md](power-budget.md)); projects to ~3.3
+      months on 1700 mAh usable. Two separate costs, both open: the floor
+      between polls is ~10× the modeled 15–40 µA (it is a ~1 kHz train of
+      50 µs pulses, origin unverified — regulator or tick), and every 20–40 s
+      a 30 ms transmission drops the device into ICD active mode, 500 ms fast
+      polls for the 5 s threshold, with no controller exchange to explain it.
+      A 150 s capture on the border router's `wpan0` saw one Matter exchange
+      (the 2 min keepalive), so the episodes stay on the link to the parent,
+      which reports a 20% frame error rate to the sensor at −77 dBm. Our
+      active-mode threshold is 5 s against `icd_app`'s 1 s for SIT (the device
+      runs SIT: no check-in client registered), so each episode costs ~5× the
+      reference's.
+      Seeed's ~15µA figure remains unverified
       ([source-reliability.md](source-reliability.md)).
 - [x] **ADC calibration at two voltages — 2026-09-12.** PPK2 as the cell
       (Source Meter, USB out). True BAT+ 3.36 V → firmware 3.02 V; true
@@ -80,6 +106,12 @@ Bench wiring diagrams and the no-solder connectivity procedure live in
       source read 3972 mV before the flash and 4308 mV after, a +336 mV step:
       proof the offset is in the image, not a third calibration point — the
       charge chip's no-cell output was never metered. A 0 reading stays 0.
+- [ ] **Battery ADC calibrated on the shipping image.** The +340 mV above was
+      measured on the bench image (no light sleep). On the shipping image the
+      same firmware reads **3914–3994 mV at a 3.70 V source**, 214–294 mV high
+      (2026-09-15, PPK2, several reports over 40 min). The offset does not
+      transfer between profiles; recalibrate on the shipping image with the
+      PPK2 sweep, reading the DIAG view after a poll, before trusting percent.
 
 ## Display
 
@@ -290,3 +322,8 @@ Blocker: **2 of 3 panels are gone and there is no spare.** Reorder Seeed SKU
       **2026-08-23**: on the shipping profile (light sleep on) the device stays
       attached as a sleepy child and serves live reads over Thread 150s+ after
       boot. Cadence as seen from HA not yet observed over a longer window.
+      **2026-09-15:** 30 min on the PPK2 (USB out, real light sleep), every
+      temperature change reached the controller, no subscription loss. The
+      device reports operating mode SIT (`0/70/8` = 0) with no registered
+      check-in client (`0/70/3` empty), so LIT is not in effect with this
+      controller.

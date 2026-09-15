@@ -17,3 +17,5 @@ __pycache__/
 .gastown-ignore
 .claude/
 firmware/**/build-bench/
+# one-off test builds (e.g. build-nopd): idf.py -B build-<name>
+firmware/**/build-*/
