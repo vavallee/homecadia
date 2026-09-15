@@ -83,9 +83,9 @@ Bench wiring diagrams and the no-solder connectivity procedure live in
       Target ≤300 µA ([power-budget.md](power-budget.md)); projects to ~3.3
       months on 1700 mAh usable. Two separate costs, both open: the floor
       between polls is ~10× the modeled 15–40 µA (the ~1 kHz pulse train is
-      the XIAO's SGM6029 buck in power-save mode, not wakes; the load behind it
-      is the modem power domain, held on by the battery ADC — see the next
-      item), and every 20–40 s
+      the XIAO's SGM6029 buck in power-save mode, not wakes; ~95 µA of the load
+      behind it was the modem power domain, held on by the battery ADC — see
+      the next item), and every 20–40 s
       a 30 ms transmission drops the device into ICD active mode, 500 ms fast
       polls for the 5 s threshold, with no controller exchange to explain it.
       A 150 s capture on the border router's `wpan0` saw one Matter exchange
@@ -96,16 +96,21 @@ Bench wiring diagrams and the no-solder connectivity procedure live in
       reference's.
       Seeed's ~15µA figure remains unverified
       ([source-reliability.md](source-reliability.md)).
-- [ ] **Modem power domain off in sleep — cause found, fix unmeasured
-      (2026-09-15).** A diagnostic image (`CONFIG_HOMECADIA_SLEEP_DIAG`) showed
+- [x] **Modem power domain off in sleep — fixed 2026-09-15, worth ~95 µA.** A diagnostic image (`CONFIG_HOMECADIA_SLEEP_DIAG`) showed
       the chip asleep 98–99% of the time with ~2 timer wakes/s and no pin
       wakes, but the modem power domain **on for 100% of sleep time**. Cause:
       `battery.cpp` held its oneshot ADC unit from boot, and on the C6
       `adc_oneshot_new_unit()` pins the modem domain on until the unit is
       deleted (`ADC_LL_ADC_FE_ON_MODEM_DOMAIN`, `esp_adc/adc_oneshot.c`). Fix:
-      create and delete the unit around each reading. Close when the DIAG
-      screen shows the modem-on share near 0% and the PPK2 quiet floor drops
-      by roughly 300 µA ([field-notes.md](field-notes.md) §21).
+      create and delete the unit around each reading. Measured with the fix:
+      modem on 0% of sleep time, quiet floor **376 → 282 µA**. Still ~225 µA
+      above Espressif's 55 µA reference.
+- [ ] **Quiet floor near the reference (~55 µA).** Every sleep still leaves
+      the TOP domain and HP peripherals powered (flag bits 0 and 3 never set),
+      which `CONFIG_PM_POWER_DOWN_PERIPHERAL_IN_LIGHT_SLEEP=n` does by design.
+      Next test: that option back on with the ADC fix, on the PPK2, watching
+      the DIAG flags for TOP power-down and the trace for the §20 hang
+      ([field-notes.md](field-notes.md) §21).
 - [x] **ADC calibration at two voltages — 2026-09-12.** PPK2 as the cell
       (Source Meter, USB out). True BAT+ 3.36 V → firmware 3.02 V; true
       3.97 V → firmware 3.64 V. Same 0.33–0.34 V short at both points, slope

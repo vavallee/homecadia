@@ -886,13 +886,21 @@ so `adc_oneshot_new_unit()` calls
 v5.5.5). IDF powers the modem domain down only when that option is not ON
 (`sleep_modes.c`, the `RTC_SLEEP_PD_MODEM` condition). With
 `CONFIG_PM_POWER_DOWN_PERIPHERAL_IN_LIGHT_SLEEP=y` the same call also pins the
-TOP domain on. Espressif's reference has no ADC, which is why its floor is
-clean. The fix creates and deletes the unit around each reading (every
+TOP domain on. Espressif's reference has no ADC. The fix creates and deletes the unit around each reading (every
 120 s); the calibration handle is eFuse coefficients only and is kept.
 
-**Status: fix built, not yet measured.** Expected on the diagnostic image: the
-modem-on share near 0% and the quiet floor down by roughly 300 µA. The
-measured numbers replace this paragraph when they exist.
+**Measured the same day, diagnostic image with the fix:** modem domain on for
+0% of sleep time (was 100%); last sleep's flags `0x20003c16`, MODEM bit set.
+Quiet floor over a 1.3 s window with nothing above the buck's 13 mA bursts:
+**282 µA**, against 376 µA before with the same config (PPK2 3700 mV). The fix
+is worth ~95 µA: real, but a third of the excess, not the ~300 µA it was
+expected to be. Still powered in every sleep: the TOP domain and the HP
+peripherals (flag bits 0 and 3 never set). That is what
+`CONFIG_PM_POWER_DOWN_PERIPHERAL_IN_LIGHT_SLEEP=n` (§20) leaves on, and
+Espressif's reference runs with that option on. Before the fix the held ADC
+unit also pinned TOP on in the option-on build, so no run here has ever
+powered TOP down, including the one that hung. Next test: option on plus the
+fix, watching for bit 0 and for the hang.
 
 Also found in the same session:
 
