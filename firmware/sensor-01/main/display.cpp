@@ -1,4 +1,5 @@
 #include "display.h"
+#include "sleep_diag.h"
 
 #include <string.h>
 
@@ -157,9 +158,29 @@ static void render_commissioning(const char *qr_payload, const char *manual_code
     monogfx_draw_text(&s_gfx, 140, 76, manual_code, 2);
 }
 
+#if CONFIG_HOMECADIA_SLEEP_DIAG
+static char s_sleep_lines[SLEEP_DIAG_LINES][SLEEP_DIAG_COLS]; /* static: keeps it off the task stack */
+#endif
+
 static void render_diag(const display_diag_t *d, const char *fw)
 {
     monogfx_clear(&s_gfx);
+#if CONFIG_HOMECADIA_SLEEP_DIAG
+    {
+        /* Diagnostic image: sleep counters replace the normal view (sleep_diag.cpp). */
+        char line[SLEEP_DIAG_COLS + 16];
+        snprintf(line, sizeof(line), "SLEEP DIAG bat %lumV rssi %d", (unsigned long)d->battery_mv,
+                 d->rssi_valid ? d->rssi_dbm : 0);
+        monogfx_draw_text(&s_gfx, 2, 2, line, 1);
+        int n = sleep_diag_format(s_sleep_lines);
+        for (int i = 0; i < n; i++) {
+            monogfx_draw_text(&s_gfx, 2, 14 + i * 10, s_sleep_lines[i], 1);
+        }
+        snprintf(line, sizeof(line), "FW %s", fw);
+        monogfx_draw_text(&s_gfx, 2, 118, line, 1);
+        return;
+    }
+#endif
     monogfx_draw_text(&s_gfx, 10, 8, "DIAGNOSTICS", 2);
     monogfx_fill_rect(&s_gfx, 0, 26, LAND_W, 1, true);
 
@@ -231,6 +252,9 @@ static void display_task(void *arg)
                 s_partials_since_full = DISPLAY_FULL_REFRESH_EVERY_N;
                 break;
             }
+#if CONFIG_HOMECADIA_SLEEP_DIAG
+            continue; /* diagnostic image: the 60 s DIAG redraw (sleep_diag.cpp) owns the panel */
+#endif
             render_readings(&msg.readings);
             break;
         case display_msg_t::MSG_COMMISSIONED:
@@ -278,7 +302,12 @@ esp_err_t display_init(void)
     if (!s_queue) {
         return ESP_ERR_NO_MEM;
     }
-    if (xTaskCreate(display_task, "display", 4096, nullptr, 3, nullptr) != pdPASS) {
+#if CONFIG_HOMECADIA_SLEEP_DIAG
+    const uint32_t stack = 6144; /* sleep_diag_format: snprintf %f */
+#else
+    const uint32_t stack = 4096;
+#endif
+    if (xTaskCreate(display_task, "display", stack, nullptr, 3, nullptr) != pdPASS) {
         return ESP_ERR_NO_MEM;
     }
     return ESP_OK;

@@ -13,6 +13,7 @@
 #include <nvs_flash.h>
 #if CONFIG_PM_ENABLE
 #include <esp_pm.h>
+#include "sleep_diag.h"
 #endif
 
 #include <esp_matter.h>
@@ -216,6 +217,7 @@ extern "C" void app_main()
     };
     err = esp_pm_configure(&pm_config);
     ABORT_APP_ON_FAILURE(err == ESP_OK, ESP_LOGE(TAG, "Failed to configure power management, err:%d", err));
+    sleep_diag_init(); /* no-op unless CONFIG_HOMECADIA_SLEEP_DIAG */
 #endif
 
     node::config_t node_config;

@@ -26,4 +26,21 @@ config HOMECADIA_BENCH_PIN_HOLD
         a leak that only conducts under power, which an unpowered ohmmeter
         cannot detect. Turn this off once the path is identified.
 
+config HOMECADIA_SLEEP_DIAG
+    bool "Light-sleep counters on the DIAG screen (diagnostic image)"
+    depends on FREERTOS_USE_TICKLESS_IDLE
+    select PM_LIGHT_SLEEP_CALLBACKS
+    select ESP_SLEEP_DEBUG
+    default n
+    help
+        Counts every automatic light-sleep request, whether IDF attempted it,
+        how long the chip slept, what woke it and which power domains it
+        powered down, and redraws those on the DIAG view every 60 s in place
+        of its normal content (the dial cannot open the view on battery).
+
+        Read from the glass, never over USB: a USB host keeps the chip out of
+        light sleep (CONFIG_USJ_NO_AUTO_LS_ON_CONNECTION), which hides the
+        thing being measured. Added 2026-09-15 to find the ~300 uA sleep
+        load (docs/field-notes.md section 21). Not for shipping images.
+
 endmenu
