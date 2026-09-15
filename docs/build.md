@@ -41,6 +41,36 @@ docker run --rm -it --device=/dev/ttyACM0 -v "$PWD":/work \
 (XIAO ESP32-C6 enumerates as USB CDC, typically `/dev/ttyACM0`. If flashing
 won't start, hold BOOT while plugging in.)
 
+### Diagnostic image: light-sleep counters
+
+To see what the chip does while it sleeps, build `build-diag`: the shipping
+`sdkconfig` plus `CONFIG_HOMECADIA_SLEEP_DIAG`, which selects the esp_pm
+light-sleep callbacks and `CONFIG_ESP_SLEEP_DEBUG`
+([field-notes.md](field-notes.md) §21):
+
+```sh
+docker run --rm -v "$PWD":/work espressif/esp-matter:release-v1.6_idf_v5.5.5 bash -c '
+  cd /work/firmware/sensor-01 && mkdir -p build-diag &&
+  cp sdkconfig build-diag/sdkconfig &&
+  echo CONFIG_HOMECADIA_SLEEP_DIAG=y >> build-diag/sdkconfig &&
+  idf.py -B build-diag -DSDKCONFIG=build-diag/sdkconfig reconfigure build'
+diff <(grep -E "^CONFIG_|is not set" firmware/sensor-01/sdkconfig) \
+     <(grep -E "^CONFIG_|is not set" firmware/sensor-01/build-diag/sdkconfig)
+```
+
+The diff must show only the option and what it selects. Use `reconfigure`
+after touching `Kconfig.projbuild`: a plain `build` once left a newly
+`select`ed option unset.
+
+Run it on the PPK2 with USB out and read the DIAG screen, which the image
+redraws every 60 s (the dial cannot open it on battery). Lines, top down:
+sleep calls / attempts / % of uptime asleep; requested sleep lengths; actual
+sleep lengths and early wakes; wake causes; power-down flags of the last
+sleep, those set in every sleep (AND) and in any sleep (OR), bit meanings in
+`esp_private/esp_pmu.h` (`PMU_SLEEP_PD_*`: TOP 0, MODEM 2, HP_PERIPH 3, CPU 4,
+XTAL 10, RC_FAST 11); share of sleep time with the modem domain and XTAL on;
+BLE controller status and the sleep-retention bitmaps.
+
 ## Path B: native install
 
 ```sh
@@ -124,6 +154,24 @@ usbipd.exe attach --wsl --busid <BUSID>
 # board appears as /dev/ttyACM0; flash via the docker command above with
 # --device=/dev/ttyACM0 and `idf.py -p /dev/ttyACM0 flash`
 ```
+
+**The reliable path is Windows-native esptool**, not usbipd: the C6's
+native USB re-enumerates on every reset and usbipd loses it mid-flash about
+half the time. Leave the board *Not shared*, take the COM port from
+`usbipd.exe list` (it follows the physical port), copy the four images from
+`build/` (or `build-bench/`, `build-diag/`) to a Windows folder, and run from
+WSL:
+
+```sh
+cmd.exe /c "cd /d C:\\path\\to\\images && python.exe -m esptool --chip esp32c6 -p COM11 \
+  -b 460800 --before default-reset --after hard-reset write-flash --flash-mode dio \
+  --flash-freq 80m --flash-size 4MB 0x0 bootloader.bin 0xc000 partition-table.bin \
+  0x1d000 ota_data_initial.bin 0x20000 homecadia-sensor-01.bin"
+```
+
+NVS survives, so the device keeps its fabric. On a board powered from the
+PPK2, lift the PPK2's VOUT lead before plugging USB in: the two must never
+feed BAT+ together.
 
 Gotchas, all hit in practice:
 

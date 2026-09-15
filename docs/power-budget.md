@@ -9,7 +9,7 @@ meter (e.g. Nordic PPK2 or a µCurrent) between battery and XIAO.
 
 | Item | Modeled | Measured | Notes |
 |---|---|---|---|
-| Deep/light sleep floor (Thread ICD idle) | ~15–40µA | **~376 µA** | 2026-09-15, PPK2 Source Meter 3700 mV, USB out, shipping image: median of radio-free seconds. ~10× the model; a ~1 kHz train of 50 µs pulses, origin unverified. Before the light-sleep fix the same floor was ~350 µA. See bringup.md, Power & sleep. |
+| Deep/light sleep floor (Thread ICD idle) | ~15–40µA | **~376 µA** | 2026-09-15, PPK2 Source Meter 3700 mV, USB out, shipping image: median of radio-free seconds. ~10× the model. The ~1 kHz pulse train is the XIAO's SGM6029 buck in power-save mode delivering the load in bursts, not wakes; the load is the modem power domain, held on through every sleep by the battery ADC unit (field-notes.md §21). Fix built 2026-09-15, not yet measured. Before the light-sleep fix the same floor was ~350 µA. |
 | Awake floor, bench profile | — | **41 mA avg @ 3.4 V** | PPK2 Source Meter 2026-09-09: ~40 mA baseline, radio bursts to ~190 mA, 424 mA one-sample inrush at power-on. Not a budget line — it is what a sleep-disabled build costs, and it flattens a 2000 mAh cell in ~2 days |
 | Battery divider bleed | 2.1µA | | 4.2V / 2MΩ, continuous |
 | SHT40 single-shot high-precision read | ~0.5ms·mA class, negligible avg | | ~8ms @ ~0.5mA every 120s |

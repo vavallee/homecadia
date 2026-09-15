@@ -825,3 +825,94 @@ parent, which reports a 20% frame error rate to the sensor at −77 dBm
 threshold; ours is 5 s, inherited from their LIT table while the device runs as
 SIT (no check-in client registered, `0/70/8` = 0).
 
+
+## 21. The battery ADC kept the radio powered through every sleep
+
+**2026-09-15.** With the hang fixed (§20) the shipping image still averaged
+~700 µA against a 300 µA target, and the quiet stretches between radio polls
+sat near 376 µA. Espressif's C6 DevKit-C trace for the same stack
+(esp-matter `examples/icd_app/README.md`, image `C6-sit-icd.png`) reads
+32–71 µA there.
+
+**The trace looked like a wake storm. It was the regulator.** Between polls
+98% of the charge arrived in ~2340 short pulses per second (they come in
+pairs, ~1170 Hz; ~50 µs, 1–14 mA each) with 3–7 µA between them, and the rate
+slid ~10% over the 5 s between polls, jumping back at each poll. That is the
+XIAO's 3.3 V supply: U1 is an SGM6029 buck (XIAO-ESP32-C6_v1.0 schematic,
+sheet 4; L1 0.47 µH). Its VSEL/MODE pin has 249 kΩ to GND, which the datasheet
+(Table 1) reads at startup as 3.3 V; after startup a low on the same pin
+selects power-save mode. In power-save mode a buck draws from the battery in
+bursts whose rate follows the load. Quiescent current is 2.3 µA typ
+(datasheet), which with the divider's ~1.9 µA is the 3–7 µA between bursts.
+The average is real; the pulse shape only says how big the load is.
+
+**Instrument before guessing.** A diagnostic image
+(`CONFIG_HOMECADIA_SLEEP_DIAG`, `main/sleep_diag.cpp`; how to build it is in
+[build.md](build.md)) counts every automatic light-sleep request through the
+esp_pm light-sleep callbacks, records the power-down flags IDF applied to each
+sleep (`CONFIG_ESP_SLEEP_DEBUG` sleep context, bits from
+`esp_private/esp_pmu.h`), and redraws the lot on the DIAG screen every 60 s.
+It is read from the glass: a USB host keeps the chip awake.
+
+| Measured (PPK2 3700 mV, USB out, 300–1020 s uptime) | Value |
+|---|---|
+| Light sleeps | ~2/s, all ≥3 ms, all ended by the timer; no GPIO wakes |
+| Time asleep | 98–99% |
+| Sleep time with the modem power domain on | **100%** |
+| Sleep time with the 40 MHz XTAL on | 0% |
+| BLE controller / NimBLE host task | idle / gone (torn down after commissioning) |
+
+Ruled out on the way, each by source or by the counters:
+
+- *A wake storm* — 2 wakes/s.
+- *The USB-Serial-JTAG console* (ours; `icd_app` uses the UART) — the C6 does
+  not define `SOC_USB_SERIAL_JTAG_SUPPORT_LIGHT_SLEEP` (soc_caps.h:354), so IDF
+  disables the USJ pad and clock on every light sleep
+  (`sleep_modes.c` `misc_modules_sleep_prepare`).
+- *The panel left awake* — `ssd1680.c` sends deep sleep (mode 1) after every
+  refresh.
+- *GPIO3 held low into sleep.* 3.3 V across Q3's 10 kΩ gate pull-up is 330 µA,
+  which fit the number exactly. Its IO_MUX register read `0x1802`: sleep select
+  on, sleep output, pulls and input off. IDF already isolates it.
+- *BLE keeping the XTAL and modem up* (`CONFIG_BT_LE_LP_CLK_SRC_MAIN_XTAL=y`)
+  — controller idle, task gone, XTAL on 0% of sleep time.
+
+**Cause.** `battery.cpp` created its oneshot ADC unit once in `battery_init()`
+and never deleted it. On the C6 the ADC front end sits in the modem power
+domain (`ADC_LL_ADC_FE_ON_MODEM_DOMAIN`, `hal/esp32c6/include/hal/adc_ll.h:41`),
+so `adc_oneshot_new_unit()` calls
+`esp_sleep_pd_config(ESP_PD_DOMAIN_MODEM, ESP_PD_OPTION_ON)` and only
+`adc_oneshot_del_unit()` sets it back to OFF (`esp_adc/adc_oneshot.c`, IDF
+v5.5.5). IDF powers the modem domain down only when that option is not ON
+(`sleep_modes.c`, the `RTC_SLEEP_PD_MODEM` condition). With
+`CONFIG_PM_POWER_DOWN_PERIPHERAL_IN_LIGHT_SLEEP=y` the same call also pins the
+TOP domain on. Espressif's reference has no ADC, which is why its floor is
+clean. The fix creates and deletes the unit around each reading (every
+120 s); the calibration handle is eFuse coefficients only and is kept.
+
+**Status: fix built, not yet measured.** Expected on the diagnostic image: the
+modem-on share near 0% and the quiet floor down by roughly 300 µA. The
+measured numbers replace this paragraph when they exist.
+
+Also found in the same session:
+
+- **The dial does not work on battery.** The encoder uses edge interrupts
+  (`components/ec11_encoder/ec11.c`), which cannot wake the chip from light
+  sleep (`gpio_wakeup_enable` accepts level types only, `esp_driver_gpio`
+  `gpio.c`), and `CONFIG_PM_SLP_DISABLE_GPIO` disables every pin's input while
+  asleep (`sleep_gpio.c` `esp_sleep_config_gpio_isolate`). Every dial test so
+  far ran on USB, where the chip never sleeps. Open.
+- **The CLOCK_SYSTEM retention module is inited but never created** (retention
+  bitmaps `0x60000006` inited, `0x60000004` created). `top_domain_pd_allowed()`
+  requires the clock domain to be allowed to power down, so this probably
+  blocks TOP power-down whatever the peripheral option says — unverified.
+- **One-minute PPK2 averages swing ±100 µA with radio traffic** (827 vs 645 µA
+  on identical behaviour). Compare quiet windows or long averages.
+- **Battery offset on the shipping image:** 3400 → 3676, 3700 → 3988,
+  4000 → 4288 mV with the bench image's +340 mV applied — a constant +276 to
+  +288 mV, slope 1.02. The fix changes the ADC's power state between
+  readings, so it is re-swept after the fix rather than patched now.
+- **The first `get_node` after a reflash can be the server's cache.** The
+  interview returned and the attributes still showed the previous boot's
+  reboot count and uptime; the next read 25 s later was current. Check
+  `0/51/1` (reboot count) moved before trusting anything else.

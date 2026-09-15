@@ -82,8 +82,10 @@ Bench wiring diagrams and the no-solder connectivity procedure live in
       settled: **696 µA average**, radio-free seconds **~376 µA** median.
       Target ≤300 µA ([power-budget.md](power-budget.md)); projects to ~3.3
       months on 1700 mAh usable. Two separate costs, both open: the floor
-      between polls is ~10× the modeled 15–40 µA (it is a ~1 kHz train of
-      50 µs pulses, origin unverified — regulator or tick), and every 20–40 s
+      between polls is ~10× the modeled 15–40 µA (the ~1 kHz pulse train is
+      the XIAO's SGM6029 buck in power-save mode, not wakes; the load behind it
+      is the modem power domain, held on by the battery ADC — see the next
+      item), and every 20–40 s
       a 30 ms transmission drops the device into ICD active mode, 500 ms fast
       polls for the 5 s threshold, with no controller exchange to explain it.
       A 150 s capture on the border router's `wpan0` saw one Matter exchange
@@ -94,6 +96,16 @@ Bench wiring diagrams and the no-solder connectivity procedure live in
       reference's.
       Seeed's ~15µA figure remains unverified
       ([source-reliability.md](source-reliability.md)).
+- [ ] **Modem power domain off in sleep — cause found, fix unmeasured
+      (2026-09-15).** A diagnostic image (`CONFIG_HOMECADIA_SLEEP_DIAG`) showed
+      the chip asleep 98–99% of the time with ~2 timer wakes/s and no pin
+      wakes, but the modem power domain **on for 100% of sleep time**. Cause:
+      `battery.cpp` held its oneshot ADC unit from boot, and on the C6
+      `adc_oneshot_new_unit()` pins the modem domain on until the unit is
+      deleted (`ADC_LL_ADC_FE_ON_MODEM_DOMAIN`, `esp_adc/adc_oneshot.c`). Fix:
+      create and delete the unit around each reading. Close when the DIAG
+      screen shows the modem-on share near 0% and the PPK2 quiet floor drops
+      by roughly 300 µA ([field-notes.md](field-notes.md) §21).
 - [x] **ADC calibration at two voltages — 2026-09-12.** PPK2 as the cell
       (Source Meter, USB out). True BAT+ 3.36 V → firmware 3.02 V; true
       3.97 V → firmware 3.64 V. Same 0.33–0.34 V short at both points, slope
@@ -112,6 +124,11 @@ Bench wiring diagrams and the no-solder connectivity procedure live in
       (2026-09-15, PPK2, several reports over 40 min). The offset does not
       transfer between profiles; recalibrate on the shipping image with the
       PPK2 sweep, reading the DIAG view after a poll, before trusting percent.
+      **Swept 2026-09-15** (PPK2 slider, battery attribute `3/47/11` read over
+      the Matter API, no board contact): 3400 → 3676, 3700 → 3988,
+      4000 → 4288 mV. Constant +276 to +288 mV, slope 1.02, so the shipping
+      image needs ~+56 mV, not +340. Not applied: the ADC fix above changes
+      the ADC's power state between readings, so sweep again after it.
 
 ## Display
 
@@ -186,6 +203,15 @@ Blocker: **2 of 3 panels are gone and there is no spare.** Reorder Seeed SKU
       pins were **soldered to leads**: EC11 blades are ~0.6 mm and seat in
       neither breadboard springs nor Dupont sockets — every earlier run had one
       line dead or intermittent.
+- [ ] **Dial works on battery — found broken 2026-09-15.** On the PPK2 (no
+      USB) a detent did nothing. The encoder uses edge interrupts
+      (`components/ec11_encoder/ec11.c`), which cannot wake light sleep
+      (`gpio_wakeup_enable` takes level types only), and
+      `CONFIG_PM_SLP_DISABLE_GPIO` turns every pin's input off while asleep. All
+      the verifications below ran on USB, where the chip never sleeps. Needs a
+      level wake on A/B re-armed to the opposite level after each change, or
+      the pins kept out of sleep isolation ([field-notes.md](field-notes.md)
+      §21).
 - [x] **Clockwise = view advances — verified 2026-08-26.** With A on D6 it read
       `dir=-1`, so A/B were swapped in `app_config.h` (A=D9, B=D6), not on the
       board. About 1 detent in 4 is dropped on a slow turn — one lost quadrature

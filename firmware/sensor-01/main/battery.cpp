@@ -21,40 +21,29 @@ static const char *TAG = "battery";
  * ADC calibration row. */
 #define VBAT_OFFSET_MV 340
 
-static adc_oneshot_unit_handle_t s_adc;
+static adc_unit_t s_unit;
 static adc_cali_handle_t s_cali;
 static adc_channel_t s_channel;
 
+/* The ADC unit exists only for the length of one reading. On the C6 a live
+ * oneshot unit keeps the modem power domain on through every light sleep:
+ * adc_oneshot_new_unit() calls esp_sleep_pd_config(ESP_PD_DOMAIN_MODEM, ON)
+ * because the ADC front end sits in that domain (ADC_LL_ADC_FE_ON_MODEM_DOMAIN,
+ * hal/esp32c6/include/hal/adc_ll.h), and only adc_oneshot_del_unit() sets it
+ * back to OFF (esp_adc/adc_oneshot.c, IDF v5.5.5). Created once at boot, it
+ * held the modem domain up for 100% of sleep time -- measured 2026-09-15 with
+ * the sleep-diag image (CONFIG_HOMECADIA_SLEEP_DIAG). The calibration handle
+ * is only eFuse coefficients and does not need a live unit, so it is kept. */
 esp_err_t battery_init(void)
 {
-    adc_unit_t unit;
-    esp_err_t err = adc_oneshot_io_to_channel(VBAT_ADC_GPIO, &unit, &s_channel);
+    esp_err_t err = adc_oneshot_io_to_channel(VBAT_ADC_GPIO, &s_unit, &s_channel);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "GPIO%d is not an ADC pin", VBAT_ADC_GPIO);
         return err;
     }
 
-    adc_oneshot_unit_init_cfg_t unit_cfg = {
-        .unit_id = unit,
-        .ulp_mode = ADC_ULP_MODE_DISABLE,
-    };
-    err = adc_oneshot_new_unit(&unit_cfg, &s_adc);
-    if (err != ESP_OK) {
-        return err;
-    }
-
-    /* 12dB attenuation: full-scale ~3.3V, Vbat/2 tops out at 2.1V. */
-    adc_oneshot_chan_cfg_t chan_cfg = {
-        .atten = ADC_ATTEN_DB_12,
-        .bitwidth = ADC_BITWIDTH_DEFAULT,
-    };
-    err = adc_oneshot_config_channel(s_adc, s_channel, &chan_cfg);
-    if (err != ESP_OK) {
-        return err;
-    }
-
     adc_cali_curve_fitting_config_t cali_cfg = {
-        .unit_id = unit,
+        .unit_id = s_unit,
         .chan = s_channel,
         .atten = ADC_ATTEN_DB_12,
         .bitwidth = ADC_BITWIDTH_DEFAULT,
@@ -69,20 +58,42 @@ esp_err_t battery_init(void)
 
 esp_err_t battery_read_mv(uint32_t *out_mv)
 {
+    adc_oneshot_unit_handle_t adc = nullptr;
+    adc_oneshot_unit_init_cfg_t unit_cfg = {
+        .unit_id = s_unit,
+        .ulp_mode = ADC_ULP_MODE_DISABLE,
+    };
+    esp_err_t err = adc_oneshot_new_unit(&unit_cfg, &adc);
+    if (err != ESP_OK) {
+        return err;
+    }
+
+    /* 12dB attenuation: full-scale ~3.3V, Vbat/2 tops out at 2.1V. */
+    adc_oneshot_chan_cfg_t chan_cfg = {
+        .atten = ADC_ATTEN_DB_12,
+        .bitwidth = ADC_BITWIDTH_DEFAULT,
+    };
+    err = adc_oneshot_config_channel(adc, s_channel, &chan_cfg);
+
     /* The 100nF cap holds the divider node steady (source is always connected),
      * but give the ADC input a moment after (re)config before sampling.
      * The 2026-09-02 "within 1.2%" check once cited here was a false pass
      * (docs/bringup.md, divider row); the real error is VBAT_OFFSET_MV. */
-    vTaskDelay(pdMS_TO_TICKS(VBAT_ADC_SETTLE_MS));
-
     int sum = 0;
-    for (int i = 0; i < SAMPLES; i++) {
-        int raw = 0;
-        esp_err_t err = adc_oneshot_read(s_adc, s_channel, &raw);
-        if (err != ESP_OK) {
-            return err;
+    if (err == ESP_OK) {
+        vTaskDelay(pdMS_TO_TICKS(VBAT_ADC_SETTLE_MS));
+        for (int i = 0; i < SAMPLES; i++) {
+            int raw = 0;
+            err = adc_oneshot_read(adc, s_channel, &raw);
+            if (err != ESP_OK) {
+                break;
+            }
+            sum += raw;
         }
-        sum += raw;
+    }
+    adc_oneshot_del_unit(adc); /* releases the modem-domain hold before the next sleep */
+    if (err != ESP_OK) {
+        return err;
     }
     int raw_avg = sum / SAMPLES;
 
