@@ -66,6 +66,10 @@ esp_err_t sht40_init(int sda_gpio, int scl_gpio, uint8_t i2c_addr, sht40_handle_
         .clk_source = I2C_CLK_SRC_DEFAULT,
         .glitch_ignore_cnt = 7,
         .flags.enable_internal_pullup = true, /* Grove board has pullups; harmless belt-and-suspenders */
+        /* Build the sleep-retention entries so the C6 may power the TOP domain
+         * down in light sleep; without it the retention bitmap showed I2C0
+         * inited but not created, 2026-09-15 (docs/field-notes.md section 21). */
+        .flags.allow_pd = true,
     };
     esp_err_t err = i2c_new_master_bus(&bus_cfg, &h->bus);
     if (err != ESP_OK) {

@@ -920,6 +920,53 @@ Also found in the same session:
   4000 → 4288 mV with the bench image's +340 mV applied — a constant +276 to
   +288 mV, slope 1.02. The fix changes the ADC's power state between
   readings, so it is re-swept after the fix rather than patched now.
+**Later the same day: the TOP domain needs two driver flags, and the option
+still hangs.** With the ADC fixed and
+`CONFIG_PM_POWER_DOWN_PERIPHERAL_IN_LIGHT_SLEEP=y` back on, the TOP domain
+*still* never powered down (flag bit 0 never set, floor unchanged at 279 µA).
+The retention bitmap said why: I2C0 (bit 12) and GPSPI2 (bit 22) were inited
+but never created. IDF's I2C and SPI drivers only build their sleep-retention
+entries when the bus asks for it — `i2c_master_bus_config_t.flags.allow_pd`
+(`driver/i2c_master.h`) and `SPICOMMON_BUSFLAG_SLP_ALLOW_PD`
+(`driver/spi_common.h`, gate in `spi_common.c`) — and `peripheral_domain_pd_allowed()`
+refuses TOP power-down until every inited module is created. Our SHT40 bus
+(`components/sht40/sht40.c`) and panel bus (`components/ssd1680/ssd1680.c`)
+set neither.
+
+With both flags set and the option on:
+
+| | |
+|---|---|
+| Last sleep's flags | `0x20007c17` — TOP (bit 0) and LP_PERIPH (bit 14) now powered down |
+| Retention inited / created | `6040133e` / `6040133e` — everything created |
+| Quiet floor | **56 µA** (106 ms selection), against Espressif's 55 µA reference |
+| Sleeps ending early | ~2/s, still timer wakes; IDF appears to wake early to cover the retention restore (inferred) |
+
+**And the §20 hang came back.** Last report 478 s after boot (matter-server:
+subscription timeout at 16:48:04 less its 2 min 38 s), screen frozen at
+`up 480s` with 882 sleeps counted, `is offline` 16:47:35, unavailable
+16:50:35. §20's hang was ~490 s. Both stopped at the **4th** 120 s sensor
+poll, not the first, and nothing in `poll_cb()` (`sensor_loop.cpp`) is
+every-4th-poll: each poll does the same SHT40 read, battery read and
+conditional report. Unexplained.
+
+So the floor is a choice between two known states, until the hang is
+understood:
+
+| Shipping option | Quiet floor | Runs |
+|---|---|---|
+| `PM_POWER_DOWN_PERIPHERAL_IN_LIGHT_SLEEP=n` (current) | 282 µA | 38 min clean (§20), plus several runs today |
+| `=y` with both driver flags | 56 µA | hangs at ~480 s, twice |
+
+The driver flags stay in regardless: they cost nothing with the option off,
+and they are required the moment it goes on.
+
+**Flashing a power-down-on image wedged the USB port.** The first plug-in
+after that image ran gave Windows `Unknown USB Device (Device Descriptor
+Request Failed)` and esptool could not open the port. Holding the **B** button
+while plugging in (ROM download mode never sleeps) flashed first try. Six
+plug-ins on option-off images had been fine.
+
 - **The first `get_node` after a reflash can be the server's cache.** The
   interview returned and the attributes still showed the previous boot's
   reboot count and uptime; the next read 25 s later was current. Check

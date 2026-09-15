@@ -295,6 +295,11 @@ esp_err_t ssd1680_init(const ssd1680_config_t *cfg, ssd1680_handle_t *out)
         .quadwp_io_num = -1,
         .quadhd_io_num = -1,
         .max_transfer_sz = (int)h->frame_size + 8,
+        /* Without this the SPI driver never builds its sleep-retention entries
+         * (esp_driver_spi spi_common.c), and the C6 cannot power the TOP
+         * domain down in light sleep: retention bitmap showed GPSPI2 inited
+         * but not created, 2026-09-15 (docs/field-notes.md section 21). */
+        .flags = SPICOMMON_BUSFLAG_SLP_ALLOW_PD,
     };
     err = spi_bus_initialize(cfg->host, &bus, SPI_DMA_CH_AUTO);
     if (err != ESP_OK) {

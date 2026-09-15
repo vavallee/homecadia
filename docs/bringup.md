@@ -76,7 +76,10 @@ Bench wiring diagrams and the no-solder connectivity procedure live in
       PPK2 with no radio-poll gap over 5.0 s and no subscription loss. A USB
       run cannot show this: `CONFIG_USJ_NO_AUTO_LS_ON_CONNECTION=y` keeps the
       chip out of light sleep while a host is attached
-      ([field-notes.md](field-notes.md) §20).
+      ([field-notes.md](field-notes.md) §20). **Reproduced 2026-09-15** with
+      the ADC fix in and the TOP domain genuinely powering down: stopped again
+      at the 4th 120 s poll, ~480 s after boot. The workaround stands; the
+      cause is still unknown.
 - [x] Sleep current measured — **2026-09-15, over budget.** Shipping image
       (with the fix above), PPK2 Source Meter 3700 mV, USB out, no cell, 38 min
       settled: **696 µA average**, radio-free seconds **~376 µA** median.
@@ -105,11 +108,14 @@ Bench wiring diagrams and the no-solder connectivity procedure live in
       create and delete the unit around each reading. Measured with the fix:
       modem on 0% of sleep time, quiet floor **376 → 282 µA**. Still ~225 µA
       above Espressif's 55 µA reference.
-- [ ] **Quiet floor near the reference (~55 µA).** Every sleep still leaves
-      the TOP domain and HP peripherals powered (flag bits 0 and 3 never set),
-      which `CONFIG_PM_POWER_DOWN_PERIPHERAL_IN_LIGHT_SLEEP=n` does by design.
-      Next test: that option back on with the ADC fix, on the PPK2, watching
-      the DIAG flags for TOP power-down and the trace for the §20 hang
+- [ ] **Quiet floor near the reference (~55 µA) — reached, but it hangs.**
+      The TOP domain only powers down once the I2C and SPI buses ask for it
+      (`flags.allow_pd`, `SPICOMMON_BUSFLAG_SLP_ALLOW_PD`; added 2026-09-15 to
+      `sht40.c` and `ssd1680.c`) *and*
+      `CONFIG_PM_POWER_DOWN_PERIPHERAL_IN_LIGHT_SLEEP=y`. With both: flags
+      `0x20007c17`, quiet floor **56 µA**. But the §20 hang reproduced at
+      480 s — the 4th sensor poll, as in §20 — so the shipping profile keeps
+      the option **off** at 282 µA until that is understood
       ([field-notes.md](field-notes.md) §21).
 - [x] **ADC calibration at two voltages — 2026-09-12.** PPK2 as the cell
       (Source Meter, USB out). True BAT+ 3.36 V → firmware 3.02 V; true
