@@ -43,4 +43,30 @@ config HOMECADIA_SLEEP_DIAG
         thing being measured. Added 2026-09-15 to find the ~300 uA sleep
         load (docs/field-notes.md section 21). Not for shipping images.
 
+choice HOMECADIA_SLEEP_DIAG_POLL_BISECT
+    prompt "Hang bisect: what the sensor poll skips"
+    depends on HOMECADIA_SLEEP_DIAG
+    default HOMECADIA_SLEEP_DIAG_POLL_FULL
+    help
+        For the hang that stops the sensor at the 4th 120 s poll, ~480 s after
+        boot, whenever CONFIG_PM_POWER_DOWN_PERIPHERAL_IN_LIGHT_SLEEP is on
+        (docs/field-notes.md sections 20 and 21). The DIAG redraw keeps
+        running in every variant, so the screen still shows whether the chip
+        is alive. Skipped reads are replaced by fixed values so the rest of
+        the poll (delta check, report, refresh) behaves normally.
+
+config HOMECADIA_SLEEP_DIAG_POLL_FULL
+    bool "nothing: the normal poll"
+
+config HOMECADIA_SLEEP_DIAG_NO_POLL
+    bool "the whole poll (poll_cb returns at once)"
+
+config HOMECADIA_SLEEP_DIAG_POLL_NO_SHT40
+    bool "only the SHT40 I2C read (fixed 21.0 C / 50 %RH)"
+
+config HOMECADIA_SLEEP_DIAG_POLL_NO_ADC
+    bool "only the battery ADC read (fixed 3700 mV)"
+
+endchoice
+
 endmenu

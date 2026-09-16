@@ -9,7 +9,7 @@ meter (e.g. Nordic PPK2 or a µCurrent) between battery and XIAO.
 
 | Item | Modeled | Measured | Notes |
 |---|---|---|---|
-| Deep/light sleep floor (Thread ICD idle) | ~15–40µA | **~376 µA** | 2026-09-15, PPK2 Source Meter 3700 mV, USB out, shipping image: median of radio-free seconds. ~10× the model. The ~1 kHz pulse train is the XIAO's SGM6029 buck in power-save mode delivering the load in bursts, not wakes; ~95 µA of the load was the modem power domain, held on through every sleep by the battery ADC unit; with that fixed (2026-09-15) the quiet floor is **~282 µA**. The rest is the TOP/peripheral domains the §20 workaround leaves on: with the option on and the I2C/SPI buses asking for power-down, the floor is **56 µA** — but the §20 hang returns at ~480 s, so shipping stays at 282 µA (field-notes.md §21). Before the light-sleep fix the same floor was ~350 µA. |
+| Deep/light sleep floor (Thread ICD idle) | ~15–40µA | **~376 µA** | 2026-09-15, PPK2 Source Meter 3700 mV, USB out, shipping image: median of radio-free seconds. ~10× the model. The ~1 kHz pulse train is the XIAO's SGM6029 buck in power-save mode delivering the load in bursts, not wakes; ~95 µA of the load was the modem power domain, held on through every sleep by the battery ADC unit; with that fixed (2026-09-15) the quiet floor is **~282 µA**. The rest was the TOP/peripheral domains: with the option on, the I2C/SPI buses asking for power-down, and the ADC read under a no-light-sleep lock, the floor is **52 µA** and the all-in average **230 µA** over 74 s with a radio burst (107 µA over a quiet 9 s) — 2026-09-15, shipping config (field-notes.md §21). Before the light-sleep fix the same floor was ~350 µA. |
 | Awake floor, bench profile | — | **41 mA avg @ 3.4 V** | PPK2 Source Meter 2026-09-09: ~40 mA baseline, radio bursts to ~190 mA, 424 mA one-sample inrush at power-on. Not a budget line — it is what a sleep-disabled build costs, and it flattens a 2000 mAh cell in ~2 days |
 | Battery divider bleed | 2.1µA | | 4.2V / 2MΩ, continuous |
 | SHT40 single-shot high-precision read | ~0.5ms·mA class, negligible avg | | ~8ms @ ~0.5mA every 120s |
@@ -20,7 +20,7 @@ meter (e.g. Nordic PPK2 or a µCurrent) between battery and XIAO.
 | Display full refresh | ~? mC per refresh | | every N partials for ghosting |
 | LED blink | avoided | | commissioning + low-battery only |
 | Inter-pin leakage (post-wash) | <1µA | | flux residue washed 2026-08-31; a 100kΩ path would add ~0.2µA at 0.5% refresh duty — re-scan if refresh behaviour changes |
-| **Average (no display)** | **≤300µA target** | **696 µA** (display included) | 2026-09-15, 38 min settled on the shipping image, ~5 display refreshes in the window. Fast-poll episodes every 20–40 s (cause open) plus the floor above. ≈3.3 months on 1700 mAh usable. |
+| **Average (no display)** | **≤300µA target** | **230 µA** (was 696 µA) | 2026-09-15, 38 min settled on the shipping image, ~5 display refreshes in the window. Fast-poll episodes every 20–40 s (cause open) plus the floor above. ≈3.3 months on 1700 mAh usable. |
 
 ## Months-of-battery calculator
 

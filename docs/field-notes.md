@@ -961,6 +961,38 @@ understood:
 The driver flags stay in regardless: they cost nothing with the option off,
 and they are required the moment it goes on.
 
+**Cause found, same evening: a light sleep inside the ADC sequence.** Bisected
+with `CONFIG_HOMECADIA_SLEEP_DIAG`'s poll variants, each run on the PPK2 with
+the option on:
+
+| Poll variant | Result |
+|---|---|
+| Full poll | hangs ~480 s (twice) |
+| No poll at all | 1490 s clean |
+| Poll without the battery ADC read | 1176 s clean (SHT40, report and refresh all running) |
+| Full poll, ADC sequence under an `ESP_PM_NO_LIGHT_SLEEP` lock | **1231 s clean** |
+
+`adc_oneshot_new_unit()` changes the sleep power-domain configuration (modem,
+and TOP when peripheral power-down is on) and `adc_oneshot_del_unit()` changes
+it back. Nothing stopped a light sleep landing between those two calls, and a
+sleep that started mid-change never woke. That also explains the "4th poll"
+pattern that looked like a counter: the window is a few ms per 120 s poll, so
+which poll loses the race is chance. IDF has no ADC sleep retention yet
+(`esp_adc/adc_oneshot.c`, `TODO: IDF-8475`), which is why it pins domains
+instead.
+
+Fix: `battery.cpp` holds an `ESP_PM_NO_LIGHT_SLEEP` lock across create, read
+and delete, ~10 ms per poll. With it, `CONFIG_PM_POWER_DOWN_PERIPHERAL_IN_
+LIGHT_SLEEP=y` is back on in `sdkconfig.defaults` and the numbers are:
+
+| | Before today | Now |
+|---|---|---|
+| Quiet floor | 376 µA | **52 µA** (4.1 s selection; Espressif's DevKit reference is 55) |
+| All-in average | 645–827 µA | **230 µA** over 74 s including a heavy radio burst; 107 µA over a quiet 9 s |
+
+That is ~10 months on 1700 mAh at the pessimistic figure, against 3.3 months
+this morning, and it is the first number inside the 300 µA budget.
+
 **Flashing a power-down-on image wedged the USB port.** The first plug-in
 after that image ran gave Windows `Unknown USB Device (Device Descriptor
 Request Failed)` and esptool could not open the port. Holding the **B** button

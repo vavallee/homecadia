@@ -5,6 +5,7 @@
 #include "esp_adc/adc_cali.h"
 #include "esp_adc/adc_cali_scheme.h"
 #include "esp_log.h"
+#include "esp_pm.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
@@ -24,6 +25,16 @@ static const char *TAG = "battery";
 static adc_unit_t s_unit;
 static adc_cali_handle_t s_cali;
 static adc_channel_t s_channel;
+#if CONFIG_PM_ENABLE
+/* No light sleep may straddle the ADC sequence. Creating the unit changes the
+ * sleep power-domain config (modem, and TOP when peripheral power-down is on)
+ * and deleting it changes it back; with CONFIG_PM_POWER_DOWN_PERIPHERAL_IN_
+ * LIGHT_SLEEP=y a sleep landing inside that window stops the chip waking
+ * ~480 s in -- bisected to this read on 2026-09-15 (docs/field-notes.md
+ * section 21). IDF has no ADC sleep retention yet (esp_adc/adc_oneshot.c,
+ * TODO IDF-8475). Costs ~10 ms of awake time per 120 s poll. */
+static esp_pm_lock_handle_t s_no_sleep;
+#endif
 
 /* The ADC unit exists only for the length of one reading. On the C6 a live
  * oneshot unit keeps the modem power domain on through every light sleep:
@@ -42,6 +53,14 @@ esp_err_t battery_init(void)
         return err;
     }
 
+#if CONFIG_PM_ENABLE
+    err = esp_pm_lock_create(ESP_PM_NO_LIGHT_SLEEP, 0, "battery_adc", &s_no_sleep);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "no-sleep lock: %s", esp_err_to_name(err));
+        return err;
+    }
+#endif
+
     adc_cali_curve_fitting_config_t cali_cfg = {
         .unit_id = s_unit,
         .chan = s_channel,
@@ -58,6 +77,9 @@ esp_err_t battery_init(void)
 
 esp_err_t battery_read_mv(uint32_t *out_mv)
 {
+#if CONFIG_PM_ENABLE
+    esp_pm_lock_acquire(s_no_sleep);
+#endif
     adc_oneshot_unit_handle_t adc = nullptr;
     adc_oneshot_unit_init_cfg_t unit_cfg = {
         .unit_id = s_unit,
@@ -65,6 +87,9 @@ esp_err_t battery_read_mv(uint32_t *out_mv)
     };
     esp_err_t err = adc_oneshot_new_unit(&unit_cfg, &adc);
     if (err != ESP_OK) {
+#if CONFIG_PM_ENABLE
+        esp_pm_lock_release(s_no_sleep);
+#endif
         return err;
     }
 
@@ -92,6 +117,9 @@ esp_err_t battery_read_mv(uint32_t *out_mv)
         }
     }
     adc_oneshot_del_unit(adc); /* releases the modem-domain hold before the next sleep */
+#if CONFIG_PM_ENABLE
+    esp_pm_lock_release(s_no_sleep);
+#endif
     if (err != ESP_OK) {
         return err;
     }

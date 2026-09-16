@@ -111,16 +111,28 @@ static void report_matter(float temp_c, float rh, uint32_t bat_mv, uint8_t bat_p
 
 static void poll_cb(void *arg)
 {
+#if CONFIG_HOMECADIA_SLEEP_DIAG_NO_POLL
+    return; /* hang bisect: poll does nothing (main/Kconfig.projbuild) */
+#endif
     float temp_c, rh;
-    esp_err_t err = sht40_read(s_sht40, &temp_c, &rh);
+    esp_err_t err;
+#if CONFIG_HOMECADIA_SLEEP_DIAG_POLL_NO_SHT40
+    temp_c = 21.0f, rh = 50.0f; /* hang bisect: no I2C traffic (main/Kconfig.projbuild) */
+#else
+    err = sht40_read(s_sht40, &temp_c, &rh);
     if (err != ESP_OK) {
         ESP_LOGW(TAG, "SHT40 read failed: %s", esp_err_to_name(err));
         return;
     }
+#endif
 
     uint32_t bat_mv = 0;
     uint8_t bat_pct = 0;
+#if CONFIG_HOMECADIA_SLEEP_DIAG_POLL_NO_ADC
+    bat_mv = 3700, err = ESP_OK; /* hang bisect: ADC unit never created (main/Kconfig.projbuild) */
+#else
     err = battery_read_mv(&bat_mv);
+#endif
     if (err == ESP_OK) {
         bat_pct = battery_percent_from_mv(bat_mv);
     } else {

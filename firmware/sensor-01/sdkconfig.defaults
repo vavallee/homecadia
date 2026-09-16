@@ -70,13 +70,17 @@ CONFIG_RTC_CLK_SRC_EXT_CRYS=n
 # Power management: light sleep with DFS
 CONFIG_PM_ENABLE=y
 CONFIG_PM_DFS_INIT_AUTO=y
-# Peripheral power-down in light sleep: EXPERIMENTAL in ESP-IDF v5.5.5 (default n,
-# components/esp_pm/Kconfig), though esp-matter examples/icd_app -- which this file was
-# copied from -- enables it. On this build (XIAO RF switch on GPIO3/14, SPI panel, I2C
-# SHT40) the first real light-sleep run stopped waking 8 min after boot, at a sensor
-# poll, and dropped off Thread (2026-09-15 00:33). Off: 38 min with no poll gap over
-# 5 s. field-notes.md s20.
-CONFIG_PM_POWER_DOWN_PERIPHERAL_IN_LIGHT_SLEEP=n
+# Peripheral power-down in light sleep. EXPERIMENTAL in ESP-IDF v5.5.5 (default n,
+# components/esp_pm/Kconfig); esp-matter examples/icd_app, which this file was copied
+# from, enables it. Worth ~226 uA here: the quiet floor is 52 uA with it on against
+# 282 uA with it off, because the TOP domain and HP peripherals stay powered otherwise.
+# It was off between 2026-09-15 00:33 and 22:40 because the sensor stopped waking ~480 s
+# after boot. Cause, bisected 2026-09-15: a light sleep landing inside the battery ADC
+# sequence, which changes the sleep power-domain config as it creates and deletes the
+# oneshot unit. battery.cpp now holds an ESP_PM_NO_LIGHT_SLEEP lock across that
+# sequence; 20 min clean with the full poll. Needs the I2C/SPI allow_pd flags too, or
+# the TOP domain never powers down at all. field-notes.md s21.
+CONFIG_PM_POWER_DOWN_PERIPHERAL_IN_LIGHT_SLEEP=y
 CONFIG_ESP_SLEEP_POWER_DOWN_FLASH=y
 CONFIG_ESP_PHY_MAC_BB_PD=y
 CONFIG_FREERTOS_HZ=1000

@@ -78,8 +78,11 @@ Bench wiring diagrams and the no-solder connectivity procedure live in
       chip out of light sleep while a host is attached
       ([field-notes.md](field-notes.md) §20). **Reproduced 2026-09-15** with
       the ADC fix in and the TOP domain genuinely powering down: stopped again
-      at the 4th 120 s poll, ~480 s after boot. The workaround stands; the
-      cause is still unknown.
+      at the 4th 120 s poll, ~480 s after boot. **Cause found the same
+      evening** — a light sleep landing inside the battery ADC sequence, which
+      changes the sleep power-domain config as the oneshot unit is created and
+      deleted. Fixed with an `ESP_PM_NO_LIGHT_SLEEP` lock in `battery.cpp`;
+      the workaround (option off) is retired.
 - [x] Sleep current measured — **2026-09-15, over budget.** Shipping image
       (with the fix above), PPK2 Source Meter 3700 mV, USB out, no cell, 38 min
       settled: **696 µA average**, radio-free seconds **~376 µA** median.
@@ -108,15 +111,17 @@ Bench wiring diagrams and the no-solder connectivity procedure live in
       create and delete the unit around each reading. Measured with the fix:
       modem on 0% of sleep time, quiet floor **376 → 282 µA**. Still ~225 µA
       above Espressif's 55 µA reference.
-- [ ] **Quiet floor near the reference (~55 µA) — reached, but it hangs.**
+- [x] **Quiet floor near the reference — 52 µA, 2026-09-15.**
       The TOP domain only powers down once the I2C and SPI buses ask for it
       (`flags.allow_pd`, `SPICOMMON_BUSFLAG_SLP_ALLOW_PD`; added 2026-09-15 to
       `sht40.c` and `ssd1680.c`) *and*
       `CONFIG_PM_POWER_DOWN_PERIPHERAL_IN_LIGHT_SLEEP=y`. With both: flags
-      `0x20007c17`, quiet floor **56 µA**. But the §20 hang reproduced at
-      480 s — the 4th sensor poll, as in §20 — so the shipping profile keeps
-      the option **off** at 282 µA until that is understood
-      ([field-notes.md](field-notes.md) §21).
+      `0x20007c17`, quiet floor **52 µA**, all-in average **230 µA** over 74 s
+      with a heavy radio burst in it. The §20 hang that this option used to
+      bring was bisected the same evening to a light sleep landing inside the
+      battery ADC sequence; `battery.cpp` now holds an `ESP_PM_NO_LIGHT_SLEEP`
+      lock across it (20 min clean, full poll). Option back on in
+      `sdkconfig.defaults` ([field-notes.md](field-notes.md) §21).
 - [x] **ADC calibration at two voltages — 2026-09-12.** PPK2 as the cell
       (Source Meter, USB out). True BAT+ 3.36 V → firmware 3.02 V; true
       3.97 V → firmware 3.64 V. Same 0.33–0.34 V short at both points, slope
