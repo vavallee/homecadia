@@ -20,7 +20,7 @@ meter (e.g. Nordic PPK2 or a µCurrent) between battery and XIAO.
 | Display full refresh | ~? mC per refresh | | every N partials for ghosting |
 | LED blink | avoided | | commissioning + low-battery only |
 | Inter-pin leakage (post-wash) | <1µA | | flux residue washed 2026-08-31; a 100kΩ path would add ~0.2µA at 0.5% refresh duty — re-scan if refresh behaviour changes |
-| **Average (no display)** | **≤300µA target** | **230 µA** (was 696 µA) | 2026-09-15, 38 min settled on the shipping image, ~5 display refreshes in the window. Fast-poll episodes every 20–40 s (cause open) plus the floor above. ≈3.3 months on 1700 mAh usable. |
+| **Average (no display)** | **≤300µA target** | **208 µA settled / 238 µA full run** | 2026-09-17, 12 h 37 min PPK2 soak at 3700 mV with the slow poll at an effective 15 s: **237.7 µA** over the whole run (10.79 C, includes boot, attach and three interviews at ~0.15 C each), **207.8 µA over one settled 120 s cycle** (24.94 mC), floor 59 µA. The day before at 5 s: 288.5 µA / 240.6 µA. Per cycle now: floor ~59 µA, seven parent polls ~35 µA, the active period around each 120 s report ~113 µA (field-notes.md §22). ≈10 months on 1700 mAh, ≈12 on 2000, at the full-run figure. |
 
 ## Months-of-battery calculator
 

@@ -122,6 +122,19 @@ Bench wiring diagrams and the no-solder connectivity procedure live in
       battery ADC sequence; `battery.cpp` now holds an `ESP_PM_NO_LIGHT_SLEEP`
       lock across it (20 min clean, full poll). Option back on in
       `sdkconfig.defaults` ([field-notes.md](field-notes.md) §21).
+- [x] **Overnight soak of the shipping image — 2026-09-16, no hang.**
+      `0.6.0-dev.84+e0760b0`, PPK2 3700 mV, 15:18 → 22:56 (7 h 39 min), node 25
+      answered a fresh `interview_node` at +85 min, +7.7 h and at the end.
+      Whole run **288.5 µA** (7.94 C); one settled 120 s cycle **240.6 µA**;
+      quiet floor 59 µA. Radio is now ~155 µA of the 240: the 5 s slow poll
+      (~22 × ~0.58 mC per cycle) and the ~10-poll fast tail after each report.
+      Slow poll raised 5 s → 30 s in `sdkconfig.defaults`
+      ([field-notes.md](field-notes.md) §22).
+- [x] **Slow poll re-measured — 2026-09-17.** 12 h 37 min, no hang. Polls
+      land 15 s apart, not 30: no ICD client is registered, so the stack runs
+      SIT mode and clamps. Whole run **237.7 µA**, settled 120 s cycle
+      **207.8 µA** (was 288.5 / 240.6). One `interview_node` costs ~150 mC,
+      about ten minutes of normal running — keep liveness checks rare.
 - [x] **ADC calibration at two voltages — 2026-09-12.** PPK2 as the cell
       (Source Meter, USB out). True BAT+ 3.36 V → firmware 3.02 V; true
       3.97 V → firmware 3.64 V. Same 0.33–0.34 V short at both points, slope

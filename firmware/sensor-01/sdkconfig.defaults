@@ -107,6 +107,15 @@ CONFIG_ICD_ACTIVE_MODE_INTERVAL_MS=1000
 # powered bench test). Threshold only extends awake time after user
 # activity, so the power cost vs 1000 is per-interaction, not per-cycle.
 CONFIG_ICD_ACTIVE_MODE_THRESHOLD_MS=5000
+# Slow poll 5 s -> 30 s. On the 2026-09-16 7.6 h PPK2 soak the 5 s parent polls
+# were ~107 uA of a 240 uA settled cycle, twice the 59 uA sleep floor
+# (docs/field-notes.md section 22). Effective interval is 30 s only while an ICD
+# client is registered (LIT mode); with none the stack runs SIT and clamps to
+# CHIP_DEVICE_CONFIG_ICD_SIT_SLOW_POLL_LIMIT = 15 s (ICDConfigurationData.cpp:25,
+# CHIPDeviceConfig.h:159). Cost: a controller command waits up to one interval.
+# Measured 2026-09-17: polls 15 s apart (SIT, no client registered), settled
+# cycle 240.6 -> 207.8 uA, whole 12.6 h run 237.7 uA.
+CONFIG_ICD_SLOW_POLL_INTERVAL_MS=30000
 
 # disable groupcast cluster until verified (upstream icd_app default)
 CONFIG_SUPPORT_GROUPCAST_CLUSTER=n

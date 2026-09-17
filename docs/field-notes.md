@@ -1003,3 +1003,86 @@ plug-ins on option-off images had been fine.
   interview returned and the attributes still showed the previous boot's
   reboot count and uptime; the next read 25 s later was current. Check
   `0/51/1` (reboot count) moved before trusting anything else.
+
+## 22. After the sleep floor, the radio is the budget
+
+**When:** 2026-09-16, the first overnight soak of the shipping image
+(`0.6.0-dev.84+e0760b0`, both §21 fixes,
+`CONFIG_PM_POWER_DOWN_PERIPHERAL_IN_LIGHT_SLEEP=y`).
+
+**Run:** PPK2 Source Meter 3700 mV, USB out, 15:18 → 22:56. The PC lost power
+before the intended start the previous evening, so the run began the next
+afternoon. Node 25 answered a fresh `interview_node` at +85 min, +7.7 h and
+after the run; no hang (the §20/§21 hang reproduced at ~480 s).
+
+| Selection | Average | Charge | Note |
+|---|---|---|---|
+| Whole run, 7:38:36 | **288.5 µA** | 7.94 C | includes boot, Thread attach, five interviews |
+| One 120 s report cycle at +5 h 31 min | **240.6 µA** | 28.87 mC | the settled number |
+| 1.79 s between polls | 59 µA | 105.8 µC | matches the 52 µA §21 floor |
+
+**What the 240 µA is.** The 2-minute window shows three things: a flat
+59 µA floor; 22 evenly spaced ~250 mA spikes 5.3 s apart; and a cluster of
+~10 spikes 0.5 s apart right after the report. Per spike ~0.58 mC (from a
+1-minute window: 9.54 mC minus 60 s of floor, over 11 spikes). So:
+
+| | per 120 s | µA |
+|---|---|---|
+| floor | 7.1 mC | 59 |
+| slow polls, `CONFIG_ICD_SLOW_POLL_INTERVAL_MS=5000` (SDK default, never set by us) | ~12.8 mC | ~107 |
+| fast-poll tail, `CONFIG_ICD_FAST_POLL_INTERVAL_MS=500` for `ACTIVE_MODE_THRESHOLD_MS=5000` after the report | ~5.8 mC | ~48 |
+| sensor read + report | ~3 mC | ~25 |
+
+The Thread parent polls cost twice what the chip does asleep. Yesterday's
+"107 µA over a quiet 9 s" was a window with no report in it; a 1-minute window
+today read 159 µA for the same reason. **Only a window that spans a full
+report cycle is a settled average**; anything shorter is a floor-plus-luck
+number.
+
+**What changed.** `CONFIG_ICD_SLOW_POLL_INTERVAL_MS=30000` in
+`sdkconfig.defaults`. Two things verified in the SDK first:
+
+- The active-mode threshold stays at 5000. It is the LIT spec minimum;
+  1000 trips `ICDManager.cpp:82` and boot-loops (already recorded in
+  `sdkconfig.defaults`). The fast tail is not recoverable by config.
+- A LIT-capable device with no registered ICD client operates as SIT and
+  uses `min(LIT interval, SIT interval)` with the SIT interval capped at
+  `CHIP_DEVICE_CONFIG_ICD_SIT_SLOW_POLL_LIMIT` = 15 s
+  (`ICDConfigurationData.cpp:25-40`, `CHIPDeviceConfig.h:159`, release/v1.6).
+  So the poll spacing in the next trace tells whether the matter-server
+  registered as a client: 30 s means LIT, 15 s means SIT. Either is a cut.
+
+Expected: ~107 µA → ~18 µA (30 s) or ~36 µA (15 s), settled cycle 240 →
+~150–170 µA. Cost: a controller-initiated command waits up to one interval;
+subscriptions and the 120 s report are unaffected.
+
+**Result, 2026-09-17 (12 h 37 min, 23:26 → 12:03, no hang).**
+
+| | 5 s poll (09-16) | 30 s configured (09-17) |
+|---|---|---|
+| Poll spacing in the trace | 5.3 s | **15 s** — SIT clamp, no ICD client registered |
+| Whole run | 288.5 µA over 7.6 h, five interviews | **237.7 µA** over 12.6 h, three interviews |
+| One settled 120 s cycle | 240.6 µA, 28.87 mC | **207.8 µA**, 24.94 mC |
+
+The cycle saved 3.9 mC, about half of what the poll count alone predicted
+(22 → 7 polls ≈ 8.5 mC). The other half went into the active period around
+the report, which grew from ~8.8 mC to ~13.6 mC: about twelve spikes reaching
+390 mA where the 5 s trace had about ten at 250 mA. Cause not established.
+Per cycle now: floor ~59 µA, polls ~35 µA, report active period ~113 µA. The
+next lever is how often that active period happens
+(`CONFIG_ICD_IDLE_MODE_INTERVAL_SEC` and the 120 s sensor poll), not the polls.
+
+Two measurement traps from this run:
+
+- **A window taken ten minutes after boot read 309 µA** with a cluster of
+  twelve 300–400 mA spikes, and looked like the change had made things worse.
+  The same image at +12 h read 208 µA. The matter-server re-subscribes and
+  re-reads after a node returns; nothing measured in the first half hour is a
+  settled number.
+- **One `interview_node` costs ~150 mC** — a 2:00 window containing one read
+  1.26 mA against 0.21 mA without. It reads every attribute on the node. Three
+  of them are 0.45 C of this run's 10.79 C; the five in the 09-16 run were
+  ~10 % of its total. A liveness check is not free on a device budgeted in
+  microamps; use the PPK2 trace (polls still arriving) as the liveness signal
+  instead.
+
