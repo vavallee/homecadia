@@ -124,3 +124,9 @@ CONFIG_SUPPORT_GROUPCAST_CLUSTER=n
 # Without this the device reports TEST_VENDOR / TEST_PRODUCT. IDs stay 0xFFF1/
 # 0x8000 to match the test DAC — see main/chip_project_config.h.
 CONFIG_CHIP_PROJECT_CONFIG="main/chip_project_config.h"
+
+# GPIO light-sleep wake (encoder A on GPIO7, push switch on GPIO6). With this
+# y, the sleep entry swaps a pin armed for HIGH to a pull-down
+# (sleep_modes.c gpio_deep_sleep_wakeup_prepare), and the encoder re-arms A
+# for whichever level it is not at. Our own pull-ups stay instead.
+CONFIG_ESP_SLEEP_GPIO_ENABLE_INTERNAL_RESISTORS=n

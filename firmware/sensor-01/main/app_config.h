@@ -19,13 +19,19 @@
 
 // EC11 encoder. A/B assignment chosen so that clockwise = +1 = view advances;
 // verified on the bench 2026-08-26 (with A on D6 clockwise read -1, so the two
-// were swapped here rather than on the board). Neither is an LP pad: no
-// deep-sleep wake from rotation.
-#define ENC_PIN_A          20   // D9
+// were swapped here rather than on the board). A moved D9/GPIO20 -> MTCK pad
+// 2026-09-23: with CONFIG_PM_POWER_DOWN_PERIPHERAL_IN_LIGHT_SLEEP only LP GPIOs
+// (0-7) can wake light sleep (ESP-IDF sleep_modes docs), and a detent always
+// changes A. B stays on an HP pin and is decoded in the awake window after.
+// The push switch takes MTDO, the other free LP pad, so a press wakes it too.
+// XIAO #2 lost MTDI, MTDO and MTCK to pad lifts and cannot use this layout;
+// it stays a bench unit with a dead dial (bringup.md).
+#define ENC_PIN_A          6    // MTCK underside pad (TP6); LP GPIO, light-sleep wake
+#define ENC_AWAKE_MS       2000 // chip held out of light sleep after the last detent
 #define ENC_PIN_B          16   // D6 -- was D7/GPIO17: on both driver boards D7 sits at
                                 //      0V once the SPI bus is up (2026-08-25, unexplained;
                                 //      field-notes.md s16). D6's only neighbour is SCL.
-#define ENC_PIN_SW         6    // MTCK underside pad; LP GPIO, deep-sleep wake source
+#define ENC_PIN_SW         7    // MTDO underside pad (TP7); LP GPIO, light-sleep wake
 
 // LED (commissioning state + low battery only)
 #define LED_PIN            17   // D7 — an output; does not care what its neighbour does

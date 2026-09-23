@@ -277,9 +277,9 @@ void bench_selftest(void)
         {"EPD BUSY", EPD_PIN_BUSY, "idle panel: held LOW; no panel: floating"},
         {"I2C SDA ", SHT40_I2C_SDA, "sensor module pull-up: held HIGH; floating = no sensor power"},
         {"I2C SCL ", SHT40_I2C_SCL, "sensor module pull-up: held HIGH; held LOW = no clock possible"},
-        {"ENC A   ", ENC_PIN_A, "floating at rest (switch open); held LOW mid-detent"},
+        {"ENC A   ", ENC_PIN_A, "MTCK: held HIGH by the C6 JTAG pull-up; held LOW mid-detent"},
         {"ENC B   ", ENC_PIN_B, "floating at rest (switch open); held LOW mid-detent"},
-        {"ENC SW  ", ENC_PIN_SW, "held HIGH by the C6 JTAG pull-up until MTCK is soldered"},
+        {"ENC SW  ", ENC_PIN_SW, "MTDO: floating while open; held LOW while pressed"},
         {"VBAT ADC", VBAT_ADC_GPIO, "floating until the divider is built"},
     };
     for (auto &p : inputs) {
@@ -319,7 +319,7 @@ void bench_selftest(void)
  * magnitude, not a value. A 10M-input meter perturbs the divider by <0.5%. */
 static void hold_phase(const char *what, int aggressor, int seconds)
 {
-    const int group[] = {EPD_PIN_MOSI, EPD_PIN_SCK, ENC_PIN_A, LED_PIN};
+    const int group[] = {EPD_PIN_MOSI, EPD_PIN_SCK, 20 /* D9 */, LED_PIN};
     for (int i = 0; i < 4; i++) {
         gpio_config_t io = {
             .pin_bit_mask = 1ULL << group[i],
@@ -346,11 +346,11 @@ static void hold_phase(const char *what, int aggressor, int seconds)
 void bench_pin_hold(void)
 {
     ESP_LOGE(TAG, "== PIN HOLD: MOSI=GPIO%d SCK=GPIO%d D9=GPIO%d D7=GPIO%d ==",
-             EPD_PIN_MOSI, EPD_PIN_SCK, ENC_PIN_A, LED_PIN);
+             EPD_PIN_MOSI, EPD_PIN_SCK, 20, LED_PIN);
     hold_phase("baseline, nothing driven (all four should read 3.3V)", -1, 30);
     hold_phase("MOSI driven LOW (read SCK, D9, D7)", EPD_PIN_MOSI, 60);
     hold_phase("SCK driven LOW (read MOSI, D9, D7)", EPD_PIN_SCK, 60);
-    const int group[] = {EPD_PIN_MOSI, EPD_PIN_SCK, ENC_PIN_A, LED_PIN};
+    const int group[] = {EPD_PIN_MOSI, EPD_PIN_SCK, 20 /* D9 */, LED_PIN};
     for (int i = 0; i < 4; i++) {
         gpio_config_t io = {.pin_bit_mask = 1ULL << group[i], .mode = GPIO_MODE_INPUT};
         gpio_config(&io);

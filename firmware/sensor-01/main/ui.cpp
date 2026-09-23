@@ -1,15 +1,18 @@
 #include "ui.h"
 
-#include "button_gpio.h"
 #include "driver/gpio.h"
+#include "hal/gpio_ll.h"
+#include "soc/gpio_struct.h"
 #include "sdkconfig.h"
 #include "esp_app_desc.h"
 #include "esp_log.h"
 #include "esp_matter.h"
 #include "esp_openthread.h"
 #include "esp_openthread_lock.h"
+#include "esp_pm.h"
 #include "esp_timer.h"
-#include "iot_button.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include "openthread/thread.h"
 
 #include "app_config.h"
@@ -17,6 +20,7 @@
 #include "battery.h"
 #include "display.h"
 #include "ec11.h"
+#include "esp_sleep.h"
 #include "sensor_loop.h"
 #include "settings.h"
 
@@ -136,7 +140,7 @@ static void on_rotate(int dir, void *arg)
     render_current();
 }
 
-static void on_push(void *button_handle, void *usr_data)
+static void on_push(void)
 {
 #if CONFIG_HOMECADIA_BENCH_SELFTEST
     ESP_LOGW(TAG, "on_push (SW=%d)", gpio_get_level((gpio_num_t)ENC_PIN_SW));
@@ -166,10 +170,105 @@ static void on_push(void *button_handle, void *usr_data)
     render_current();
 }
 
-static void on_factory_reset(void *button_handle, void *usr_data)
+static void on_factory_reset(void)
 {
     ESP_LOGW(TAG, "Encoder held %ds: factory reset", FACTORY_RESET_HOLD_S);
     esp_matter::factory_reset(); /* wipes fabrics + NVS, reboots into commissioning */
+}
+
+/* Push switch on an LP GPIO, so a press wakes the chip from light sleep.
+ * Not espressif/button: under CONFIG_PM_POWER_DOWN_PERIPHERAL_IN_LIGHT_SLEEP
+ * its power-save mode drives ext1 wake and gpio_hold_en on the pin itself
+ * (button_gpio.c), and without power save it polls every 5 ms forever.
+ *
+ * Level interrupts, not edges: a press that wakes the chip happened while it
+ * slept, so its edge is gone, but the level is still there when it wakes.
+ * The ISR disables the pin's interrupt; the task debounces (re-read after
+ * 20 ms), acts, and re-arms for the opposite level. A no-light-sleep lock is
+ * held while the switch is down, and a one-shot timer does the factory-reset
+ * hold. */
+static TaskHandle_t s_sw_task;
+static esp_pm_lock_handle_t s_sw_lock;
+static esp_timer_handle_t s_sw_hold_timer;
+
+static void IRAM_ATTR sw_isr(void *arg)
+{
+    BaseType_t woken = pdFALSE;
+    gpio_ll_set_intr_type(&GPIO, ENC_PIN_SW, GPIO_INTR_DISABLE); /* register write; IRAM-safe */
+    vTaskNotifyGiveFromISR(s_sw_task, &woken);
+    if (woken) {
+        portYIELD_FROM_ISR();
+    }
+}
+
+static void sw_hold_cb(void *arg)
+{
+    if (gpio_get_level((gpio_num_t)ENC_PIN_SW) == 0) {
+        on_factory_reset();
+    }
+}
+
+static void sw_task(void *arg)
+{
+    bool pressed = false;
+    for (;;) {
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+        vTaskDelay(pdMS_TO_TICKS(20));
+        bool now = gpio_get_level((gpio_num_t)ENC_PIN_SW) == 0;
+        if (now != pressed) {
+            pressed = now;
+            if (pressed) {
+                esp_pm_lock_acquire(s_sw_lock);
+                esp_timer_start_once(s_sw_hold_timer, (uint64_t)FACTORY_RESET_HOLD_S * 1000000ULL);
+            } else {
+                bool reset_fired = esp_timer_stop(s_sw_hold_timer) != ESP_OK;
+                esp_pm_lock_release(s_sw_lock);
+                if (!reset_fired) {
+                    on_push();
+                }
+            }
+        }
+        gpio_set_intr_type((gpio_num_t)ENC_PIN_SW, pressed ? GPIO_INTR_HIGH_LEVEL : GPIO_INTR_LOW_LEVEL);
+    }
+}
+
+static esp_err_t push_switch_init(void)
+{
+    esp_err_t err = esp_pm_lock_create(ESP_PM_NO_LIGHT_SLEEP, 0, "push_sw", &s_sw_lock);
+    if (err != ESP_OK) {
+        return err;
+    }
+    const esp_timer_create_args_t targs = {
+        .callback = sw_hold_cb,
+        .name = "sw_hold",
+    };
+    err = esp_timer_create(&targs, &s_sw_hold_timer);
+    if (err != ESP_OK) {
+        return err;
+    }
+    if (xTaskCreate(sw_task, "push_sw", 3072, nullptr, 4, &s_sw_task) != pdPASS) {
+        return ESP_ERR_NO_MEM;
+    }
+    gpio_config_t io = {};
+    io.pin_bit_mask = 1ULL << ENC_PIN_SW;
+    io.mode = GPIO_MODE_INPUT;
+    io.pull_up_en = GPIO_PULLUP_ENABLE;
+    io.intr_type = GPIO_INTR_LOW_LEVEL;
+    err = gpio_config(&io);
+    if (err != ESP_OK) {
+        return err;
+    }
+    /* ec11_init installed the ISR service already */
+    err = gpio_isr_handler_add((gpio_num_t)ENC_PIN_SW, sw_isr, nullptr);
+    if (err != ESP_OK) {
+        return err;
+    }
+#if CONFIG_PM_ENABLE
+    /* LP wake on press. While the switch is down the lock keeps the chip
+     * awake, so LOW never needs re-arming. */
+    err = esp_deep_sleep_enable_gpio_wakeup(BIT64(ENC_PIN_SW), ESP_GPIO_WAKEUP_GPIO_LOW);
+#endif
+    return err;
 }
 
 esp_err_t ui_init(void)
@@ -188,24 +287,19 @@ esp_err_t ui_init(void)
         ESP_LOGE(TAG, "encoder init failed: %s", esp_err_to_name(err));
         return err;
     }
-
-    button_config_t btn_cfg = {};
-    button_gpio_config_t gpio_cfg = {
-        .gpio_num = ENC_PIN_SW,
-        .active_level = 0,
-        .enable_power_save = true,
-    };
-    button_handle_t btn;
-    err = iot_button_new_gpio_device(&btn_cfg, &gpio_cfg, &btn);
+#if CONFIG_PM_ENABLE
+    err = ec11_enable_light_sleep_wake(ENC_PIN_A, ENC_AWAKE_MS);
     if (err != ESP_OK) {
-        ESP_LOGE(TAG, "button init failed: %s", esp_err_to_name(err));
+        ESP_LOGE(TAG, "encoder wake failed: %s", esp_err_to_name(err));
         return err;
     }
-    iot_button_register_cb(btn, BUTTON_SINGLE_CLICK, nullptr, on_push, nullptr);
+#endif
 
-    button_event_args_t reset_args = {};
-    reset_args.long_press.press_time = FACTORY_RESET_HOLD_S * 1000;
-    iot_button_register_cb(btn, BUTTON_LONG_PRESS_START, &reset_args, on_factory_reset, nullptr);
+    err = push_switch_init();
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "push switch init failed: %s", esp_err_to_name(err));
+        return err;
+    }
 
     bench_encoder_monitor_start(); /* no-op outside the bench profile */
     return ESP_OK;
