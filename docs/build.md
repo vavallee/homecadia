@@ -206,6 +206,22 @@ pay that cost again — append steps, do not split.
 | `tools/check-profiles.sh` | the bench profile silently no longer disabling sleep, and `CONFIG_HOMECADIA_BENCH_SELFTEST` reaching a shipping image — it asserts `# CONFIG_HOMECADIA_BENCH_SELFTEST is not set` in the shipping sdkconfig and `=y` in the bench one, since bench-only diagnostics must not reach a shipping image |
 | `tools/check-version.sh` | a `SoftwareVersion` that is stale, untagged, or fails to increase |
 
+## Reading a node over Matter
+
+`tools/matter-node.py` reads a node through the matter-server WebSocket
+(`ws://192.168.1.173:5580/ws`, override with `MATTER_WS`) and prints version,
+reboot count, temperature, humidity and battery. One shot, 90 s bound.
+
+```sh
+tools/matter-node.py get        # server's subscription cache: free for the device
+tools/matter-node.py interview  # full read of every attribute on the device
+```
+
+`interview` costs the sensor ~150 mC, about ten minutes of its normal running
+(field-notes §22); use it once to prove liveness after a reflash, not as a
+poll. For calibration or soak work, listen for `attribute_updated` events
+instead: every 120 s report arrives with no extra radio traffic.
+
 Flash images (app, bootloader, partition table, `flasher_args.json`) are
 uploaded as an artifact.
 

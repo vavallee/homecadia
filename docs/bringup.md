@@ -135,7 +135,9 @@ Bench wiring diagrams and the no-solder connectivity procedure live in
       SIT mode and clamps. Whole run **237.7 µA**, settled 120 s cycle
       **207.8 µA** (was 288.5 / 240.6). One `interview_node` costs ~150 mC,
       about ten minutes of normal running — keep liveness checks rare.
-- [x] **ADC calibration at two voltages — 2026-09-12.** PPK2 as the cell
+- [x] **ADC calibration at two voltages — 2026-09-12.** *(Superseded
+      2026-09-22 by the shipping-image calibration below; `VBAT_OFFSET_MV` no
+      longer exists.)* PPK2 as the cell
       (Source Meter, USB out). True BAT+ 3.36 V → firmware 3.02 V; true
       3.97 V → firmware 3.64 V. Same 0.33–0.34 V short at both points, slope
       1.02: a **constant offset, not a gain error**. ~0.17 V at the pin across

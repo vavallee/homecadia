@@ -1126,3 +1126,29 @@ Two other things this sweep showed:
   only load, so the XIAO was not on the node. Arithmetic on a flat current
   identifies what is connected faster than any probe.
 
+## 24. The border router forgot the network; the node never did
+
+**When:** 2026-09-21 20:19 → 2026-09-22 21:30.
+
+The Kubernetes node hosting the OTBR rebooted. The OTBR pod came back on
+OpenThread factory defaults (PAN ID `0xffff`, channel 11, Thread disabled):
+its settings file lives in `/var/lib/thread`, and the persistent volume had
+been mounted at `/data` since 2026-08-19, a path the image's entrypoint never
+links. Fixed in the homelab repo (PR #373: mount at `/var/lib/thread`); the
+dataset was restored from Home Assistant's store.
+
+What that looks like from this project's side:
+
+- matter-server logs `ENETUNREACH` to the node's old mesh-local address every
+  2 min, and the HA cache keeps serving the last values, so a `get` read
+  looks healthy with stale numbers. Check `last_interview` and the OTBR
+  (`ot-ctl state`) before blaming the device.
+- The off-mesh-routable prefix is regenerated when the OTBR loses its
+  settings (`fd20:22ab:77:1::/64` → `fd98:ce54:c5cd:1::/64`). Nodes re-register
+  with SRP on the new prefix by themselves; no re-commissioning. The node's
+  own Thread credentials are in its NVS and survived untouched.
+- `srp server host` stayed empty for an hour after the OTBR recovered. That
+  was not the prefix: node 25 was unpowered (§23, broken hookup wire). Once
+  powered it attached, registered and was re-interviewed by matter-server
+  within two minutes, `RebootCount` +1.
+

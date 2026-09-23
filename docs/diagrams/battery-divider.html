@@ -204,7 +204,7 @@
   <h2>Schematic</h2>
   <figure>
     <svg viewBox="0 0 900 430" role="img"
-         aria-label="Schematic: LiPo cell positive terminal connects to the XIAO BAT+ underside pad and to one end of a 1 megohm resistor R1. The other end of R1 forms the sense node, which connects to the MTDI GPIO5 underside pad TP5. From the sense node, a second 1 megohm resistor R2 goes to ground, and a 100 nanofarad capacitor C1 also goes to ground. The cell negative terminal connects to the XIAO BAT minus pad and to the same ground. The sense node sits at half the battery voltage, about 1.9 volts.">
+         aria-label="Schematic: LiPo cell positive terminal connects to the XIAO BAT+ underside pad and to one end of a 1 megohm resistor R1. The other end of R1 forms the sense node, which connects to the MTMS GPIO4 underside pad TP4. From the sense node, a second 1 megohm resistor R2 goes to ground, and a 100 nanofarad capacitor C1 also goes to ground. The cell negative terminal connects to the XIAO BAT minus pad and to the same ground. The sense node sits at half the battery voltage, about 1.9 volts.">
       <defs>
         <marker id="dot" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5">
           <circle cx="3.5" cy="3.5" r="3" fill="var(--ink)"/>
@@ -250,7 +250,7 @@
       <circle cx="300" cy="226" r="4.5" fill="var(--ink)"/>
       <path class="wire" d="M300 226 L470 226"/>
       <rect class="pad" x="470" y="210" rx="5" width="212" height="32"/>
-      <text class="padt" x="486" y="231">TP5 · MTDI / GPIO5 · ADC1_CH5</text>
+      <text class="padt" x="486" y="231">TP4 · MTMS / GPIO4 · ADC1_CH4</text>
       <text class="sub" x="316" y="218">sense node ≈ V<tspan baseline-shift="sub">bat</tspan>/2 ≈ 1.9 V</text>
 
       <!-- R2 to gnd -->
@@ -288,8 +288,11 @@
     4.2&nbsp;V ÷ 2&nbsp;MΩ = <strong>2.1&nbsp;µA</strong> continuously, which is
     0.7% of the 300&nbsp;µA budget and was accepted deliberately rather than
     gated with a MOSFET (see below). C1 is the ADC hold cap — the source is
-    high-impedance, so <code>app_config.h</code> sets
-    <code>VBAT_ADC_SETTLE_MS 5</code> before each read.</figcaption>
+    high-impedance (500&nbsp;kΩ ‖ 100&nbsp;nF, τ = 50&nbsp;ms), so
+    <code>app_config.h</code> sets <code>VBAT_ADC_SETTLE_MS 20</code> and
+    <code>battery.cpp</code> averages 64 samples. The ADC input loads the
+    node ~1.9&nbsp;%; <code>VBAT_SCALE_X1000 2038</code> corrects it
+    (swept 2026-09-22, <code>docs/bringup.md</code>).</figcaption>
   </figure>
 </section>
 
@@ -301,9 +304,9 @@
     <tbody>
       <tr><td>Cell <strong>+</strong></td><td class="pin">BAT+ underside pad</td><td>—</td><td>polarity verified with a meter first</td></tr>
       <tr><td>Cell <strong>−</strong></td><td class="pin">BAT− underside pad</td><td>—</td><td>—</td></tr>
-      <tr><td>BAT+</td><td class="pin">TP5 · MTDI / GPIO5</td><td>R1 1 MΩ</td><td>upper leg</td></tr>
-      <tr><td class="pin">TP5 · MTDI / GPIO5</td><td class="pin">GND</td><td>R2 1 MΩ</td><td>lower leg</td></tr>
-      <tr><td class="pin">TP5 · MTDI / GPIO5</td><td class="pin">GND</td><td>C1 100 nF</td><td>ADC hold cap</td></tr>
+      <tr><td>BAT+</td><td class="pin">TP4 · MTMS / GPIO4</td><td>R1 1 MΩ</td><td>upper leg</td></tr>
+      <tr><td class="pin">TP4 · MTMS / GPIO4</td><td class="pin">GND</td><td>R2 1 MΩ</td><td>lower leg</td></tr>
+      <tr><td class="pin">TP4 · MTMS / GPIO4</td><td class="pin">GND</td><td>C1 100 nF</td><td>ADC hold cap</td></tr>
     </tbody>
   </table>
   </div>
@@ -327,22 +330,22 @@
     <li><strong>Inline and heat-shrunk</strong> — no mount needed, less tidy.</li>
   </ul>
   <p>Only three connections genuinely need the XIAO's underside pads: the
-  encoder push switch (MTCK/GPIO6), this divider node (MTDI/GPIO5), and
+  encoder push switch (MTCK/GPIO6), this divider node (MTMS/GPIO4), and
   BAT+/BAT−. Everything else solders to the driver board's larger
   through-holes.</p>
 </section>
 
 <section>
-  <h2>Strapping on GPIO5 — resolved, not a risk</h2>
-  <p>GPIO5 is in Seeed's avoid list, and the permanent divider holds it at
+  <h2>Strapping on GPIO4 — resolved, not a risk</h2>
+  <p>GPIO4 is in Seeed's avoid list, and the permanent divider holds it at
   ~1.9&nbsp;V — inside the undefined logic band while straps are sampled, so the
   strap latches unpredictably.</p>
   <p><strong>It does not matter.</strong> Per the ESP32-C6 datasheet Table 3-4,
-  MTDI straps <em>the SDIO sampling and driving clock edge</em> and nothing else.
+  MTMS (like MTDI/GPIO5, the original pad until it lifted on XIAO #2) straps <em>the SDIO sampling and driving clock edge</em> and nothing else.
   sensor-01 uses no SDIO — display is SPI, sensor is I2C, console is native USB.
   No code path reads the setting, so no gating MOSFET is needed and the
   2.1&nbsp;µA bleed stays as budgeted.</p>
-  <p class="sub">One real cost remains: MTDI is JTAG TDI, so external JTAG
+  <p class="sub">One real cost remains: MTMS is JTAG TMS, so external JTAG
   through the underside pads is given up.</p>
 </section>
 </div>
@@ -371,9 +374,9 @@
 </section>
 
 <section class="foot">
-  Divider values and pin from <code>app_config.h:31</code>
-  (<code>VBAT_ADC_GPIO 5</code>, <code>VBAT_ADC_SETTLE_MS 5</code>); ADC is
-  one-shot on ADC1_CH5 at <code>ADC_ATTEN_DB_12</code>
+  Divider values and pin from <code>app_config.h:36</code>
+  (<code>VBAT_ADC_GPIO 4</code>, <code>VBAT_ADC_SETTLE_MS 20</code>); ADC is
+  one-shot on ADC1_CH4 at <code>ADC_ATTEN_DB_12</code>
   (<code>battery.cpp</code>). Build order and the polarity warning are
   <code>docs/assembly.md</code> step 1; the strapping analysis and the A0
   conflict are <code>docs/pinmap.md</code>; the 2.1&nbsp;µA bleed is line 1 of
