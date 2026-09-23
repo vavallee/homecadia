@@ -35,7 +35,7 @@
 // "avoid" list (strapping/JTAG) — see the strapping caveat in docs/pinmap.md.
 #define VBAT_ADC_GPIO      4    // MTMS, ADC1_CH4 -- see pinmap.md; GPIO5/MTDI is
                                 //   equivalent (both strap only SDIO clock edge, unused here)
-#define VBAT_ADC_SETTLE_MS 5    // high-impedance source: delay after ADC config before read
+#define VBAT_ADC_SETTLE_MS 20   // high-impedance source (500k || 100nF, tau 50 ms): delay after ADC config before read
 
 // XIAO ESP32-C6 board-internal pins (schematic XIAO-ESP32-C6_v1.0_SCH_PDF_24028,
 // sheet 4/5). Not on the header. The FM8625H RF switch is powered through

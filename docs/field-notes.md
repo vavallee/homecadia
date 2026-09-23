@@ -1086,3 +1086,43 @@ Two measurement traps from this run:
   microamps; use the PPK2 trace (polls still arriving) as the liveness signal
   instead.
 
+## 23. A meter on a high-impedance node is a load, not a reference
+
+**When:** 2026-09-22, calibrating the battery ADC on the shipping image.
+
+With the PPK2 at 3.70 V the meter read BAT+ 3.67 V and the divider midpoint
+1.73 V, a ratio of 0.471 for a 1M:1M divider. I took 0.471 as the divider's
+real ratio, compared the firmware's pin voltage against 1.73 V, found them
+within 13 mV, and concluded the offset should be 0. Flashed, and the reading
+came out 64–144 mV **low**.
+
+The midpoint has a 500 kΩ source impedance. The meter's 10 MΩ input is in
+parallel with the bottom leg and pulls the node down ~5 %: 0.5 × 10/10.5 =
+0.476, which is what it read (0.471 with tolerance). The ADC's own input does
+the same thing, less strongly (~1.9 %). Comparing one loaded reading against
+another loaded reading measured nothing.
+
+The fix was to calibrate only against **BAT+**, which is driven by the PPK2
+and has near-zero impedance, so the meter cannot move it. Two points, BAT+
+3.68 and 4.00 V, gave the same gain (×1.0176, ×1.0201) and no offset, which
+is what input loading should produce. A third point the fit never saw, 3.39 V,
+read 3389 and 3387.
+
+Rule: **calibrate an ADC chain end to end, from a low-impedance source to the
+number the firmware reports. Never use a meter reading of a node with more
+than ~10 kΩ source impedance as the reference.** A meter on such a node is
+fine for "is it roughly there", not for millivolts.
+
+Two other things this sweep showed:
+
+- **One Matter report is not a measurement.** At 8 samples after a 5 ms
+  settle, reports at a fixed voltage scattered ±120 mV; a single report
+  looked like an offset change twice. 64 samples after a 20 ms settle (the
+  500 kΩ ‖ 100 nF node has a 50 ms time constant) brought it to 4 mV. Take
+  several reports per point and hold each point for ≥ 3 report periods; one
+  slider move inside a 120 s poll produced a mixed reading.
+- **The "dead node" of 2026-09-22 was a broken hookup wire.** The PPK2 read
+  1.84 µA at 3.7 V, exactly 3.7 V over the 2 MΩ divider: the divider was the
+  only load, so the XIAO was not on the node. Arithmetic on a flat current
+  identifies what is connected faster than any probe.
+

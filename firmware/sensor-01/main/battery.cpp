@@ -11,16 +11,19 @@
 
 static const char *TAG = "battery";
 
-#define DIVIDER_RATIO 2  /* 1M : 1M */
-#define SAMPLES       8
+#define SAMPLES       64
 
-/* The computed battery voltage sits a constant ~340mV below BAT+. Measured
- * 2026-09-12 against a PPK2 source, BAT+ metered in-circuit, DIAG view read
- * after a full poll:  BAT+ 3.36V -> 3020mV,  BAT+ 3.97V -> 3640mV  (slope 1.02,
- * so an offset, not a gain error). Cause inferred, not measured: ~0.34uA into
- * the ADC input across the divider's 500k source impedance. docs/bringup.md,
- * ADC calibration row. */
-#define VBAT_OFFSET_MV 340
+/* Pin millivolts -> BAT+ millivolts, x1000. The ideal 1M:1M ratio is 2000;
+ * the ADC input loads the 500k source, so the pin sits ~1.9% low and the
+ * scale is higher. Fitted 2026-09-22 against a PPK2 source, BAT+ metered
+ * in-circuit (not the midpoint: the meter's 10M loads it by ~5%), five and
+ * three settled Matter reports at 64 samples / 20 ms settle:
+ *   BAT+ 3.68 V -> 3616 mV at 2000 (x1.0176),  4.00 V -> 3921 mV (x1.0201)
+ * One gain, no offset, fits both to +/-5 mV. Report-to-report scatter 4 mV
+ * (it was +/-120 mV at 8 samples / 5 ms). Replaces VBAT_OFFSET_MV 340, which
+ * was measured with the ADC unit held open between reads and over-read by
+ * ~130-300 mV once the unit became per-read. docs/bringup.md, ADC row. */
+#define VBAT_SCALE_X1000 2038
 
 static adc_unit_t s_unit;
 static adc_cali_handle_t s_cali;
@@ -103,7 +106,7 @@ esp_err_t battery_read_mv(uint32_t *out_mv)
     /* The 100nF cap holds the divider node steady (source is always connected),
      * but give the ADC input a moment after (re)config before sampling.
      * The 2026-09-02 "within 1.2%" check once cited here was a false pass
-     * (docs/bringup.md, divider row); the real error is VBAT_OFFSET_MV. */
+     * (docs/bringup.md, divider row). */
     int sum = 0;
     if (err == ESP_OK) {
         vTaskDelay(pdMS_TO_TICKS(VBAT_ADC_SETTLE_MS));
@@ -135,8 +138,8 @@ esp_err_t battery_read_mv(uint32_t *out_mv)
         mv_at_pin = raw_avg * 3300 / 4095;
     }
 
-    /* 0 means no divider / open input: report 0 rather than a phantom 340mV. */
-    *out_mv = mv_at_pin > 0 ? (uint32_t)mv_at_pin * DIVIDER_RATIO + VBAT_OFFSET_MV : 0;
+    /* 0 means no divider / open input: report 0. */
+    *out_mv = mv_at_pin > 0 ? (uint32_t)mv_at_pin * VBAT_SCALE_X1000 / 1000 : 0;
     return ESP_OK;
 }
 

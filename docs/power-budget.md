@@ -13,7 +13,7 @@ meter (e.g. Nordic PPK2 or a µCurrent) between battery and XIAO.
 | Awake floor, bench profile | — | **41 mA avg @ 3.4 V** | PPK2 Source Meter 2026-09-09: ~40 mA baseline, radio bursts to ~190 mA, 424 mA one-sample inrush at power-on. Not a budget line — it is what a sleep-disabled build costs, and it flattens a 2000 mAh cell in ~2 days |
 | Battery divider bleed | 2.1µA | | 4.2V / 2MΩ, continuous |
 | SHT40 single-shot high-precision read | ~0.5ms·mA class, negligible avg | | ~8ms @ ~0.5mA every 120s |
-| ADC battery read (incl. settling) | negligible | | settle delay then one-shot. ADC input draws ~0.34 µA from the divider node while sampling (2026-09-12: constant −340 mV at battery level); correct in firmware, not with a stiffer divider |
+| ADC battery read (incl. settling) | negligible | | 20 ms settle then 64 one-shot samples, under a no-light-sleep lock (~25 ms awake per 120 s poll). The ADC input loads the 500 kΩ divider ~1.9 %; corrected by `VBAT_SCALE_X1000` in firmware (2026-09-22), not with a stiffer divider |
 | Thread poll (ICD idle-mode poll) | ~10–30µA avg contribution | **~300 µC per poll** | 2026-09-15: 5 ms at 250–330 mA peak, every 5.0 s idle ≈ 60 µA avg; every 0.5 s in active mode ≈ 600 µA while it lasts. | depends on idle interval; radio rx window |
 | Matter report (attribute change tx) | spike, small avg | | only on delta ≥0.2°C / ≥1%RH |
 | Display partial refresh | ~? mC per refresh | | measure in M3: charge per refresh event |

@@ -147,17 +147,23 @@ Bench wiring diagrams and the no-solder connectivity procedure live in
       source read 3972 mV before the flash and 4308 mV after, a +336 mV step:
       proof the offset is in the image, not a third calibration point — the
       charge chip's no-cell output was never metered. A 0 reading stays 0.
-- [ ] **Battery ADC calibrated on the shipping image.** The +340 mV above was
-      measured on the bench image (no light sleep). On the shipping image the
-      same firmware reads **3914–3994 mV at a 3.70 V source**, 214–294 mV high
-      (2026-09-15, PPK2, several reports over 40 min). The offset does not
-      transfer between profiles; recalibrate on the shipping image with the
-      PPK2 sweep, reading the DIAG view after a poll, before trusting percent.
-      **Swept 2026-09-15** (PPK2 slider, battery attribute `3/47/11` read over
-      the Matter API, no board contact): 3400 → 3676, 3700 → 3988,
-      4000 → 4288 mV. Constant +276 to +288 mV, slope 1.02, so the shipping
-      image needs ~+56 mV, not +340. Not applied: the ADC fix above changes
-      the ADC's power state between readings, so sweep again after it.
+- [x] **Battery ADC calibrated on the shipping image — 2026-09-22.**
+      `VBAT_OFFSET_MV` is gone; `battery.cpp` now scales the pin reading by
+      `VBAT_SCALE_X1000 2038` (ideal 1M:1M is 2000; the ADC input loads the
+      500 kΩ source ~1.9 %). Also `SAMPLES` 8 → 64 and `VBAT_ADC_SETTLE_MS`
+      5 → 20: report-to-report scatter fell from ±120 mV to 4 mV. PPK2 source,
+      BAT+ metered in-circuit, settled Matter reports of `3/47/11`:
+
+      | BAT+ | Reported | Error | Role |
+      |---|---|---|---|
+      | 3.68 V | 3616 → ×1.0176 (n=5) | — | fit |
+      | 4.00 V | 3921 → ×1.0201 (n=3) | — | fit |
+      | 3.39 V | **3389, 3387** | −1 to −3 mV | check, fitted image |
+
+      The first report after each boot reads ~80 mV low (3307 at 3.39 V;
+      3536 at 3.68 V on the previous image); cause not established. Earlier
+      2026-09-22 this row was nearly closed with an offset of 0 from a
+      comparison against the divider midpoint — wrong, see field-notes §23.
 
 ## Display
 
