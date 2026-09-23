@@ -14,20 +14,23 @@ e-ink display and a rotary dial. Built from scratch on the ESP32-C6.**
 
 A room temperature and humidity sensor that reports to Home Assistant over
 Thread, shows its own readings on a 2.9" e-ink panel, takes input from a rotary
-dial, and is designed to run about eight months on one 2000 mAh cell. No vendor
-cloud, no hub beyond a Thread border router, and no Wi-Fi — the radio is
-compiled out.
+dial, and averages 238 µA measured on the bench — about ten months on one
+2000 mAh cell at 85 % usable. No vendor cloud, no hub beyond a Thread border
+router, and no Wi-Fi — the radio is compiled out.
 
 Everything is here: firmware, drivers, pin map with schematic-verified board
 facts, power budget, 3D-printable enclosure, bill of materials with real prices,
 and the reasoning behind each decision.
 
-> **Status: pre-assembly.** The firmware builds in CI and has been flashed and
-> booted on a bare XIAO ESP32-C6 — no sensor, no panel, no battery. Nothing here
-> has run on a fully assembled unit yet, so commissioning, display output,
-> encoder direction, ADC calibration and every current figure are **unverified**.
-> Code written ahead of hardware is marked `HW-VERIFY` and tracked in
-> [docs/bringup.md](docs/bringup.md). Read this as a build log, not a design to
+> **Status: bench-verified, not yet assembled.** One unit runs on the bench
+> (XIAO, driver board, panel, SHT40, encoder on a breadboard) with a Nordic PPK2
+> standing in for the cell. Verified there: commissioning to Home Assistant over
+> Thread, display output, battery-voltage reading (within 3 mV of a meter,
+> 3.4–4.0 V), and current — 59 µA sleep floor, 238 µA average over a 12.6 h
+> soak. **Not yet done:** a real LiPo, the enclosure, the encoder push switch,
+> and the dial on battery power (it only works on USB; open in
+> [docs/bringup.md](docs/bringup.md)). Code written ahead of hardware is marked
+> `HW-VERIFY` and tracked there. Read this as a build log, not a design to
 > reproduce unmodified.
 
 ## Devices
@@ -61,7 +64,9 @@ Firmware capabilities, all implemented in this repo unless noted:
   Bluetooth Low Energy, joins via any OpenThread border router (developed
   against Home Assistant Connect ZBT-2).
 - **Long Idle Time ICD** (Intermittently Connected Device) so the node sleeps
-  between subscription reports instead of polling continuously.
+  between subscription reports instead of polling continuously. Configured for
+  a 30 s slow poll; until a controller registers as an ICD client the stack runs
+  short-idle mode and clamps it to 15 s, which is what Home Assistant gets today.
 - **Matter clusters**: TemperatureMeasurement, RelativeHumidityMeasurement, and
   PowerSource with battery percentage and voltage.
 - **Delta-gated reporting** — a report is sent on ≥0.2 °C / ≥1 %RH change, with
@@ -79,10 +84,14 @@ Firmware capabilities, all implemented in this repo unless noted:
 - **Local-only UI**: readings, diagnostics, and settings views; settings persist
   in NVS. The display never renders Home Assistant state — it shows what this
   device measured.
-- **Battery monitoring** via a 2×1 MΩ + 100 nF divider on GPIO5, one-shot ADC
-  with curve-fitting calibration and an open-circuit-voltage lookup table.
-- **Factory reset** on a 10-second encoder press; commissioning and low-battery
-  states shown on a single LED and on the display.
+- **Battery monitoring** via a 2×1 MΩ + 100 nF divider on GPIO4 (an underside
+  pad): 64 one-shot ADC samples after a 20 ms settle, eFuse curve-fitting
+  calibration, and a scale factor fitted against a metered source to correct the
+  ADC input loading the 500 kΩ divider. Open-circuit-voltage lookup table for
+  percent.
+- **Factory reset** on a 10-second encoder press (code done; the push switch is
+  not wired yet); commissioning and low-battery states shown on a single LED and
+  on the display.
 - **CI** builds the flashable images on every push touching `firmware/**` and
   uploads them as an artifact.
 
@@ -162,14 +171,25 @@ pay for them twice. Full list in
   onboard divider the C6 schematic shows isn't populated.
 - **A 100k battery divider costs ~9% of a 300µA budget.** 2×1MΩ + 100nF instead,
   at the price of a high-impedance ADC source ([power budget](docs/power-budget.md)).
+- **A live ADC unit keeps the C6's radio power domain on through every light
+  sleep** (~95 µA). Create and delete the unit per reading, and hold a
+  no-light-sleep lock across it or the chip can fail to wake
+  ([field notes](docs/field-notes.md) §21).
+- **The chip only powers down its peripherals in light sleep if every I2C and
+  SPI bus asks for it** (`flags.allow_pd`, `SPICOMMON_BUSFLAG_SLP_ALLOW_PD`).
+  Without them the sleep floor was 279 µA; with them, 56 µA (§21).
+- **A multimeter on a high-impedance node is a load, not a reference.** A 10 MΩ
+  meter reads a 1 MΩ:1 MΩ divider midpoint ~5 % low. Calibrate the ADC against
+  the supply, end to end (§23).
 - **Light sleep kills the USB serial port in ~2 seconds**, which makes a board
   effectively unflashable without `CONFIG_USJ_NO_AUTO_LS_ON_CONNECTION`
   ([build](docs/build.md) has the recovery procedure, including the WSL2/usbipd
   quirks).
 - **Opening `/dev/ttyACM0` with a plain shell read can hard-reset the chip** —
   it pulses the USB-Serial-JTAG control lines. Use `idf.py monitor`.
-- **Seeed's deep-sleep current figures are optimistic** and regulator-dependent;
-  treated as unverified until measured.
+- **Seeed's sleep-current figures are for a bare board.** Measured on this build:
+  a 52–59 µA light-sleep floor once the two fixes above were in; 376 µA before
+  them ([power budget](docs/power-budget.md)).
 
 ## Milestones
 
@@ -178,8 +198,8 @@ pay for them twice. Full list in
 | 1 | Repo scaffold, docs, CI compiling an esp-matter skeleton for esp32c6 | done |
 | 2 | Matter temp/humidity over Thread, commissions to HA (TinyENV parity) | **done 2026-08-23** — commissioned to HA over ZBT-2 OTBR, readings live in HA; see `docs/field-notes.md` for the preconditions |
 | 3 | Display driver, view 1 rendering readings, measured refresh cost | display verified on hardware 2026-08-22 (full 1.79s / partial 0.54s BUSY); refresh charge cost still unmeasured |
-| 4 | Encoder, views, settings, wake behavior | code complete; encoder direction + wake await hardware |
-| 5 | ICD tuning, battery reporting, power budget with measured numbers | LIT ICD configured; tuning + measurements await hardware |
+| 4 | Encoder, views, settings, wake behavior | works on USB power; **the dial does not wake the chip on battery** (edge interrupts cannot wake light sleep) — open |
+| 5 | ICD tuning, battery reporting, power budget with measured numbers | **done 2026-09-22** — 238 µA average over 12.6 h (budget ≤300 µA), battery voltage within 3 mV; see `docs/power-budget.md` |
 | 6 | Factory reset, low-battery behavior, assembly guide final, v1.0.0 | factory reset + LED + low-bat display done; rest awaits hardware |
 
 ## Repo layout
