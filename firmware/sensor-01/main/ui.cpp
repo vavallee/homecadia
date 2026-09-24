@@ -176,7 +176,8 @@ static void on_factory_reset(void)
     esp_matter::factory_reset(); /* wipes fabrics + NVS, reboots into commissioning */
 }
 
-/* Push switch on an LP GPIO, so a press wakes the chip from light sleep.
+/* Push switch. On an LP GPIO a press wakes the chip from light sleep; on an
+ * HP GPIO (D9, the current layout) it registers only while awake.
  * Not espressif/button: under CONFIG_PM_POWER_DOWN_PERIPHERAL_IN_LIGHT_SLEEP
  * its power-save mode drives ext1 wake and gpio_hold_en on the pin itself
  * (button_gpio.c), and without power save it polls every 5 ms forever.
@@ -264,9 +265,13 @@ static esp_err_t push_switch_init(void)
         return err;
     }
 #if CONFIG_PM_ENABLE
-    /* LP wake on press. While the switch is down the lock keeps the chip
-     * awake, so LOW never needs re-arming. */
-    err = esp_deep_sleep_enable_gpio_wakeup(BIT64(ENC_PIN_SW), ESP_GPIO_WAKEUP_GPIO_LOW);
+    /* LP wake on press, only if the switch is on an LP GPIO (0-7). On an HP
+     * pin a press registers only while the chip is already awake. While the
+     * switch is down the lock keeps the chip awake, so LOW never needs
+     * re-arming. */
+    if (esp_sleep_is_valid_wakeup_gpio((gpio_num_t)ENC_PIN_SW)) {
+        err = esp_deep_sleep_enable_gpio_wakeup(BIT64(ENC_PIN_SW), ESP_GPIO_WAKEUP_GPIO_LOW);
+    }
 #endif
     return err;
 }

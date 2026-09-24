@@ -279,7 +279,7 @@ void bench_selftest(void)
         {"I2C SCL ", SHT40_I2C_SCL, "sensor module pull-up: held HIGH; held LOW = no clock possible"},
         {"ENC A   ", ENC_PIN_A, "MTCK: held HIGH by the C6 JTAG pull-up; held LOW mid-detent"},
         {"ENC B   ", ENC_PIN_B, "floating at rest (switch open); held LOW mid-detent"},
-        {"ENC SW  ", ENC_PIN_SW, "MTDO: floating while open; held LOW while pressed"},
+        {"ENC SW  ", ENC_PIN_SW, "D9: floating while open; held LOW while pressed"},
         {"VBAT ADC", VBAT_ADC_GPIO, "floating until the divider is built"},
     };
     for (auto &p : inputs) {
