@@ -247,6 +247,10 @@ static void coupling_scan(void)
 
 void bench_selftest(void)
 {
+    /* The USB console drops everything logged before a host reopens the port
+     * after a reset (~1 s on Windows), and this scan runs ~0.3 s after boot.
+     * Bench profile only. */
+    vTaskDelay(pdMS_TO_TICKS(4000));
     ESP_LOGW(TAG, "harness scan (nothing driven yet)");
 
     const struct {
@@ -277,7 +281,7 @@ void bench_selftest(void)
         {"EPD BUSY", EPD_PIN_BUSY, "idle panel: held LOW; no panel: floating"},
         {"I2C SDA ", SHT40_I2C_SDA, "sensor module pull-up: held HIGH; floating = no sensor power"},
         {"I2C SCL ", SHT40_I2C_SCL, "sensor module pull-up: held HIGH; held LOW = no clock possible"},
-        {"ENC A   ", ENC_PIN_A, "MTCK: held HIGH by the C6 JTAG pull-up; held LOW mid-detent"},
+        {"ENC A   ", ENC_PIN_A, "MTCK; held HIGH was also read with the wire on the 3V3 pad: prove by turning"},
         {"ENC B   ", ENC_PIN_B, "floating at rest (switch open); held LOW mid-detent"},
         {"ENC SW  ", ENC_PIN_SW, "D9: floating while open; held LOW while pressed"},
         {"VBAT ADC", VBAT_ADC_GPIO, "floating until the divider is built"},

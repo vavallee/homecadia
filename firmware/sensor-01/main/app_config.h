@@ -2,7 +2,7 @@
 
 // Pin map for sensor-01 (XIAO ESP32-C6 + Seeed ePaper Driver Board V2).
 // Mirrors docs/pinmap.md — change both together.
-// HW-VERIFY: all values unverified on hardware; tracked in docs/bringup.md.
+// Verification status of each value is tracked in docs/bringup.md.
 
 // e-paper, fixed by driver board routing (Seeed wiki, ePaper Driver Board V2)
 #define EPD_PIN_RST        0    // D0 — also the A0 pad; battery ADC must not use it
@@ -26,6 +26,8 @@
 // The push switch stays on a header pin (D9): turn to wake, then press. A
 // press-only wake would need a fifth underside pad (MTDO). XIAO #2 lost
 // MTDI, MTDO and MTCK to pad lifts and stays a bench unit (bringup.md).
+// Wake on a detent from light sleep verified on battery 2026-09-28 (node 26).
+// The 3V3 pad sits beside MTCK: see assembly.md before soldering.
 #define ENC_PIN_A          6    // MTCK underside pad (TP6); LP GPIO, light-sleep wake
 #define ENC_AWAKE_MS       2000 // chip held out of light sleep after the last detent
 #define ENC_PIN_B          16   // D6 -- was D7/GPIO17: on both driver boards D7 sits at

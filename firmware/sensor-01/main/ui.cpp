@@ -189,7 +189,9 @@ static void on_factory_reset(void)
  * held while the switch is down, and a one-shot timer does the factory-reset
  * hold. */
 static TaskHandle_t s_sw_task;
+#if CONFIG_PM_ENABLE
 static esp_pm_lock_handle_t s_sw_lock;
+#endif
 static esp_timer_handle_t s_sw_hold_timer;
 
 static void IRAM_ATTR sw_isr(void *arg)
@@ -219,11 +221,15 @@ static void sw_task(void *arg)
         if (now != pressed) {
             pressed = now;
             if (pressed) {
+#if CONFIG_PM_ENABLE
                 esp_pm_lock_acquire(s_sw_lock);
+#endif
                 esp_timer_start_once(s_sw_hold_timer, (uint64_t)FACTORY_RESET_HOLD_S * 1000000ULL);
             } else {
                 bool reset_fired = esp_timer_stop(s_sw_hold_timer) != ESP_OK;
+#if CONFIG_PM_ENABLE
                 esp_pm_lock_release(s_sw_lock);
+#endif
                 if (!reset_fired) {
                     on_push();
                 }
@@ -235,10 +241,13 @@ static void sw_task(void *arg)
 
 static esp_err_t push_switch_init(void)
 {
-    esp_err_t err = esp_pm_lock_create(ESP_PM_NO_LIGHT_SLEEP, 0, "push_sw", &s_sw_lock);
+    esp_err_t err;
+#if CONFIG_PM_ENABLE /* no PM (bench profile): no light sleep, so no lock needed */
+    err = esp_pm_lock_create(ESP_PM_NO_LIGHT_SLEEP, 0, "push_sw", &s_sw_lock);
     if (err != ESP_OK) {
         return err;
     }
+#endif
     const esp_timer_create_args_t targs = {
         .callback = sw_hold_cb,
         .name = "sw_hold",
