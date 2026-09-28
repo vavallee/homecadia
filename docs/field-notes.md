@@ -1152,6 +1152,12 @@ What that looks like from this project's side:
   powered it attached, registered and was re-interviewed by matter-server
   within two minutes, `RebootCount` +1.
 
+**2026-09-28, the fix held.** The same node (`k8sn3-agent`) went down twice
+in one afternoon. Both times the OTBR pod came back attached as a router on
+channel 15 with no restore, and node 26 rejoined by itself: `RebootCount` did
+not move across the first outage, and the controller resubscribed within
+about a minute of the matter server returning (16:27:24).
+
 ## 25. Three faults, none where the symptoms pointed
 
 **When:** 2026-09-24 → 2026-09-28, XIAO #3 then #4.
