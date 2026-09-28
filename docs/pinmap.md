@@ -19,6 +19,11 @@ sheet numbers cited). Rows still open on hardware are in
   boilerplate and does not apply — any divider is user-added.
 - **Underside pads exist for GPIO4–7**: TP4=MTMS/GPIO4, TP5=MTDI/GPIO5,
   TP6=MTCK/GPIO6, TP7=MTDO/GPIO7, plus BOOT(GPIO9), EN, 3V3, GND (sheet 3/5).
+  **The labels are printed beside the pads, not on them, and the 3V3 pad is
+  next to MTCK.** On XIAO #3 the encoder wire went onto 3V3: every detent
+  shorted the rail to ground through the encoder contact
+  ([field-notes.md](field-notes.md) §25). Which pad a wire is on is proven by
+  the post-solder tests in [assembly.md](assembly.md), never by eye.
 - **RF switch must be enabled by firmware** (sheet 4/5): FM8625H powered via
   P-FET Q3 whose gate (GPIO3) has a 10k pull-up — the switch is OFF at
   reset. Drive GPIO3 low to power it; GPIO14 (VCTL) low selects the onboard
@@ -74,12 +79,12 @@ debug both run over the C6's native USB Serial/JTAG.
 | SHT40 SDA | D4 | 22 | our wiring | Grove cable, I2C addr 0x44 |
 | SHT40 SCL | D5 | 23 | our wiring | |
 | LED | D7 | 17 | our wiring | swapped with encoder A 2026-08-25; see bringup.md Encoder & LED |
-| Encoder A | D9 | 20 | our wiring | no deep-sleep wake (not an LP pad). A/B chosen so clockwise = view advances (bench 2026-08-26) |
+| Encoder A | **MTCK pad (underside)** | **6** | our wiring | LP GPIO: wakes light sleep on a detent. Moved from D9 2026-09-23; wake verified on battery 2026-09-28 (node 26). Clockwise = view advances |
 | ePaper SCK | D8 | 19 | driver board routing | |
 | Encoder B | D6 | 16 | our wiring | was D7, which reads 0V once SPI is up (field-notes s16); D6 neighbours only SCL |
 | ePaper MOSI | D10 | 18 | driver board routing | |
-| Encoder push | MTCK pad (underside) | 6 | our wiring (veltoc) | LP GPIO → deep-sleep wake source |
-| Battery divider | **MTMS pad (underside)** | **4** | our wiring | ADC1_CH4; 2×1M + 100nF. Verified 2026-09-02 (±1.2% vs meter). Moved from MTDI/GPIO5 after a pad lifted on XIAO #2; the two are interchangeable here — see below |
+| Encoder push | D9 | 20 | our wiring | HP GPIO, cannot wake: a press registers only within `ENC_AWAKE_MS` (2 s) of a turn. Moved from the MTCK pad 2026-09-23 to keep the build at four underside pads |
+| Battery divider | **MTMS pad (underside)** | **4** | our wiring | ADC1_CH4; 2×1M + 100nF. Calibrated against a metered source 2026-09-22 (within 3 mV, 3.4–4.0 V); the same constants read 3682 mV at a 3700 mV source on a second XIAO 2026-09-28. Moved from MTDI/GPIO5 after a pad lifted on XIAO #2; the two are interchangeable here — see above |
 | Battery + / − | battery pads (underside) | — | XIAO charge IC | ⚠️ polarity check first — [assembly.md](assembly.md) |
 
 ## Resolved conflict: battery ADC is NOT on A0
@@ -98,8 +103,11 @@ in an undefined logic region while the panel is supposed to be sleeping.
 - D-pin → GPIO numbers against the official XIAO ESP32-C6 pinout diagram.
 - ePaper pin usage against the assembled driver board (wiki table above is
   V2-specific; probe BUSY/RST if the display misbehaves).
-- GPIO6 (MTCK) wakes from deep sleep with the encoder switch wiring.
-- ADC reading on GPIO5 with the 2×1M divider: settling behavior and calibration.
+- ~~GPIO6 (MTCK) wakes from deep sleep with the encoder switch wiring.~~
+  Superseded: the firmware uses light sleep, and GPIO6 carries encoder A.
+  Wake on a detent verified 2026-09-28.
+- ~~ADC reading on the divider pin: settling behavior and calibration.~~
+  Closed 2026-09-22 on GPIO4 (20 ms settle, 64 samples, fitted scale).
 
 ## Driver board schematic
 

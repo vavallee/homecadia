@@ -53,7 +53,13 @@ Bench wiring diagrams and the no-solder connectivity procedure live in
       the panel. So any pull-up seen on D3/D8/D10 is the panel's, and a
       "held HIGH" on D4/D5 is coupling from a neighbour, not a board pull-up
       (an earlier row here claimed I2C pull-ups on D4/D5; it was wrong).
-- [ ] BAT+/BAT− underside pad markings confirmed on this XIAO revision.
+- [x] BAT+/BAT− underside pad markings confirmed on this XIAO revision —
+      **2026-09-28**, XIAO #4 (node 26): runs from a 3700 mV source on those
+      pads and reports 3682 mV.
+- [x] **Underside signal wires proven on the right pads — 2026-09-28**, XIAO
+      #4, by the unpowered exclusion tests and the powered tests in
+      [assembly.md](assembly.md) stages 2–3. On XIAO #3 the encoder wire was
+      on the 3V3 pad beside MTCK ([field-notes.md](field-notes.md) §25).
 - [ ] EEMB battery lead polarity measured with multimeter — **all 3 cells,
       before first connection** ([assembly.md](assembly.md) warning).
 - [x] Battery divider reads Vbat/2 — on **MTMS/GPIO4**, not MTDI (see the
@@ -63,7 +69,18 @@ Bench wiring diagrams and the no-solder connectivity procedure live in
 
 ## Power & sleep
 
-- [ ] GPIO6 (MTCK) wakes the C6 from deep sleep on encoder press.
+- [x] ~~GPIO6 (MTCK) wakes the C6 from deep sleep on encoder press.~~
+      **Superseded 2026-09-23, closed 2026-09-28.** The firmware sleeps in
+      light sleep, not deep sleep, and GPIO6 carries encoder A, not the
+      switch. A detent wakes the chip: see "Dial works on battery" under
+      Encoder & LED.
+- [x] **Unpaired current — measured 2026-09-28: 28.1 mA average.** Shipping
+      image on XIAO #4 before commissioning, PPK2 3700 mV, 10 s window:
+      baseline 20–40 mA, ~200 mA spikes every 0.5 s (the 500 ms pairing
+      advertisement interval). The chip does not enter light sleep while
+      unpaired; the cause in the code is not traced. Three minutes after
+      commissioning the same unit averaged **91 µA** over a quiet 10 s with
+      one parent poll in the window.
 - [x] Light sleep does not hang — **fixed 2026-09-15** by turning off
       `CONFIG_PM_POWER_DOWN_PERIPHERAL_IN_LIGHT_SLEEP`. ESP-IDF v5.5.5 marks it
       experimental (default n), but Espressif's own C6 sleepy references turn
@@ -240,15 +257,20 @@ Blocker: **2 of 3 panels are gone and there is no spare.** Reorder Seeed SKU
       pins were **soldered to leads**: EC11 blades are ~0.6 mm and seat in
       neither breadboard springs nor Dupont sockets — every earlier run had one
       line dead or intermittent.
-- [ ] **Dial works on battery — found broken 2026-09-15.** On the PPK2 (no
-      USB) a detent did nothing. The encoder uses edge interrupts
-      (`components/ec11_encoder/ec11.c`), which cannot wake light sleep
-      (`gpio_wakeup_enable` takes level types only), and
-      `CONFIG_PM_SLP_DISABLE_GPIO` turns every pin's input off while asleep. All
-      the verifications below ran on USB, where the chip never sleeps. Needs a
-      level wake on A/B re-armed to the opposite level after each change, or
-      the pins kept out of sleep isolation ([field-notes.md](field-notes.md)
-      §21).
+- [x] **Dial works on battery — found broken 2026-09-15, fixed 2026-09-23,
+      verified 2026-09-28.** On the PPK2 (no USB) a detent did nothing: the
+      encoder used edge interrupts (`components/ec11_encoder/ec11.c`), which
+      cannot wake light sleep, and with
+      `CONFIG_PM_POWER_DOWN_PERIPHERAL_IN_LIGHT_SLEEP` only LP GPIOs 0–7 can
+      wake at all. Fix: encoder A on the MTCK pad (GPIO6), armed with
+      `esp_deep_sleep_enable_gpio_wakeup()` for the level it is not at, and a
+      no-light-sleep lock held for `ENC_AWAKE_MS` (2 s) after the last
+      change. Evidence, XIAO #4 / node 26, PPK2 3700 mV, USB out, paired and
+      settled: flat baseline (91 µA average over 10 s), then one detent gave
+      a ~2 s burst at ~40 mA with peaks to 570 mA, the screen changed view,
+      and the baseline returned. 53.2 mC for the 10 s window containing the
+      detent and its refresh. On USB with the bench image the same unit
+      decoded 6 of 6 detents, three each way.
 - [x] **Clockwise = view advances — verified 2026-08-26.** With A on D6 it read
       `dir=-1`, so A/B were swapped in `app_config.h` (A=D9, B=D6), not on the
       board. About 1 detent in 4 is dropped on a slow turn — one lost quadrature
@@ -293,8 +315,14 @@ Blocker: **2 of 3 panels are gone and there is no spare.** Reorder Seeed SKU
       separate row under Power & sleep. Encoder confirmed changing views in
       both directions during the same session. Wiring reference:
       [diagrams/bench-verify.html](diagrams/bench-verify.html).
-- [ ] GPIO6 (MTCK) push switch — deferred until the underside pad is
-      soldered; the deep-sleep-wake row under "## Power & sleep" stays open.
+- [x] **Push switch on D9/GPIO20 — verified 2026-09-28** on USB, bench
+      image, XIAO #4: `on_push` logged per press. D9 is an HP pin, so a press
+      registers only while the chip is awake: turn first, then press within
+      2 s. Press-within-the-window on battery is not yet tested.
+- [x] **XIAO inventory — 2026-09-28.** #1 dead (source-meter injection,
+      field-notes.md §18). #2 lost the MTDI, MTDO and MTCK pads; node 25,
+      retired. #3 had the encoder wire on the 3V3 pad, then lost pads during
+      handling after its hot glue was removed for rework. #4 is node 26.
 - [x] Harness scan: `firmware/sensor-01/main/bench_selftest.cpp` logs every
       pin's electrical state at boot in the bench profile. Read it first
       after any wiring change; all six outputs must say "follows the driver"

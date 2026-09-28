@@ -8,10 +8,10 @@ Each follows the viewer's light/dark theme.
 |---|---|
 | [bench-rig.html](bench-rig.html) | Breadboard wiring for the second bench step: XIAO + Grove SHT40 + ePaper driver board + panel, with the full jumper table |
 | [battery-divider.html](battery-divider.html) | Step 3: the LiPo on the XIAO's underside pads and the 2×1M + 100nF ADC divider — schematic, connection table, and the polarity warning |
-| [encoder-led.html](encoder-led.html) | Step 4: the EC11 rotary encoder and status LED — including the push-switch lead that has to be soldered to an underside pad |
-| [internals.html](internals.html) | How the parts sit inside the enclosure — plan view and side elevation, dimensioned from the STLs |
+| [encoder-led.html](encoder-led.html) | Step 4: the EC11 rotary encoder and status LED. **Stale since 2026-09-23:** it draws encoder A on D9 and the push switch on the MTCK pad; as built, A is on the MTCK pad and the switch on D9 ([../assembly.md](../assembly.md)) |
+| [internals.html](internals.html) | How the parts sit inside the enclosure — plan view and side elevation, dimensioned from the STLs. **Does not match the parts:** the 2000 mAh cell and the stacked header height do not fit the printed case; redesign pending |
 | [bringup-ladder.html](bringup-ladder.html) | The no-solder connectivity procedure: one thing added per rung, using only internal pull resistors and the ADC |
-| [bench-verify.html](bench-verify.html) | Current bench state (2026-09-12): every wire drawn on the breadboard by node, with the meter reading each node must give with the PPK2 as the battery. Pins from `app_config.h`, which is what is flashed — `assembly.md` steps 1–3 are stale |
+| [bench-verify.html](bench-verify.html) | Bench state as of 2026-09-12 (encoder pins since moved): every wire drawn on the breadboard by node, with the meter reading each node must give with the PPK2 as the battery. Pins from `app_config.h`, which is what is flashed — `assembly.md` steps 1–3 are stale |
 
 ## These are dated snapshots, not current state
 

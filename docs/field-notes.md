@@ -1152,3 +1152,81 @@ What that looks like from this project's side:
   powered it attached, registered and was re-interviewed by matter-server
   within two minutes, `RebootCount` +1.
 
+## 25. Three faults, none where the symptoms pointed
+
+**When:** 2026-09-24 → 2026-09-28, XIAO #3 then #4.
+
+The dial did nothing on a freshly soldered XIAO. Four days of symptoms:
+D6 at 0 V with nothing attached, every encoder wire reading open, the board
+vanishing from USB whenever the knob turned, the press never registering.
+The causes, in the order they were found:
+
+| Symptom | Cause | How it was found |
+|---|---|---|
+| 0 V on D6, D5, the 3V3 pin and the 5V pin; no beep on any encoder wire | **meter probe lead loose in its jack** | the 5V pin read 0 V while the board was enumerated on USB, which no board fault can produce |
+| board drops off USB on the first detent; encoder A never changes in the log | **encoder wire soldered to the 3V3 pad, which sits beside MTCK** | MTCK wire beeped to the 3V3 header pin |
+| press never registers | **wire loose in the D9 breadboard row** | found by hand after rotation worked |
+
+Wrong turns on the way, each of which was written up as a conclusion before
+it was tested:
+
+- **Flux residue on D6.** The 0 V readings matched §17 exactly (0 V under
+  bias, open unpowered), and a pin swap in firmware was planned around a
+  "dead" GPIO16. The flux was a no-clean pen and the pin was fine: 3.27 V
+  once the meter worked.
+- **Encoder wires not reaching their pins.** Both beep tests "failed" on
+  wires that were connected. A loose probe cannot beep.
+- **MTCK bridged to BAT+.** Proposed from the board dying when contact A
+  closed. One voltage reading (3.26 V on the wire, 4.04 V on BAT+) killed it.
+- **Wire tugging.** The reset followed the knob, so handling was blamed. The
+  log showed the last line before the drop was the first contact closure.
+
+What decided it each time was a measurement that could only come out one way:
+
+- **A reading the fault cannot explain identifies the instrument.** A board
+  that is enumerated on USB has 5 V on its 5V pin. Check the meter against a
+  known source before believing a run of zeros.
+- **The chip's own reads stayed right throughout.** `encoder raw` lines and
+  the harness verdicts come from the pins, not the meter. When the two
+  disagree about a powered board, the firmware is the better witness.
+- **The harness said `held HIGH` for GPIO6 on the miswired board.** The probe
+  applies a pull-down, so a free pad is expected to follow it. The note in
+  `bench_selftest.cpp` explained the reading away as the JTAG pull-up. What a
+  correctly wired MTCK reads is not recorded, so this stays a hint, not a
+  verdict; turning the knob is the test.
+- **Isolate by removing the other signal.** With B pulled from its row and
+  only A connected, the first detent still killed the board and no line
+  reached the log. That put the fault on A with nothing inferred.
+- **An ePaper panel is not a liveness signal.** It kept its image through
+  every power loss. The COM port was the only indicator.
+
+Process changes, now in [assembly.md](assembly.md):
+
+- Test before glue. The glue hid which pad each wire was on, and XIAO #3
+  lost its pads in the handling that followed the glue's removal.
+- Identify pads by exclusion, unpowered: beep each signal wire against 3V3,
+  5V and GND, and against GND with the B and R buttons held (BOOT and EN).
+  What is left can be corrected in `app_config.h`.
+- Prove them powered: the battery reading proves MTMS and BAT+, three
+  detents each way prove MTCK.
+
+## 26. An unpaired unit does not sleep
+
+**When:** 2026-09-28, XIAO #4, shipping image, PPK2 3700 mV, USB out.
+
+Before commissioning: **28.1 mA average** over 10 s, baseline 20–40 mA,
+~200 mA spikes every 0.5 s, matching the 500 ms advertisement interval the
+firmware logs after its first 30 s. `CONFIG_PM_ENABLE` and
+`CONFIG_BT_LE_SLEEP_ENABLE` are both set, so the build is able to sleep; why
+it does not while advertising is not traced. Three minutes after
+commissioning, same unit, same source: 91 µA over a quiet 10 s.
+
+Two consequences:
+
+- A dial test on an unpaired unit proves the wiring and nothing about wake
+  from sleep. The first "works on battery" result was exactly that and was
+  withdrawn. The valid test is a detent on a paired, settled unit, with the
+  trace showing a flat baseline before and after
+  ([bringup.md](bringup.md), Encoder & LED).
+- At 28 mA a 2000 mAh cell lasts about three days. Pair a unit before it
+  goes on a cell.

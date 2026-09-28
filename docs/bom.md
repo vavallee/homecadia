@@ -9,7 +9,7 @@ are in [bringup.md](bringup.md).
 
 | Part | Spec / SKU | Qty per unit | Vendor | Order status | Price paid |
 |---|---|---|---|---|---|
-| Seeed XIAO ESP32-C6 | MCU, Thread radio, LiPo charge IC on underside pads | 1 | — | **3 in hand, confirmed 2026-08-13** | — |
+| Seeed XIAO ESP32-C6 | MCU, Thread radio, LiPo charge IC on underside pads | 1 | — | **3 in hand, confirmed 2026-08-13**; four consumed by 2026-09-28 (one dead, two with lifted underside pads, one in service — [bringup.md](bringup.md)). Budget spares: the underside pads do not survive rework | — |
 | Seeed ePaper Driver Board for XIAO V2 | SKU 114993558; 24-pin FPC, SPI; battery JST + power switch (JST **not** used — see notes) | 1 | Seeed | **delivered 2026-08-17**, 3/3 | US$5.90 ea / 17.70 |
 | Seeed 2.9" mono ePaper 296×128 | SKU 104990853; SSD1680-class; partial refresh + panel deep sleep | 1 | Seeed | **delivered 2026-08-17**, 3/3 — marking `029BN-T94-D2` = Good Display GDEY029T94, SSD1680 controller, **verified 2026-08-22**. ⚠️ 2 of 3 killed during bring-up; reorder | US$9.95 ea / 29.85 |
 | Grove SHT40 | SKU 101021032; ±0.2 °C, ±1.8 %RH typ (max ±3.5 %); I2C 0x44; Grove cable cut and soldered | 1 | Seeed | **delivered 2026-08-17**, 3/3 | US$5.50 ea / 16.50 |

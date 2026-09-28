@@ -26,12 +26,13 @@ and the reasoning behind each decision.
 > (XIAO, driver board, panel, SHT40, encoder on a breadboard) with a Nordic PPK2
 > standing in for the cell. Verified there: commissioning to Home Assistant over
 > Thread, display output, battery-voltage reading (within 3 mV of a meter,
-> 3.4–4.0 V), and current — 59 µA sleep floor, 238 µA average over a 12.6 h
-> soak. **Not yet done:** a real LiPo, the enclosure, the encoder push switch,
-> and the dial on battery power (it only works on USB; open in
-> [docs/bringup.md](docs/bringup.md)). Code written ahead of hardware is marked
-> `HW-VERIFY` and tracked there. Read this as a build log, not a design to
-> reproduce unmodified.
+> 3.4–4.0 V), current — 59 µA sleep floor, 238 µA average over a 12.6 h
+> soak — and the dial waking the chip from light sleep on battery power
+> (2026-09-28). **Not yet done:** a real LiPo and the enclosure, which is being
+> redesigned. Open rows are in [docs/bringup.md](docs/bringup.md). Code written
+> ahead of hardware is marked `HW-VERIFY` and tracked there. The build
+> procedure, with a test gate after every soldering stage, is
+> [docs/assembly.md](docs/assembly.md).
 
 ## Devices
 
@@ -89,9 +90,9 @@ Firmware capabilities, all implemented in this repo unless noted:
   calibration, and a scale factor fitted against a metered source to correct the
   ADC input loading the 500 kΩ divider. Open-circuit-voltage lookup table for
   percent.
-- **Factory reset** on a 10-second encoder press (code done; the push switch is
-  not wired yet); commissioning and low-battery states shown on a single LED and
-  on the display.
+- **Factory reset** on a 10-second encoder press (turn first: the switch is on
+  a pin that cannot wake the chip); commissioning and low-battery states shown
+  on a single LED and on the display.
 - **CI** builds the flashable images on every push touching `firmware/**` and
   uploads them as an artifact.
 
@@ -198,7 +199,7 @@ pay for them twice. Full list in
 | 1 | Repo scaffold, docs, CI compiling an esp-matter skeleton for esp32c6 | done |
 | 2 | Matter temp/humidity over Thread, commissions to HA (TinyENV parity) | **done 2026-08-23** — commissioned to HA over ZBT-2 OTBR, readings live in HA; see `docs/field-notes.md` for the preconditions |
 | 3 | Display driver, view 1 rendering readings, measured refresh cost | display verified on hardware 2026-08-22 (full 1.79s / partial 0.54s BUSY); refresh charge cost still unmeasured |
-| 4 | Encoder, views, settings, wake behavior | works on USB power; **the dial does not wake the chip on battery** (edge interrupts cannot wake light sleep) — open |
+| 4 | Encoder, views, settings, wake behavior | **done 2026-09-28** — a detent wakes the chip from light sleep on battery (encoder A on the MTCK pad); the push switch registers within 2 s of a turn |
 | 5 | ICD tuning, battery reporting, power budget with measured numbers | **done 2026-09-22** — 238 µA average over 12.6 h (budget ≤300 µA), battery voltage within 3 mV; see `docs/power-budget.md` |
 | 6 | Factory reset, low-battery behavior, assembly guide final, v1.0.0 | factory reset + LED + low-bat display done; rest awaits hardware |
 
