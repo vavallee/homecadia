@@ -146,6 +146,7 @@ will show an uncertified-device warning. Per-device factory partitions
 | [docs/commissioning.md](docs/commissioning.md) | Pairing to Home Assistant: the three preconditions, the BLE-proxy workaround, factory reset. Apple Home is not available here and the doc says why |
 | [docs/field-notes.md](docs/field-notes.md) | **Traps that cost real time during bring-up**, ordered by cost. Read before bringing up another unit |
 | [docs/power-budget.md](docs/power-budget.md) | Modeled current draw, battery-life calculator, the policies it forced |
+| [docs/battery-runbook.md](docs/battery-runbook.md) | Why a pack reads 0 V or a unit resets on battery: protection-board causes, look-alikes, and the test order |
 | [docs/bringup.md](docs/bringup.md) | Hardware verification checklist — every `HW-VERIFY` marker has a row |
 | [docs/diagrams/](docs/diagrams/) | Bench wiring, battery/divider schematic, enclosure internals and the no-solder bring-up ladder (self-contained HTML) |
 | [docs/infrastructure.md](docs/infrastructure.md) | Network-side hardware: ZBT-2 border router, Thread coverage, Voice PE, order status |

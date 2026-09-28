@@ -47,6 +47,7 @@ Reversed polarity destroys the XIAO's charge circuit instantly.
    claim did not hold).
 4. A protected cell that reads 0 V is usually latched, not dead: probe the
    metal contact (not the housing) and test by whether it accepts charge.
+   Causes and the test order are in [battery-runbook.md](battery-runbook.md).
 
 ## Wiring, as built on node 26
 
@@ -194,6 +195,7 @@ cell or the stacked header height
 | Cell reads 0 V | protection latched, or the probe is on the housing |
 | Console silent after a flash, port present | board left in download mode or wedged by the reset pulse: replug USB |
 | 28 mA average on battery | unit is unpaired |
+| Healthy cell, unit resets continuously on it, LED flickers faintly | resistance in the battery path: [battery-runbook.md](battery-runbook.md) B3 |
 
 ### FPC orientation: go by insertion force, not by which way the copper faces
 
