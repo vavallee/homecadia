@@ -318,7 +318,9 @@ Blocker: **2 of 3 panels are gone and there is no spare.** Reorder Seeed SKU
 - [x] **Push switch on D9/GPIO20 — verified 2026-09-28** on USB, bench
       image, XIAO #4: `on_push` logged per press. D9 is an HP pin, so a press
       registers only while the chip is awake: turn first, then press within
-      2 s. Press-within-the-window on battery is not yet tested.
+      2 s. **On battery 2026-09-28** (node 26, PPK2 3700 mV, USB out, paired):
+      turned to SETTINGS, pressed inside the window, the menu opened and both
+      items (poll interval, units) could be selected and edited.
 - [x] **XIAO inventory — 2026-09-28.** #1 dead (source-meter injection,
       field-notes.md §18). #2 lost the MTDI, MTDO and MTCK pads; node 25,
       retired. #3 had the encoder wire on the 3V3 pad, then lost pads during
