@@ -14,18 +14,23 @@ are in [bringup.md](bringup.md).
 | Seeed 2.9" mono ePaper 296×128 | SKU 104990853; SSD1680-class; partial refresh + panel deep sleep | 1 | Seeed | **delivered 2026-08-17**, 3/3 — marking `029BN-T94-D2` = Good Display GDEY029T94, SSD1680 controller, **verified 2026-08-22**. ⚠️ 2 of 3 killed during bring-up; reorder | US$9.95 ea / 29.85 |
 | Grove SHT40 | SKU 101021032; ±0.2 °C, ±1.8 %RH typ (max ±3.5 %); I2C 0x44; Grove cable cut and soldered | 1 | Seeed | **delivered 2026-08-17**, 3/3 | US$5.50 ea / 16.50 |
 | JST 2-pin power connector | SKU 321050009 | 1 | Seeed | **delivered 2026-08-17**, 20/20 | US$0.05 ea / 1.00 |
-| EEMB 2000mAh 3.7V LiPo | LP103454; finished size **56 × 34.5 × 10.6mm** — drove the rev 2 case stretch ([hardware/case](../hardware/case/README.md)); JST 2.0mm lead, cut it off; ⚠️ polarity | 1 | Amazon.ca | **delivered 2026-08-12**, qty 3 | |
-| Perfboard | Chanzon 34pcs double-sided FR4, 5 sizes | 1 | Amazon.ca | arriving 19–28 Aug | 22.79 (kit) |
+| EEMB 2000mAh 3.7V LiPo | LP103454; finished size **56 × 34.5 × 10.6mm** — drove the rev 2 case stretch ([hardware/case](../hardware/case/README.md)); JST 2.0mm lead, cut it off; ⚠️ polarity | 1 | Amazon.ca | **delivered 2026-08-12**, qty 3 | 29.29 ea / 87.87 |
+| Perfboard | Chanzon 34pcs double-sided FR4, 5 sizes | 1 | Amazon.ca | **delivered 2026-08-18** | 22.79 (kit) |
 | Capacitor 100nF | Chanzon 50pcs, 104M disc ceramic, 1000V, through-hole. Voltage rating is overkill but harmless; ±20% is fine for an ADC hold cap | 1 | Amazon.ca | **delivered 2026-08-11** | 29.05 (kit, with resistors) |
 | Resistor 1MΩ | ALLECIN 1/4W 1% metal film, 25 values 1Ω–1MΩ — 1MΩ is the top value | 2 | Amazon.ca | **delivered 2026-08-11** | (same order as above) |
-| USB-C female panel-mount pigtail | Gebildet 10pcs, 2-pin 24AWG, 3A, waterproof. **M11×2.3 nut, needs a Ø12mm hole — case hole is Ø12.8mm, so it fits** with ~0.8mm slop. Charging via USB **A-to-C only** (no CC resistors) | 1 | Amazon.ca | **delivered 2026-08-11**, 10pcs | 14.99 (10pcs) |
-| 3mm LED | Chanzon 60pcs assortment, diffused, 3V 20mA; needs a series resistor from the kit above | 1 | Amazon.ca | **in hand**, on the bench since 2026-08-25 | 9.11 (kit) |
+| USB-C female panel-mount pigtail | Gebildet 10pcs, 2-pin 24AWG, 3A, waterproof. **M11×2.3 nut, needs a Ø12mm hole — case hole is Ø12.8mm, so it fits** with ~0.8mm slop. Charging via USB **A-to-C only** (no CC resistors) | 1 | Amazon.ca | **delivered 2026-08-13**, 10pcs | 14.99 (10pcs) |
+| 3mm LED | Chanzon 60pcs assortment, diffused, 3V 20mA; needs a series resistor from the kit above | 1 | Amazon.ca | **delivered 2026-08-18**; on the bench since 2026-08-25 | 9.11 (kit) |
 | M2 self-tapping screw kit | 800pcs stainless, cross-drive pan head | ~4 | Amazon.ca | **delivered 2026-08-12** | 23.44 (kit) |
 | Bourns PEC11R-4220F-S0024 | EC11 rotary encoder, 20mm flatted D-shaft, push switch, 24 detents; DK part PEC11R-4220F-S0024-ND | 1 | Digi-Key CA | **delivered 2026-08-12**, qty 3; DDP Timberlea NS | 4.27 ea / 12.81 (+15.00 ship +3.89 HST = **31.70**) |
 
 Seeed line total **US$65.05** (4 lines above, shipping not shown on the order
-page). Amazon.ca lines visible above total **CAD 99.38**, plus the battery
-order (price not captured). The earlier CAD 125–155 estimate for Seeed was high.
+page). Amazon.ca orders of 2026-08-08, checked against the order pages
+2026-09-28: five parts orders at **CAD 99.38** (22.79 + 29.05 + 14.99 + 9.11 +
+23.44) plus the three cells at **CAD 87.87**, **CAD 187.25** in all. A sixth
+order, 120 Ω resistors, was cancelled by the seller and never charged; the LED
+series resistor comes from the ALLECIN kit. The bench order of 2026-09-12 (wire,
+flux pens, breadboard) added **CAD 66.44**. The earlier CAD 125–155 estimate
+for Seeed was high.
 
 ## Still to order
 
