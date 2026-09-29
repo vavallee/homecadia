@@ -28,8 +28,9 @@ and the reasoning behind each decision.
 > Thread, display output, battery-voltage reading (within 3 mV of a meter,
 > 3.4–4.0 V), current — 59 µA sleep floor, 238 µA average over a 12.6 h
 > soak — and the dial waking the chip from light sleep on battery power
-> (2026-09-28). **Not yet done:** a real LiPo and the enclosure, which is being
-> redesigned. Open rows are in [docs/bringup.md](docs/bringup.md). Code written
+> (2026-09-28). It has since run 21 h on a real LiPo with no restart
+> (2026-09-29). **Not yet done:** a long battery soak, and the enclosure, which
+> is being redesigned. Open rows are in [docs/bringup.md](docs/bringup.md). Code written
 > ahead of hardware is marked `HW-VERIFY` and tracked there. The build
 > procedure, with a test gate after every soldering stage, is
 > [docs/assembly.md](docs/assembly.md).

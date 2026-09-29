@@ -74,6 +74,21 @@ Bench wiring diagrams and the no-solder connectivity procedure live in
       light sleep, not deep sleep, and GPIO6 carries encoder A, not the
       switch. A detent wakes the chip: see "Dial works on battery" under
       Encoder & LED.
+- [x] **Runs on a real cell — 2026-09-28/29, 21 h soak.** Node 26 (XIAO #4,
+      shipping image, paired) on an EEMB LP103454 through the BAT pads, USB
+      out. 2026-09-28 16:33: 3978 mV / 82 %, `RebootCount` 504. 2026-09-29
+      13:42: **3978 mV / 82 %, `RebootCount` 504**, available throughout; the
+      matter server logged no availability change, timeout or unresponsive
+      peer for the node in those 21 h. The voltage is re-measured with every
+      report (`sensor_loop.cpp`), and temperature and humidity moved in the
+      same reports, so the reading is live. It agrees with the DIAG view
+      (3.98 V) and a meter (3.97 V). What it shows: no heavy drain (28 mA
+      would have taken ~590 mAh, about 30 %). What it cannot show: the
+      238 µA figure itself, which predicts ~5 mAh (0.25 %) in 21 h, inside
+      the reading's resolution. A week-long read is the test for that. The
+      battery path is still through breadboard contacts, which caused a
+      reset loop before the soak ([battery-runbook.md](battery-runbook.md)
+      B3).
 - [x] **Unpaired current — measured 2026-09-28: 28.1 mA average.** Shipping
       image on XIAO #4 before commissioning, PPK2 3700 mV, 10 s window:
       baseline 20–40 mA, ~200 mA spikes every 0.5 s (the 500 ms pairing

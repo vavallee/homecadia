@@ -92,3 +92,4 @@ the cell's own lead.
 | 2026-09-09 | #1 | same, after three days at ~41 mA | recovered to 3.97 V; read 0 V for hours while taking 106 mA |
 | 2026-09-28 | — | read 0 V before first connection to XIAO #4 | 3.97 V after about half an hour on the charger; cause not determined |
 | 2026-09-28 | same | unit reset ~84 times on the cell, then ~416 times with USB out | steady after the BAT+ joint was re-seated; DIAG 3.98 V / 82 %, controller 3978 mV at 16:33 |
+| 2026-09-29 | same | 21 h on the cell, paired, USB out | 3978 mV, no restart (`RebootCount` 504 at both ends) |
