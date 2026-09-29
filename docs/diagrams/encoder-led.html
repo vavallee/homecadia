@@ -174,8 +174,8 @@
   <p>Step 4 adds the two input/output parts the enclosure needs: the EC11
   rotary encoder that drives the three display views, and the status LED.
   Four wires, one resistor, and one joint that <strong>cannot be
-  breadboarded</strong> — the encoder's push switch lives on an underside pad,
-  not on the header.</p>
+  breadboarded</strong> — encoder A lives on an underside pad, not on the
+  header, because only that pad can wake the chip from sleep.</p>
 </header>
 
 <section>
@@ -194,8 +194,14 @@
 </section>
 
 <section>
-  <p><strong>Pin assignment changed 2026-08-25/26, drawing updated to match:</strong>
-  encoder A → <code>D9</code>, encoder B → <code>D6</code>, LED → <code>D7</code>.
+  <p><strong>Pin assignment changed 2026-09-23, drawing updated 2026-09-28 to
+  match the unit as built (node 26):</strong> encoder A → <code>MTCK</code>
+  underside pad, push switch → <code>D9</code>. Encoder A moved because only LP
+  GPIOs 0–7 can wake light sleep, and the header's three belong to the
+  display. <strong>The 3V3 pad sits beside MTCK:</strong> prove the wire with
+  the tests in <a href="../assembly.md">assembly.md</a> before gluing.</p>
+  <p><strong>Earlier change, 2026-08-25/26:</strong>
+  encoder B → <code>D6</code>, LED → <code>D7</code>.
   D7 was the original encoder-A pin; on both driver boards it reads 0 V once the
   SPI bus is up (unexplained — field-notes §16), so the LED, an output, took it
   and the encoder input moved to D6. A and B are then chosen so clockwise
@@ -208,7 +214,7 @@
   <h2>Layout</h2>
   <figure>
     <svg viewBox="0 0 1000 640" role="img"
-         aria-label="Wiring diagram. The XIAO ESP32-C6 sits in a breadboard. Four connections are added. Encoder terminal A goes to XIAO pin D9. Encoder terminal B goes to pin D6. The encoder common terminal C goes to the breadboard ground rail. One of the two push-switch terminals goes to the ground rail and the other is soldered by flying lead to the MTCK slash GPIO6 pad on the XIAO's underside, because that signal is not brought out to the header. Separately, pin D7 drives a series resistor into the LED anode, and the LED cathode returns to ground. No external pull-up resistors or debounce capacitors are fitted; the firmware supplies both.">
+         aria-label="Wiring diagram. The XIAO ESP32-C6 sits in a breadboard. Four connections are added. Encoder terminal A is soldered by flying lead to the MTCK slash GPIO6 pad on the XIAO's underside, because that signal is not brought out to the header. Encoder terminal B goes to pin D6. The encoder common terminal C goes to the breadboard ground rail. One of the two push-switch terminals goes to the ground rail and the other goes to XIAO pin D9. Separately, pin D7 drives a series resistor into the LED anode, and the LED cathode returns to ground. No external pull-up resistors or debounce capacitors are fitted; the firmware supplies both.">
       <style>
         .lbl2 { fill: var(--ink); font: 600 12px system-ui, sans-serif; }
         .part2 { fill: var(--surface); stroke: var(--ink); stroke-width: 2; }
@@ -230,9 +236,9 @@
         <!-- XIAO GND to rail -->
         <polyline points="602,338 602,180 476,180" class="casing"/>
         <polyline points="602,338 602,180 476,180" class="core w-black"/>
-        <!-- D9 -> encoder A -->
-        <polyline points="476,240 650,240 650,150 696,150" class="casing"/>
-        <polyline points="476,240 650,240 650,150 696,150" class="core w-sig"/>
+        <!-- D9 -> switch pin 1 (over the top of the encoder) -->
+        <polyline points="476,240 650,240 650,92 966,92 966,170 904,170" class="casing"/>
+        <polyline points="476,240 650,240 650,92 966,92 966,170 904,170" class="core w-sig"/>
         <!-- D6 -> encoder B (left-side pin, routed over the top) -->
         <polyline points="394,280 300,280 300,120 630,120 630,230 696,230" class="casing"/>
         <polyline points="394,280 300,280 300,120 630,120 630,230 696,230" class="core w-purple"/>
@@ -242,9 +248,9 @@
         <!-- switch pin 2 -> rail -->
         <polyline points="904,250 950,250 950,370 600,370 600,338" class="casing"/>
         <polyline points="904,250 950,250 950,370 600,370 600,338" class="core w-black"/>
-        <!-- switch pin 1 -> TP6 flying lead -->
-        <polyline points="904,170 966,170 966,392 470,392 470,440" class="casing"/>
-        <polyline points="904,170 966,170 966,392 470,392 470,440" class="core w-green"/>
+        <!-- encoder A -> TP6 flying lead -->
+        <polyline points="696,150 660,150 660,392 470,392 470,440" class="casing"/>
+        <polyline points="696,150 660,150 660,392 470,392 470,440" class="core w-green"/>
         <!-- D7 -> resistor -->
         <polyline points="476,280 610,280 610,415 740,415 740,430" class="casing"/>
         <polyline points="476,280 610,280 610,415 740,415 740,430" class="core w-yellow"/>
@@ -297,7 +303,7 @@
         <circle cx="904" cy="250" r="3.6" class="pin-dot used"/><text x="892" y="254" font-weight="700">SW 2</text>
       </g>
       <text x="800" y="112" text-anchor="middle" class="svg-ink" font-size="12" font-weight="600">Bourns PEC11R-4220F-S0024</text>
-      <text x="800" y="318" text-anchor="middle" class="svg-soft" font-size="10">A/C/B on one face, switch on the other · SW is not polarised</text>
+      <text x="700" y="318" class="svg-soft" font-size="10">switch face is opposite A/C/B · SW is not polarised</text>
 
       <!-- LED branch -->
       <rect x="726" y="430" width="28" height="52" rx="3" class="part2"/>
@@ -331,29 +337,29 @@
         <text x="470" y="534" fill="var(--accent)" font-weight="700">MTCK/6</text>
         <text x="562" y="534">MTDO/7</text>
       </g>
-      <text x="408" y="552" text-anchor="middle" class="svg-soft" font-size="9.5">already used —</text>
-      <text x="408" y="564" text-anchor="middle" class="svg-soft" font-size="9.5">step 3 divider</text>
-      <text x="470" y="558" text-anchor="middle" fill="var(--accent)" font-size="9.5" font-weight="700">encoder push</text>
+      <text x="316" y="552" text-anchor="middle" class="svg-soft" font-size="9.5">already used —</text>
+      <text x="316" y="564" text-anchor="middle" class="svg-soft" font-size="9.5">step 3 divider</text>
+      <text x="470" y="558" text-anchor="middle" fill="var(--accent)" font-size="9.5" font-weight="700">encoder A</text>
 
       <!-- wire tags -->
       <g class="wire-tag svg-soft">
         <text x="508" y="176">GND → − rail</text>
         <text x="546" y="276" fill="var(--wire-yellow)">D7 → R3 ↘</text>
-        <text x="546" y="234" fill="var(--wire-signal)">D9 → A ↗</text>
+        <text x="546" y="234" fill="var(--wire-signal)">D9 → SW 1 ↗</text>
         <text x="310" y="116" fill="var(--wire-purple)">D6 → B →</text>
         <text x="668" y="322" text-anchor="end">C → − rail</text>
         <text x="820" y="364">SW 2 → − rail</text>
-        <text x="700" y="386" text-anchor="end" fill="var(--wire-green)">SW 1 → TP6 flying lead (soldered)</text>
+        <text x="478" y="408" fill="var(--wire-green)">A → TP6 (soldered)</text>
         <text x="800" y="594">LED cathode → shared ground</text>
       </g>
     </svg>
     <figcaption>Colours here only make each run traceable in the drawing — use
     whatever jumpers you have. Three of the four encoder runs are ordinary
     breadboard jumpers into the rows the XIAO's <code>D9</code>,
-    <code>D6</code> and ground pins land in. The fourth is not: the push switch
+    <code>D6</code> and ground pins land in. The fourth is not: encoder A
     goes to <strong>GPIO6</strong>, which the XIAO brings out only on the
     <code>MTCK</code> pad underneath the board, so it needs a soldered flying
-    lead. The encoder's A/C/B face and its switch face are on opposite sides of
+    lead. Where two runs cross in the drawing they do not join. The encoder's A/C/B face and its switch face are on opposite sides of
     the body; the switch pair is not polarised, so SW&nbsp;1 and SW&nbsp;2 are
     interchangeable. The LED <em>is</em> polarised — long leg to the resistor,
     short leg (flat rim on the plastic) to ground.</figcaption>
@@ -367,14 +373,14 @@
     <thead><tr><th>From</th><th>XIAO pin</th><th>GPIO</th><th>To</th><th>Notes</th></tr></thead>
     <tbody>
       <tr>
-        <td><span class="swatch" style="background:var(--wire-signal)"></span>Encoder A</td>
-        <td class="pin">D9</td><td class="pin">20</td><td class="pin">header</td>
-        <td>Input, internal pull-up, any-edge interrupt (<code>ec11.c:70-75</code>). Not an LP pad — cannot wake from deep sleep.</td>
+        <td><span class="swatch" style="background:var(--wire-green)"></span>Encoder A</td>
+        <td class="pin">MTCK pad</td><td class="pin">6</td><td class="pin"><strong>solder</strong></td>
+        <td><strong>Not on the header.</strong> Underside pad TP6, an LP GPIO. Input, internal pull-up, any-edge interrupt, and a level wake armed for the state it is not in (<code>ec11.c</code>, <code>arm_wake()</code>). A detent wakes light sleep: verified on battery 2026-09-28.</td>
       </tr>
       <tr>
         <td><span class="swatch" style="background:var(--wire-purple)"></span>Encoder B</td>
         <td class="pin">D6</td><td class="pin">16</td><td class="pin">header</td>
-        <td>Same configuration. A/B assignment verified on the bench 2026-08-26: clockwise advances the view. (With A on D6 it read backwards, so the two were swapped in firmware, not on the board.)</td>
+        <td>Input, internal pull-up, any-edge interrupt; decoded in the 2 s awake window after A wakes the chip. A/B assignment verified on the bench 2026-08-26: clockwise advances the view. (With A on D6 it read backwards, so the two were swapped in firmware, not on the board.)</td>
       </tr>
       <tr>
         <td><span class="swatch" style="background:var(--wire-black-core)"></span>Encoder C (common)</td>
@@ -382,9 +388,9 @@
         <td>The middle terminal of the three-pin face. Both A and B switch against it.</td>
       </tr>
       <tr>
-        <td><span class="swatch" style="background:var(--wire-green)"></span>Encoder SW 1</td>
-        <td class="pin">MTCK pad</td><td class="pin">6</td><td class="pin"><strong>solder</strong></td>
-        <td><strong>Not on the header.</strong> Underside pad TP6. Configured active-low with an internal pull-up and registered as an <code>ext1</code> ANY_LOW wake source (<code>button_gpio.c:131-155</code>).</td>
+        <td><span class="swatch" style="background:var(--wire-signal)"></span>Encoder SW 1</td>
+        <td class="pin">D9</td><td class="pin">20</td><td class="pin">header</td>
+        <td>Active-low with an internal pull-up, level interrupt, 20 ms debounce (<code>ui.cpp</code>, <code>sw_task()</code>). Not an LP pad, so it cannot wake the chip: turn first, then press within 2 s.</td>
       </tr>
       <tr>
         <td><span class="swatch" style="background:var(--wire-black-core)"></span>Encoder SW 2</td>
@@ -405,10 +411,10 @@
   </table>
   </div>
   <div class="warn"><strong>This wiring is bench-only.</strong> In the
-  assembled unit the encoder does not connect to the XIAO header at all — the
-  ePaper driver board breaks out <code>D4</code>–<code>D7</code> and
-  <code>D9</code> as its own through-holes, and A/B solder there
-  (<a href="../assembly.md">assembly.md</a>). Only the SW-to-TP6 lead is the
+  assembled unit encoder B and the push switch do not connect to the XIAO
+  header at all — the ePaper driver board breaks out <code>D4</code>–<code>D7</code>
+  and <code>D9</code> as its own through-holes, and they solder there
+  (<a href="../assembly.md">assembly.md</a>). Only the A-to-TP6 lead is the
   same in both builds.</div>
 </section>
 
@@ -493,9 +499,9 @@
 <section>
   <h2>Bring-up rows this closes</h2>
   <ul>
-    <li><code>GPIO6 (MTCK) wakes the C6 from deep sleep on encoder press</code>
-    — needs the TP6 lead in place and a deep-sleep build; the wake source is
-    registered but has never fired on hardware.</li>
+    <li><code>Dial works on battery</code> — closed 2026-09-28: a detent on
+    encoder A (TP6) wakes the chip from light sleep. The earlier
+    deep-sleep-on-press row is superseded.</li>
     <li>Encoder clockwise direction (<code>ec11.h</code> HW-VERIFY).</li>
     <li>Encoder knob bore against the 6&nbsp;mm D-shaft — mechanical, and only
     testable once a printed set exists.</li>

@@ -4,6 +4,17 @@ Remix of [veltoc](https://github.com/danking6/veltoc) 3D models (MIT,
 © 2026 Dan King). `case-back-wallmount.stl` and `case-front.stl` are both
 modified; `insert-tray.stl` and `encoder-knob.stl` print as-is from upstream.
 
+> **⚠️ rev 4 does not fit the parts — found 2026-09-24. Do not print more
+> sets from these files.** Against the STL geometry, the 2000 mAh cell
+> (56 × 34.5 × 10.6 mm) does not fit the cavity with the tray and driver board
+> in place; the free bay at the left end is about 35 × 48 × 17 mm and the USB
+> port falls inside it. Against the printed parts in hand: the panel and the
+> tray fit; the driver board does not seat, because the header sockets soldered
+> to it are taller than the back allows. The "2.1 mm clearance" below counts
+> length only and did not account for the stack height. A deeper back is the
+> expected fix; it waits on caliper measurements of the real parts
+> ([docs/bringup.md](../../docs/bringup.md), Case & mechanical).
+>
 > **rev 2 — lengthened 7 mm for the 2000 mAh cell.** Upstream is built around a
 > 1400 mAh cell (EEMB 112945, 45 mm long). Our BOM specifies a 2000 mAh EEMB
 > LP103454, whose finished size is **56 × 34.5 × 10.6 mm** — 11 mm longer. The

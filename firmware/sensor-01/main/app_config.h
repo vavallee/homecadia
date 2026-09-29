@@ -38,8 +38,8 @@
 // LED (commissioning state + low battery only)
 #define LED_PIN            17   // D7 — an output; does not care what its neighbour does
 
-// Battery divider 2x1M + 100nF on MTDI underside pad (NOT A0 — see docs/pinmap.md;
-// schematic-verified: no divider is populated on the board). GPIO5 is in Seeed's
+// Battery divider 2x1M + 100nF on MTMS underside pad (NOT A0 — see docs/pinmap.md;
+// schematic-verified: no divider is populated on the board). GPIO4 is in Seeed's
 // "avoid" list (strapping/JTAG) — see the strapping caveat in docs/pinmap.md.
 #define VBAT_ADC_GPIO      4    // MTMS, ADC1_CH4 -- see pinmap.md; GPIO5/MTDI is
                                 //   equivalent (both strap only SDIO clock edge, unused here)

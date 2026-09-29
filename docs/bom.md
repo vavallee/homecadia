@@ -9,7 +9,7 @@ are in [bringup.md](bringup.md).
 
 | Part | Spec / SKU | Qty per unit | Vendor | Order status | Price paid |
 |---|---|---|---|---|---|
-| Seeed XIAO ESP32-C6 | MCU, Thread radio, LiPo charge IC on underside pads | 1 | — | **3 in hand, confirmed 2026-08-13**; four consumed by 2026-09-28 (one dead, two with lifted underside pads, one in service — [bringup.md](bringup.md)). Budget spares: the underside pads do not survive rework | — |
+| Seeed XIAO ESP32-C6 | MCU, Thread radio, LiPo charge IC on underside pads | 1 | — | **3 in hand, confirmed 2026-08-13**; more bought since. As of 2026-09-28: four consumed (one dead, two with lifted underside pads, one in service as node 26 — [bringup.md](bringup.md)) and **4 unused in hand**. Budget spares: the underside pads do not survive rework | — |
 | Seeed ePaper Driver Board for XIAO V2 | SKU 114993558; 24-pin FPC, SPI; battery JST + power switch (JST **not** used — see notes) | 1 | Seeed | **delivered 2026-08-17**, 3/3 | US$5.90 ea / 17.70 |
 | Seeed 2.9" mono ePaper 296×128 | SKU 104990853; SSD1680-class; partial refresh + panel deep sleep | 1 | Seeed | **delivered 2026-08-17**, 3/3 — marking `029BN-T94-D2` = Good Display GDEY029T94, SSD1680 controller, **verified 2026-08-22**. ⚠️ 2 of 3 killed during bring-up; reorder | US$9.95 ea / 29.85 |
 | Grove SHT40 | SKU 101021032; ±0.2 °C, ±1.8 %RH typ (max ±3.5 %); I2C 0x44; Grove cable cut and soldered | 1 | Seeed | **delivered 2026-08-17**, 3/3 | US$5.50 ea / 16.50 |
@@ -19,7 +19,7 @@ are in [bringup.md](bringup.md).
 | Capacitor 100nF | Chanzon 50pcs, 104M disc ceramic, 1000V, through-hole. Voltage rating is overkill but harmless; ±20% is fine for an ADC hold cap | 1 | Amazon.ca | **delivered 2026-08-11** | 29.05 (kit, with resistors) |
 | Resistor 1MΩ | ALLECIN 1/4W 1% metal film, 25 values 1Ω–1MΩ — 1MΩ is the top value | 2 | Amazon.ca | **delivered 2026-08-11** | (same order as above) |
 | USB-C female panel-mount pigtail | Gebildet 10pcs, 2-pin 24AWG, 3A, waterproof. **M11×2.3 nut, needs a Ø12mm hole — case hole is Ø12.8mm, so it fits** with ~0.8mm slop. Charging via USB **A-to-C only** (no CC resistors) | 1 | Amazon.ca | **delivered 2026-08-11**, 10pcs | 14.99 (10pcs) |
-| 3mm LED | Chanzon 60pcs assortment, diffused, 3V 20mA; needs a series resistor from the kit above | 1 | Amazon.ca | arriving 19–28 Aug | 9.11 (kit) |
+| 3mm LED | Chanzon 60pcs assortment, diffused, 3V 20mA; needs a series resistor from the kit above | 1 | Amazon.ca | **in hand**, on the bench since 2026-08-25 | 9.11 (kit) |
 | M2 self-tapping screw kit | 800pcs stainless, cross-drive pan head | ~4 | Amazon.ca | **delivered 2026-08-12** | 23.44 (kit) |
 | Bourns PEC11R-4220F-S0024 | EC11 rotary encoder, 20mm flatted D-shaft, push switch, 24 detents; DK part PEC11R-4220F-S0024-ND | 1 | Digi-Key CA | **delivered 2026-08-12**, qty 3; DDP Timberlea NS | 4.27 ea / 12.81 (+15.00 ship +3.89 HST = **31.70**) |
 
@@ -34,18 +34,18 @@ order (price not captured). The earlier CAD 125–155 estimate for Seeed was hig
 | Enclosure set | 4 parts, 30.12 cm³/set. **FDM PLA** — teal front, light grey knob, black/dark grey back. Wordmark **laser-engraved after printing**, not printed ([hardware/case](../hardware/case/README.md)). JLC3DP MJF nylon is the fallback; JLC3DP FDM is ruled out by its 30×30×10mm minimum. **Order ONE test set first** | 1 set | EurekaTec.ca / Azata.ca | quotes requested 2026-08-13; EurekaTec replied — moved ABS→PLA to enable engraving, revised STLs + artwork sent 2026-08-13. Awaiting price, lead time, PLA colour for the back, and whether they stock PETG | |
 | #6 pan-head screws + drywall anchors | keyhole wall mounts, **92mm centres** (rev 2), head ≤ Ø8.5×2.4mm | 2 | local | not ordered | |
 | Command Small strips | rail landings on case back | 2 | local | not ordered | |
-| **Female header sockets, 2.54mm** | **2×7 per unit (42 positions for 3 units)** — the ePaper driver board ships with **bare through-holes**; the XIAO cannot seat on it until these are soldered in ([assembly.md](assembly.md)). Buy 40-pin strips and cut | 14 pos | local / Amazon.ca | **not ordered — blocks assembly** | |
-| Solder + flux | 63/37 leaded rosin-core 0.6–0.8mm; rosin flux pen. Wick/braid already ordered | — | local / Amazon.ca | wick ordered; solder + flux TBC | |
-| Hookup wire | 26–28AWG silicone stranded | — | local / Amazon.ca | not ordered | |
+| **Female header sockets, 2.54mm** | **2×7 per unit (42 positions for 3 units)** — the ePaper driver board ships with **bare through-holes**; the XIAO cannot seat on it until these are soldered in ([assembly.md](assembly.md)). Buy 40-pin strips and cut | 14 pos | local / Amazon.ca | **fitted** on the driver boards (confirmed 2026-09-28). Note for the case: the fitted sockets are taller than the printed back allows ([hardware/case](../hardware/case/README.md)) | |
+| Solder + flux | 63/37 leaded rosin-core 0.6–0.8mm. Flux: no-clean rosin flux pens, 3-pack, unbranded Amazon listing ("No Clean Soldering Pen Rosin"); composition not stated on the listing, so **unverified** beyond "no-clean". Wick/braid in hand | — | Amazon.ca | solder in hand; flux pens **delivered 2026-09-15** (order of 2026-09-12) | |
+| Hookup wire, bench | TUOFENG 22 AWG **solid core** tinned copper, PVC, OD 1.60 mm, 6 colours × 30 ft. Right for breadboard rows. **Too stiff for the XIAO underside pads**: a solid 22 AWG lead levers the pad off when it moves ([assembly.md](assembly.md) rule 5) | — | Amazon.ca | **delivered 2026-09-17** (order of 2026-09-12, CAD 66.44 for the whole order, which also holds a BB830 breadboard) | |
+| **Pad wire, 30 AWG** | silicone stranded or Kynar wire-wrap, for the four underside pad leads only | ~0.5 m | local / Amazon.ca | **not ordered** | |
 | Heat shrink | assorted; fallback if the perfboard divider carrier doesn't work out | — | local / Amazon.ca | not ordered | |
 
 The LEDs and resistors were bought from Amazon.ca rather than Digi-Key, so the
 encoder is the sole Digi-Key line and carries the whole $15 freight + HST.
 
-**Every electronic part in this build is now ordered or in hand** — but the
-**female headers are a hard blocker** discovered on hardware 2026-08-17, not a
-consumable: without them the XIAO cannot seat on the driver board and bench
-bring-up cannot proceed past the display.
+**Every electronic part in this build is in hand** except the 30 AWG pad wire
+and the enclosure, which is being redesigned. The female headers, a hard
+blocker when found missing on 2026-08-17, are fitted.
 
 ## ⚠️ Assembly warnings (repeated in [assembly.md](assembly.md))
 
@@ -79,5 +79,5 @@ bring-up cannot proceed past the display.
   ~21µA continuously — about 9% of the ≤300µA average power budget. 1M+1M
   bleeds ~2.1µA. The tradeoff is a high-impedance ADC source, handled with the
   100nF hold cap and a settling delay in firmware. See
-  [power-budget.md](power-budget.md); divider lands on GPIO5/MTDI, not A0
+  [power-budget.md](power-budget.md); divider lands on GPIO4/MTMS, not A0
   ([pinmap.md](pinmap.md)).

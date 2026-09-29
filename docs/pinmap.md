@@ -92,8 +92,8 @@ debug both run over the C6's native USB Serial/JTAG.
 On the XIAO ESP32-C6, **A0 and D0 are the same pin (GPIO0)**, and the ePaper
 driver board uses D0 as the panel reset line. TinyENV reads battery on A0, but
 TinyENV has no display. veltoc (same driver board as us) moved battery sense to
-**A5 = MTDI = GPIO5**, an underside pad with ADC capability (ADC1_CH5). We do
-the same. Sharing GPIO0 between panel RST and the divider was rejected: while
+**A5 = MTDI = GPIO5**, an underside pad with ADC capability (ADC1_CH5). We
+use its neighbour, **MTMS = GPIO4** (ADC1_CH4), for the same reason. Sharing GPIO0 between panel RST and the divider was rejected: while
 the pin is driven as RST the ADC would read the drive level, and leaving it
 floating at the divider's mid-rail voltage (~1.9V) puts the panel's reset input
 in an undefined logic region while the panel is supposed to be sleeping.

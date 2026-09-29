@@ -12,7 +12,7 @@ says otherwise.
   `analogReadMilliVolts(A0)` snippet is shared XIAO boilerplate that assumes
   an onboard divider; the C6 schematic shows none populated
   (schematic-verified in [pinmap.md](pinmap.md)). Any divider is user-added —
-  and on this build it is on GPIO5/MTDI, not A0.
+  and on this build it is on GPIO4/MTMS, not A0.
 - **Seeed's deep-sleep current claims (~15µA) are optimistic** and
   regulator-dependent. Treated as unverified until measured on our stack
   ([bringup.md](bringup.md), [power-budget.md](power-budget.md)).
