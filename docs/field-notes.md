@@ -1223,9 +1223,28 @@ Process changes, now in [assembly.md](assembly.md):
 Before commissioning: **28.1 mA average** over 10 s, baseline 20–40 mA,
 ~200 mA spikes every 0.5 s, matching the 500 ms advertisement interval the
 firmware logs after its first 30 s. `CONFIG_PM_ENABLE` and
-`CONFIG_BT_LE_SLEEP_ENABLE` are both set, so the build is able to sleep; why
-it does not while advertising is not traced. Three minutes after
-commissioning, same unit, same source: 91 µA over a quiet 10 s.
+`CONFIG_BT_LE_SLEEP_ENABLE` are both set, so the build is able to sleep.
+Three minutes after commissioning, same unit, same source: 91 µA over a quiet
+10 s.
+
+**Probable cause, from reading the SDK (2026-09-29); not confirmed on
+hardware.** ESP-IDF's OpenThread port creates a power-management lock named
+`ot_sleep` and takes it at init (`components/openthread/src/port/
+esp_openthread_sleep.c`, `esp_openthread_sleep_init()`). It gives the lock
+back only when the 802.15.4 radio reports the state
+`ESP_IEEE802154_RADIO_SLEEP` (`esp_openthread_sleep_process()`, same file). A
+unit with no Thread network never starts the Thread interface, so nothing
+puts the radio into that state and the lock stays held. Any held lock blocks
+light sleep. Bluetooth is not the cause by this reading: its controller has
+its own lock and releases it between advertisements. No lock in this
+project's own code is tied to pairing state (`battery.cpp`, `ui.cpp` and
+`ec11.c` hold theirs for milliseconds to seconds). To confirm: run the sleep
+diagnostic image (`CONFIG_HOMECADIA_SLEEP_DIAG`) on an unpaired unit and read
+which locks are held.
+
+It also means the 28 mA does not end when the five-minute pairing window
+closes (`k_commissioning_window_timeout`, `app_main.cpp`): advertising stops,
+the lock does not.
 
 Two consequences:
 
