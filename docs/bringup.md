@@ -89,6 +89,25 @@ Bench wiring diagrams and the no-solder connectivity procedure live in
       battery path is still through breadboard contacts, which caused a
       reset loop before the soak ([battery-runbook.md](battery-runbook.md)
       B3).
+- [x] **Unpaired unit deep-sleeps and the dial wakes it — verified
+      2026-10-01/02**, XIAO #4. `app_main.cpp`, `unpaired_sleep_check()`
+      and `unpaired_sleep_on_boot()`. When the 15-minute commissioning window
+      has closed with no fabric (or 16 minutes after boot, whatever the window
+      reads, unless a pairing holds the fail-safe), the unit draws the
+      onboarding screen with "Asleep. Turn the dial to start pairing.",
+      restarts, and enters deep sleep from the top of the next boot, before
+      Bluetooth, Thread, the PHY or power management exist. Encoder A (GPIO6,
+      an LP pin) wakes it; a woken boot releases the pad hold and restarts
+      once more, cleanly. Evidence: **19.71 µA and 19.85 µA** in deep sleep
+      (PPK2 3700 mV, USB out, two 10 s windows); dial wake 5 of 5 on battery
+      and 5 of 5 on USB, every wake booting in under 4 s; the real path on the
+      shipping image: power on 23:46, window closed ~00:01, flat sleep line
+      30 s later; two pairings completed, one with the window closing about
+      55 s into it (node 28, 2026-10-02). Three earlier designs failed and are
+      in [field-notes.md](field-notes.md) §27. Not covered: a unit removed
+      from its controller (same reboot path, not re-tested). Bench profile:
+      off (`CONFIG_HOMECADIA_UNPAIRED_DEEP_SLEEP`); `tools/check-profiles.sh`
+      asserts it is on, and the test shortcut is 0, in shipping.
 - [x] **Unpaired current — measured 2026-09-28: 28.1 mA average.** Shipping
       image on XIAO #4 before commissioning, PPK2 3700 mV, 10 s window:
       baseline 20–40 mA, ~200 mA spikes every 0.5 s (the 500 ms pairing

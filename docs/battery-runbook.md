@@ -35,7 +35,7 @@ opens, **the leads read 0 V while the cell inside is intact.**
 |---|---|---|---|---|
 | B1 | **Probe on the connector housing** | 0 V in both polarities | probe bare metal; the JST-PH contacts sit below the rim | Measured 2026-09-03: two packs "dead", 3.87 V once the connector came off |
 | B2 | **Meter lead loose in its jack** | 0 V and "open" on everything | probes together on beep, then a known 5 V | Measured 2026-09-25 |
-| B3 | **High resistance between cell and XIAO** | pack reads healthy unloaded (3.97 V); unit resets at every boot. External LED flickers faintly and fast, `RebootCount` climbs, Home Assistant values freeze | meter on the XIAO's side of the joint, USB out, watch 10 s; read the DIAG view | Measured 2026-09-28: `RebootCount` 4 → 88 in the first episode and 88 → 504 in a second one of about five minutes; steady after the BAT+ wire was re-seated in the row, DIAG then read 3.98 V / 82 % and the controller 3978 mV. The joint is the best-supported cause, not proven |
+| B3 | **High resistance between cell and XIAO** | pack reads healthy unloaded (3.97 V); unit resets at every boot. External LED flickers faintly and fast, `RebootCount` climbs, Home Assistant values freeze | meter on the XIAO's side of the joint, USB out, watch 10 s; read the DIAG view | Measured 2026-09-28: `RebootCount` 4 → 88 in the first episode and 88 → 504 in a second one of about five minutes; steady after the BAT+ wire was re-seated in the row, DIAG then read 3.98 V / 82 % and the controller 3978 mV. The joint is the best-supported cause, not proven. **Second episode 2026-10-02**, with the PPK2 in the same row: ~6,100 restarts in 54 min during a pairing, ~0.5 s each; the device's next reported restart was `bootReason: 2` (brown-out) |
 | B4 | **Reversed leads** | negative reading | measure the sign before connecting | EEMB sells a reversed-polarity variant (Vendor: LP103454RP). Pack #1 was standard, red = + |
 | B5 | **No cell, USB in** | unit runs and reports a battery voltage anyway | BAT pin reads ~4.03–4.05 V with no cell, 4.2 V and above with one | Measured 2026-09-24 and 2026-09-28. A battery reading on USB is the charger's output, never the cell's state |
 
@@ -66,7 +66,10 @@ the cell's own lead.
    - steady near the pack voltage: look at the unit, not the battery.
    - sagging or jumping: the joint (B3). Solder the pack's leads to the BAT
      wires; do not rely on a breadboard for the battery path.
-6. **Confirm from the unit itself:** the DIAG view shows the voltage the
+6. **Ask the unit why it last restarted:** the controller holds
+   `bootReason` (`2` = brown-out); a climbing `RebootCount` with brown-out
+   as the reason is the battery path, not the firmware.
+7. **Confirm from the unit itself:** the DIAG view shows the voltage the
    firmware measures, with no network needed.
 
 ## Rules

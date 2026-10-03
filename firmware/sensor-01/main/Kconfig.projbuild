@@ -69,4 +69,24 @@ config HOMECADIA_SLEEP_DIAG_POLL_NO_ADC
 
 endchoice
 
+config HOMECADIA_UNPAIRED_DEEP_SLEEP
+    bool "An unpaired unit deep-sleeps when its commissioning window closes"
+    default y if PM_ENABLE
+    default n
+    help
+        An unpaired unit draws ~28 mA and never light-sleeps. With this on, it
+        enters deep sleep once the commissioning window has closed with no
+        fabric, and a turn of the dial (encoder A, an LP GPIO) reboots it into
+        a new window. Off in the bench profile, whose console needs USB.
+
+config HOMECADIA_UNPAIRED_SLEEP_TEST_S
+    int "TEST ONLY: unpaired unit sleeps this many seconds after boot (0 = off)"
+    depends on HOMECADIA_UNPAIRED_DEEP_SLEEP
+    default 0
+    help
+        Bench aid for the deep-sleep path: skips the 15-minute window and
+        the fail-safe check, and adds a 3 s pause at boot so a USB console
+        that re-enumerates after the wake sees the log. Must be 0 in any
+        image that ships.
+
 endmenu

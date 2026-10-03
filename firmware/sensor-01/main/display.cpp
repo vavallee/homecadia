@@ -7,6 +7,7 @@
 #include "sdkconfig.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
+#include "freertos/semphr.h"
 #include "freertos/task.h"
 #include "qrcode.h"
 
@@ -21,7 +22,7 @@ static const char *TAG = "display";
 #define FRAME_BYTES (LAND_W * LAND_H / 8)
 
 typedef struct {
-    enum { MSG_READINGS, MSG_COMMISSIONING, MSG_COMMISSIONED, MSG_DIAG, MSG_SETTINGS } type;
+    enum { MSG_READINGS, MSG_COMMISSIONING, MSG_COMMISSIONED, MSG_DIAG, MSG_SETTINGS, MSG_PAIRING_ASLEEP } type;
     sensor_readings_t readings;
     char qr[128];
     char manual[24];
@@ -35,6 +36,7 @@ static monogfx_t s_gfx;
 static uint8_t s_land[FRAME_BYTES];
 static uint8_t s_native[FRAME_BYTES];
 static QueueHandle_t s_queue;
+static SemaphoreHandle_t s_asleep_drawn; /* given once MSG_PAIRING_ASLEEP is on the panel */
 static unsigned s_partials_since_full;
 
 /* Onboarding-screen latch. Until a fabric exists the device cannot be paired
@@ -45,6 +47,7 @@ static bool s_awaiting_commissioning;
 static char s_qr[128];
 static char s_manual[24];
 static int s_screen = -1; /* display_msg_t::type currently on the panel */
+static char s_debug_line[26]; /* display_set_debug_line(); written before the task starts drawing */
 
 /* Landscape (296x128, bit=black) -> native (296 gate rows x 16 source bytes,
  * bit=white). HW-VERIFY: flip flags until the image is upright in the case. */
@@ -152,10 +155,20 @@ static void render_commissioning(const char *qr_payload, const char *manual_code
         ESP_LOGW(TAG, "QR generation failed");
     }
 
+    if (s_debug_line[0]) {
+        monogfx_draw_text(&s_gfx, 140, 4, s_debug_line, 1);
+    }
     monogfx_draw_text(&s_gfx, 140, 16, "homecadia", 2);
     monogfx_draw_text(&s_gfx, 140, 40, "Add via Matter:", 1);
     monogfx_draw_text(&s_gfx, 140, 56, "scan QR, or code:", 1);
     monogfx_draw_text(&s_gfx, 140, 76, manual_code, 2);
+}
+
+static void render_pairing_asleep(const char *qr_payload, const char *manual_code)
+{
+    render_commissioning(qr_payload, manual_code);
+    monogfx_draw_text(&s_gfx, 140, 102, "Asleep. Turn the dial", 1);
+    monogfx_draw_text(&s_gfx, 140, 114, "to start pairing.", 1);
 }
 
 #if CONFIG_HOMECADIA_SLEEP_DIAG
@@ -237,7 +250,7 @@ static void display_task(void *arg)
         }
 #if CONFIG_HOMECADIA_BENCH_SELFTEST
         static const char *kNames[] = {"READINGS", "COMMISSIONING", "COMMISSIONED", "DIAG",
-                                       "SETTINGS"};
+                                       "SETTINGS", "PAIRING_ASLEEP"};
         ESP_LOGW(TAG, "queued msg: %s", kNames[msg.type]);
 #endif
 
@@ -273,9 +286,16 @@ static void display_task(void *arg)
             render_commissioning(s_qr, s_manual);
             s_partials_since_full = DISPLAY_FULL_REFRESH_EVERY_N; /* force full: big change */
             break;
+        case display_msg_t::MSG_PAIRING_ASLEEP:
+            render_pairing_asleep(msg.qr, msg.manual);
+            s_partials_since_full = DISPLAY_FULL_REFRESH_EVERY_N; /* full: this frame stays for days */
+            break;
         }
         push_frame();
         s_screen = msg.type;
+        if (msg.type == display_msg_t::MSG_PAIRING_ASLEEP) {
+            xSemaphoreGive(s_asleep_drawn);
+        }
     }
 }
 
@@ -299,7 +319,8 @@ esp_err_t display_init(void)
     monogfx_init(&s_gfx, LAND_W, LAND_H, s_land);
 
     s_queue = xQueueCreate(4, sizeof(display_msg_t));
-    if (!s_queue) {
+    s_asleep_drawn = xSemaphoreCreateBinary();
+    if (!s_queue || !s_asleep_drawn) {
         return ESP_ERR_NO_MEM;
     }
 #if CONFIG_HOMECADIA_SLEEP_DIAG
@@ -334,6 +355,27 @@ void display_show_commissioning(const char *qr_payload, const char *manual_code)
     strlcpy(msg.qr, qr_payload, sizeof(msg.qr));
     strlcpy(msg.manual, manual_code, sizeof(msg.manual));
     xQueueSend(s_queue, &msg, 0);
+}
+
+esp_err_t display_show_pairing_asleep(const char *qr_payload, const char *manual_code, uint32_t timeout_ms)
+{
+    if (!s_queue) {
+        return ESP_ERR_INVALID_STATE;
+    }
+    display_msg_t msg = {};
+    msg.type = display_msg_t::MSG_PAIRING_ASLEEP;
+    strlcpy(msg.qr, qr_payload, sizeof(msg.qr));
+    strlcpy(msg.manual, manual_code, sizeof(msg.manual));
+    xSemaphoreTake(s_asleep_drawn, 0); /* drop a stale give */
+    if (xQueueSend(s_queue, &msg, pdMS_TO_TICKS(timeout_ms)) != pdTRUE) {
+        return ESP_ERR_TIMEOUT;
+    }
+    return xSemaphoreTake(s_asleep_drawn, pdMS_TO_TICKS(timeout_ms)) == pdTRUE ? ESP_OK : ESP_ERR_TIMEOUT;
+}
+
+void display_set_debug_line(const char *text)
+{
+    strlcpy(s_debug_line, text, sizeof(s_debug_line));
 }
 
 void display_commissioning_done(void)

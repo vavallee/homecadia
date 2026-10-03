@@ -1227,8 +1227,9 @@ firmware logs after its first 30 s. `CONFIG_PM_ENABLE` and
 Three minutes after commissioning, same unit, same source: 91 µA over a quiet
 10 s.
 
-**Probable cause, from reading the SDK (2026-09-29); not confirmed on
-hardware.** ESP-IDF's OpenThread port creates a power-management lock named
+**Cause: not known.** The explanation written here on 2026-09-29 was wrong
+and is kept below, struck, because the mistake is instructive: ESP-IDF's
+OpenThread port creates a power-management lock named
 `ot_sleep` and takes it at init (`components/openthread/src/port/
 esp_openthread_sleep.c`, `esp_openthread_sleep_init()`). It gives the lock
 back only when the 802.15.4 radio reports the state
@@ -1242,9 +1243,17 @@ project's own code is tied to pairing state (`battery.cpp`, `ui.cpp` and
 diagnostic image (`CONFIG_HOMECADIA_SLEEP_DIAG`) on an unpaired unit and read
 which locks are held.
 
-It also means the 28 mA does not end when the five-minute pairing window
-closes (`k_commissioning_window_timeout`, `app_main.cpp`): advertising stops,
-the lock does not.
+**Retracted 2026-10-02:** that lock is created as `ESP_PM_APB_FREQ_MAX`,
+which only keeps the bus clock up while awake; it does not block light
+sleep (`ESP_PM_NO_LIGHT_SLEEP` does). The USB console of an unpaired unit
+also drops about 30 s after boot, when Bluetooth moves to slow advertising,
+which suggests it does light-sleep from then on. Measured since: with the
+window closed but before deep sleep, the unit draws a few mA; it is the
+window's advertising that costs ~28 mA (29.2 mA, 2026-10-01).
+
+**Decision 2026-09-29, done 2026-10-02:** an unpaired unit goes to deep
+sleep once its window has closed, and a turn of the dial brings it back with
+a new window. 19.7 µA asleep; how it got there is §27.
 
 Two consequences:
 
@@ -1255,3 +1264,68 @@ Two consequences:
   ([bringup.md](bringup.md), Encoder & LED).
 - At 28 mA a 2000 mAh cell lasts about three days. Pair a unit before it
   goes on a cell.
+
+## 27. Deep sleep from a running Matter device: four designs, one that works
+
+**When:** 2026-09-29 → 2026-10-02, XIAO #4. Goal: an unpaired unit asleep,
+woken by the dial.
+
+| Design | On USB | On battery |
+|---|---|---|
+| 1. `esp_deep_sleep_start()` from the running system | slept; the boot after a wake **hung for 25 h** (task watchdog, `main` stuck in GPIO interrupt setup) | not tried |
+| 2. same, light sleep off (debug image) | slept, woke on the dial | not tried |
+| 3. same, shipping config, wake pin taken out of sleep isolation, clean restart after a wake | slept 12 min untouched; dial woke it 7 of 8 | **stuck at ~20 mA**, never reached sleep, deaf to the dial |
+| 4. **restart first, sleep from the top of the next boot** | 5 of 5 | **19.7 µA, 5 of 5** |
+
+What each failure turned out to be, as far as it was established:
+
+- **Woke by itself within seconds** (design 1 on the shipping config):
+  `CONFIG_PM_SLP_DISABLE_GPIO` sets every pin to an isolated, floating state
+  in sleep. The wake pin floated to its wake level. Fixed by taking the wake
+  pin out of the sleep switch and setting its pull-up explicitly.
+- **Hung boot after a wake:** the woken boot inherits the wake pin's pad
+  hold and LP wake setting. Fixed by releasing both and taking one ordinary
+  software restart before anything else runs.
+- **Stuck at ~20 mA on battery only:** ESP-IDF's sleep docs require the
+  radios to be stopped before deep sleep (`sleep_modes.rst`), and the
+  deep-sleep entry runs PHY shutdown hooks with interrupts off. On USB the
+  connection blocks light sleep, so the radio block is never powered down
+  between advertisements; on battery it is. The best-supported reading is
+  that entry stalls on a powered-down radio. Not proven; design 4 removes
+  the question by sleeping before any radio exists.
+- **Awake indefinitely after a failed pairing:** the SDK re-opens the window
+  for a retry with no timeout of its own (`CommissioningWindowManager::
+  HandleFailedAttempt`). Fixed by an uptime cap: 16 min after boot the unit
+  sleeps whatever the window says, unless a pairing holds the fail-safe.
+
+**The 6,100 restarts.** During a failed phone pairing on 2026-10-02 the
+unit restarted about 6,100 times in 54 minutes (`RebootCount` 30 → 6131),
+which the PPK2 showed as a steady 67 mA with a spike every ~0.6 s. It was
+first read as "awake" and then blamed on the firmware. Two deliberate
+reproductions on USB, one with the window closing mid-pairing, paired
+cleanly. The next restart the device reported, on 2026-10-03, gave
+`bootReason: 2`, a **brown-out reset**. The rate (~0.5 s) matches the
+battery-path episode of 2026-09-28 ([battery-runbook.md](battery-runbook.md)
+B3): a supply through breadboard contacts sags under the radio's bursts.
+The PPK2 measures at its own terminals and cannot see that sag.
+
+What the debugging tools did, because each one misled at least once:
+
+- **The USB console is not evidence of anything on the shipping config.**
+  The port stays listed while the chip sleeps and every open fails; it also
+  drops ~30 s into an unpaired boot. A "port vanished" was read as deep
+  sleep when it was light sleep. Captures need a listener that reopens a
+  dead handle (the first one held it and recorded nothing three times).
+- **The panel is not a liveness signal** (§15). A test build drew
+  `rst<reason> wakes<count> cause<cause>` on the onboarding screen instead;
+  that line answered questions the console could not.
+- **The PPK2 needs the right zoom.** At 1-minute zoom a buck converter's
+  ~1 kHz pulse train looks like radio activity; at 1-second zoom it is a
+  flat 20 mA. Read the 10 s average, then zoom to the event.
+- **`bootReason` in the controller** names the cause of the last restart
+  and costs nothing to read. It settled the restart loop after two days of
+  inference.
+- **A build directory can keep an sdkconfig from before new Kconfig
+  options existed** and compile a feature out without an error. The profile
+  check now asserts the option is on in shipping.
+

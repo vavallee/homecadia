@@ -99,6 +99,27 @@ for k in "${BENCH_ONLY[@]}"; do
   printf '  %-38s shipping=%-4s bench=%s\n' "$k" "$ship" "$bench"
 done
 
+# Unpaired deep sleep: on in shipping, with the bench test shortcut at 0. On
+# 2026-10-01 a stale build directory kept an sdkconfig from before these
+# options existed and compiled the feature out with no error; the same check
+# catches a test image's 30 s shortcut leaking into a shipping build.
+if grep -qx "CONFIG_HOMECADIA_UNPAIRED_DEEP_SLEEP=y" "$SHIPPING"; then
+  ship="on"
+else
+  ship="OFF"
+  echo "::error::CONFIG_HOMECADIA_UNPAIRED_DEEP_SLEEP is not enabled in $SHIPPING -- stale sdkconfig? run idf.py reconfigure"
+  rc=1
+fi
+printf '  %-38s shipping=%s\n' "CONFIG_HOMECADIA_UNPAIRED_DEEP_SLEEP" "$ship"
+if grep -qx "CONFIG_HOMECADIA_UNPAIRED_SLEEP_TEST_S=0" "$SHIPPING"; then
+  ship="0"
+else
+  ship="NOT 0"
+  echo "::error::CONFIG_HOMECADIA_UNPAIRED_SLEEP_TEST_S must be 0 in $SHIPPING (test-only shortcut)"
+  rc=1
+fi
+printf '  %-38s shipping=%s\n' "CONFIG_HOMECADIA_UNPAIRED_SLEEP_TEST_S" "$ship"
+
 [ "$rc" -eq 0 ] || exit 1
 echo
 echo "OK - profiles differ as intended"

@@ -38,6 +38,16 @@ void display_show_readings(const sensor_readings_t *r);
  * device's only way of being paired. */
 void display_show_commissioning(const char *qr_payload, const char *manual_code);
 
+/* The onboarding screen plus a line saying the unit is asleep and a turn of
+ * the dial wakes it. Blocks until the panel has finished refreshing or
+ * timeout_ms passes, because the caller enters deep sleep next.
+ * Returns ESP_ERR_TIMEOUT if the refresh was not seen to finish. */
+esp_err_t display_show_pairing_asleep(const char *qr_payload, const char *manual_code, uint32_t timeout_ms);
+
+/* Short text drawn at the top of the onboarding screens; "" for none. Bench
+ * aid: the panel is the one console that works whatever the chip's USB does. */
+void display_set_debug_line(const char *text);
+
 /* Releases the display_show_commissioning() latch (call when a fabric exists). */
 void display_commissioning_done(void);
 
