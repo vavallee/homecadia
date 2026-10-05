@@ -751,4 +751,4 @@ says what to watch for.
 | Does the Thread router stall again? | Silent once, 7.5 min after first placement; not seen since | [bringup.md](bringup.md) Radio / Matter |
 | What voltage is brown-out level 7? | Unverified | [battery-runbook.md](battery-runbook.md) |
 | What are the EEMB pack's protection thresholds? | Specification not retrieved; unverified | [battery-runbook.md](battery-runbook.md) |
-| Still-open bring-up rows | panel deep-sleep current, ghosting policy, over-the-air (OTA) update slot headroom (84 % full on 2026-08-23), Home Assistant and OTBR restart survival, the enclosure (rev 4 does not fit the cell or the stacked headers) | [bringup.md](bringup.md) |
+| Still-open bring-up rows | panel deep-sleep current, ghosting policy, over-the-air (OTA) update slot headroom (84 % full on 2026-08-23 and again on 2026-10-05; 300 KiB free), Home Assistant and OTBR restart survival, the enclosure (rev 4 does not fit the cell or the stacked headers) | [bringup.md](bringup.md) |

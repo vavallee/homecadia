@@ -15,7 +15,11 @@ Bench wiring diagrams and the no-solder connectivity procedure live in
       4MB OTA layout.
 - [ ] **OTA slot headroom.** App image is 0x195990 (1.66MB) of the 1.92MB
       (0x1E0000) OTA slot — **84% full, 16% free** as of 2026-08-23 with
-      milestone 5–6 features still landing. Check after every feature merge; overflow forces a partition
+      milestone 5–6 features still landing. **2026-10-05, shipping build at
+      `9ccc68b` on the pinned image: 0x195100 (1,659,136 bytes), 84 % full,
+      0x4AF00 (306,944 bytes) free** — 2,192 bytes smaller than on 2026-08-23
+      despite the dial wake, unpaired deep sleep and the Thread diagnostics
+      counters. Bootloader 0x56A0, 55 % of its slot free. Check after every feature merge; overflow forces a partition
       rework and a full reflash of deployed units (`partitions.csv` note).
 - [x] USB console stays enumerated with the app running —
       `CONFIG_USJ_NO_AUTO_LS_ON_CONNECTION=y` verified: port alive
