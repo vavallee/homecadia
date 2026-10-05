@@ -89,4 +89,17 @@ config HOMECADIA_UNPAIRED_SLEEP_TEST_S
         that re-enumerates after the wake sees the log. Must be 0 in any
         image that ships.
 
+config HOMECADIA_DIAG_DIAL_WAKE_DELAY_S
+    int "TEST ONLY: arm the dial's light-sleep wake this many seconds after boot (0 = at boot)"
+    depends on PM_ENABLE
+    default 0
+    help
+        A/B for the sleep floor. Arming the dial as a GPIO wake source keeps
+        the RTC_PERIPH power domain on through light sleep (ESP-IDF
+        sleep_modes.c, RTC_GPIO_TRIG_EN); before the dial could wake the chip,
+        the domain went down. With a delay, the first N seconds after boot
+        sleep without the wake source, so one PPK2 capture compares the floor
+        both ways on the same board. The dial does not wake the chip during
+        that window. Must be 0 in any image that ships.
+
 endmenu

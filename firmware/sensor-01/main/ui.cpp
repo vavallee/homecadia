@@ -301,7 +301,28 @@ esp_err_t ui_init(void)
         ESP_LOGE(TAG, "encoder init failed: %s", esp_err_to_name(err));
         return err;
     }
-#if CONFIG_PM_ENABLE
+#if CONFIG_PM_ENABLE && CONFIG_HOMECADIA_DIAG_DIAL_WAKE_DELAY_S > 0
+    {
+        /* Floor A/B (main/Kconfig.projbuild): no dial wake source until the timer fires. */
+        const esp_timer_create_args_t wargs = {
+            .callback = [](void *) {
+                esp_err_t e = ec11_enable_light_sleep_wake(ENC_PIN_A, ENC_AWAKE_MS);
+                ESP_LOGW(TAG, "diag: dial wake armed at %llds: %s",
+                         (long long)(esp_timer_get_time() / 1000000), esp_err_to_name(e));
+            },
+            .name = "diag_dial_wake",
+        };
+        esp_timer_handle_t t = nullptr;
+        err = esp_timer_create(&wargs, &t);
+        if (err == ESP_OK) {
+            err = esp_timer_start_once(t, (uint64_t)CONFIG_HOMECADIA_DIAG_DIAL_WAKE_DELAY_S * 1000000ULL);
+        }
+        if (err != ESP_OK) {
+            return err;
+        }
+        ESP_LOGW(TAG, "diag: dial wake deferred %ds", CONFIG_HOMECADIA_DIAG_DIAL_WAKE_DELAY_S);
+    }
+#elif CONFIG_PM_ENABLE
     err = ec11_enable_light_sleep_wake(ENC_PIN_A, ENC_AWAKE_MS);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "encoder wake failed: %s", esp_err_to_name(err));

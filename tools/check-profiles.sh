@@ -119,6 +119,15 @@ else
   rc=1
 fi
 printf '  %-38s shipping=%s\n' "CONFIG_HOMECADIA_UNPAIRED_SLEEP_TEST_S" "$ship"
+# Same for the floor A/B: a delay leaves the dial unable to wake the chip.
+if grep -qx "CONFIG_HOMECADIA_DIAG_DIAL_WAKE_DELAY_S=0" "$SHIPPING"; then
+  ship="0"
+else
+  ship="NOT 0"
+  echo "::error::CONFIG_HOMECADIA_DIAG_DIAL_WAKE_DELAY_S must be 0 in $SHIPPING (test-only A/B)"
+  rc=1
+fi
+printf '  %-38s shipping=%s\n' "CONFIG_HOMECADIA_DIAG_DIAL_WAKE_DELAY_S" "$ship"
 
 [ "$rc" -eq 0 ] || exit 1
 echo
