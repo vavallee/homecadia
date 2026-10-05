@@ -1,4 +1,12 @@
-# homecadia
+<h1 align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/img/logo-dark.svg">
+    <img src="docs/img/logo.svg" alt="homecadia" width="360">
+  </picture>
+</h1>
+
+<!-- Logo: the Grand-Pré Memorial Church (Grand-Pré National Historic Site, Nova
+     Scotia) behind the case wordmark; drawn without religious symbols. -->
 
 **A battery-powered Matter-over-Thread room sensor for Home Assistant, built
 from scratch on the ESP32-C6 with esp-matter and ESP-IDF. 125 µA average,
