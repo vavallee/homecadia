@@ -1,7 +1,7 @@
 <h1 align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/img/logo-dark.svg">
-    <img src="docs/img/logo.svg" alt="homecadia" width="360">
+    <img src="docs/img/logo.svg" alt="homecadia" width="252">
   </picture>
 </h1>
 
