@@ -111,9 +111,9 @@ equivalents, or keeping the SmartThings hub alive as a Zigbee-only bridge.
 
 ## Resolved: shipped 2026-08-10, both items together
 
-Order **#REDACTED**, GlobalPost Flat Rate with duties and taxes included (the
-DDP option chosen at checkout — nothing owed on delivery). Tracking
-**REDACTED**. Both the Voice PE and the ZBT-2 are in the one package.
+One order, GlobalPost Flat Rate with duties and taxes included (the DDP
+option chosen at checkout — nothing owed on delivery). Both the Voice PE and
+the ZBT-2 are in the one package.
 
 The pre-order flag on the Voice PE did not hold the order, so the split-shipment
 question is moot and the ZBT-2 is not blocked behind it.

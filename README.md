@@ -1,36 +1,74 @@
 # homecadia
 
-**Battery-powered Matter-over-Thread room sensors for Home Assistant, with an
-e-ink display and a rotary dial. Built from scratch on the ESP32-C6.**
+**A battery-powered Matter-over-Thread room sensor for Home Assistant, built
+from scratch on the ESP32-C6 with esp-matter and ESP-IDF. 125 µA average,
+e-ink display, rotary dial, no cloud, no Wi-Fi, and every trap written down.**
 
 [![build-sensor-01](https://github.com/vavallee/homecadia/actions/workflows/build-sensor-01.yml/badge.svg)](https://github.com/vavallee/homecadia/actions/workflows/build-sensor-01.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![ESP-IDF v5.5.5](https://img.shields.io/badge/ESP--IDF-v5.5.5-red)](docs/build.md)
 [![esp-matter v1.6](https://img.shields.io/badge/esp--matter-v1.6-orange)](docs/build.md)
+[![Matter over Thread](https://img.shields.io/badge/Matter-over%20Thread-5a3fc0)](docs/commissioning.md)
+[![Average current 125 µA](https://img.shields.io/badge/average-125%20%C2%B5A-2e7d32)](docs/power-budget.md)
 
 ![sensor-01](hardware/case/render-assembled.png)
 
 <!-- photo replaces the render once a unit is assembled: ![sensor-01](docs/img/sensor-01.jpg) -->
 
 A room temperature and humidity sensor that reports to Home Assistant over
-Thread, shows its own readings on a 2.9" e-ink panel, takes input from a rotary
-dial, and averages 125 µA measured on the bench — about eighteen months on one
-2000 mAh cell at 85 % usable. No vendor cloud, no hub beyond a Thread border
-router, and no Wi-Fi — the radio is compiled out.
+Thread as a Matter sleepy end device, shows its own readings on a 2.9" e-ink
+panel, and takes input from a rotary dial. It averages **125 µA** measured on
+the bench, about eighteen months on one 2000 mAh cell at 85 % usable. No vendor
+cloud, no hub beyond a Thread border router, and no Wi-Fi: the radio is
+compiled out.
 
 Everything is here: firmware, drivers, pin map with schematic-verified board
-facts, power budget, 3D-printable enclosure, bill of materials with real prices,
-and the reasoning behind each decision.
+facts, measured power budget, 3D-printable enclosure, bill of materials with
+real prices, and the reasoning behind each decision, including the ones that
+turned out wrong.
+
+## At a glance
+
+| | |
+|---|---|
+| MCU | Seeed XIAO ESP32-C6 (RISC-V, 802.15.4 + BLE; Wi-Fi compiled out) |
+| Stack | [esp-matter](https://github.com/espressif/esp-matter) v1.6 on ESP-IDF v5.5.5, C++ |
+| Network | Matter over Thread, OpenThread minimal device (MTD), commissioned over BLE |
+| Power mode | Intermittently Connected Device (ICD), short idle time: 15 s parent polls, 600 s idle interval, automatic light sleep |
+| Controller | Home Assistant with matterjs-server, Home Assistant Connect ZBT-2 border router |
+| Clusters | Temperature Measurement, Relative Humidity Measurement, Power Source (battery % and voltage), Thread Network Diagnostics with counters |
+| Measured current | **125 µA** paired and settled (sleep floor 57 µA, parent poll ~0.48 mC); **19.7 µA** unpaired in deep sleep |
+| Display | 2.9" 296×128 SSD1680 e-paper, partial refresh ~6–7.5 mC, full ~19 mC |
+| Status | One unit bench-verified on a Nordic PPK2; enclosure being redesigned |
+
+## If you are building Matter or Thread devices on an ESP32
+
+Most of this repo is reusable even if you never build this sensor. The
+findings that took longest, with where to read them:
+
+| Topic | Where |
+|---|---|
+| Getting an ESP32-C6 Matter device from ~376 µA to 125 µA: ADC power domain, bus power-down flags, ICD mode, a pin regression | [power-budget.md](docs/power-budget.md), [field-notes](docs/field-notes.md) §20–§22, §28 |
+| Long Idle Time ICD buys nothing with Home Assistant (no check-in client) and costs ~67 µA; what to use instead | [retro](docs/retro.md) M8, [sdkconfig.defaults](firmware/sensor-01/sdkconfig.defaults) |
+| A non-wake GPIO with a level interrupt under `CONFIG_PM_SLP_DISABLE_GPIO`: +16 µA floor, polls 60 % dearer | [field-notes](docs/field-notes.md) §28 |
+| Waking light sleep from a rotary encoder: LP GPIOs only, level not edge | [field-notes](docs/field-notes.md) §21, [`ec11_encoder`](firmware/components/ec11_encoder) |
+| An unpaired Matter device draws 28 mA; deep sleep that works (restart, then sleep before the stack starts) | [field-notes](docs/field-notes.md) §26–§27 |
+| `attribute::update()` silently does nothing for code-driven clusters in esp-matter v1.6 | [field-notes](docs/field-notes.md) §9 |
+| Commissioning to Home Assistant without HAOS: test certificates, BLE proxy, border router | [commissioning.md](docs/commissioning.md) |
+| Thread coverage, border-router outages, a bare XIAO ESP32-C6 as a Thread router | [field-notes](docs/field-notes.md) §6–§7, §24, [infrastructure.md](docs/infrastructure.md), [bringup.md](docs/bringup.md) Radio / Matter |
+| Measuring µA on a sleepy radio device with a PPK2, and analysing captures offline | [`tools/ppk2-events.py`](tools/ppk2-events.py), [retro](docs/retro.md) T7–T9 |
+| Hardware bring-up traps: FPC ribbons, flux, underside pads, breadboard battery paths | [assembly.md](docs/assembly.md), [battery-runbook.md](docs/battery-runbook.md), [field-notes](docs/field-notes.md) §15–§19, §25 |
+| Eight weeks of bring-up in one place: what went wrong, why, and the checklist for the next unit | [retro.md](docs/retro.md) |
 
 > **Status: bench-verified, not yet assembled.** One unit runs on the bench
-> (XIAO, driver board, panel, SHT40, encoder on a breadboard) with a Nordic PPK2
-> standing in for the cell. Verified there: commissioning to Home Assistant over
-> Thread, display output, battery-voltage reading (within 3 mV of a meter,
-> 3.4–4.0 V), current — 238 µA average over a 12.6 h soak (2026-09-17),
-> 125 µA settled on the current build (2026-10-05) — and the dial waking the chip from light sleep on battery power
-> (2026-09-28). It has since run 21 h on a real LiPo with no restart
-> (2026-09-29). **Not yet done:** a long battery soak, and the enclosure, which
-> is being redesigned. Open rows are in [docs/bringup.md](docs/bringup.md). Code written
+> (XIAO, driver board, panel, SHT40, encoder on a breadboard) with a Nordic
+> PPK2 standing in for the cell. Verified there: commissioning to Home
+> Assistant over Thread, display output, battery-voltage reading (within 3 mV
+> of a meter, 3.4–4.0 V), **125 µA settled paired current** (2026-10-05),
+> 19.7 µA unpaired deep sleep, and the dial waking the chip from light sleep on
+> battery power. It has run 21 h on a real LiPo with no restart. **Not yet
+> done:** a long soak on a real cell, and the enclosure, which is being
+> redesigned. Open rows are in [docs/bringup.md](docs/bringup.md); code written
 > ahead of hardware is marked `HW-VERIFY` and tracked there. The build
 > procedure, with a test gate after every soldering stage, is
 > [docs/assembly.md](docs/assembly.md).
@@ -54,9 +92,18 @@ MIT licensed.
 | [`monogfx`](firmware/components/monogfx) | 1-bit framebuffer renderer with a scaled 5×7 font and a seven-segment digit routine. No LVGL, no external graphics library |
 | [`ec11_encoder`](firmware/components/ec11_encoder) | EC11 rotary encoder decoded from a Gray-code transition table in an ISR — bounce-immune without debounce delays, and draws no idle current |
 
+Tools, usable on any project:
+
+| Tool | What it does |
+|---|---|
+| [`tools/ppk2-events.py`](tools/ppk2-events.py) | Reads a Nordic PPK2 `.ppk2` capture offline and splits it into sleep floor, radio polls, bursts and short wakes with their charge, so one capture gives a per-item current budget |
+| [`tools/matter-node.py`](tools/matter-node.py) | Reads a node through the Home Assistant Matter server WebSocket: the cached attributes (free for the device) or a forced interview |
+| [`tools/check-profiles.sh`](tools/check-profiles.sh) | Asserts a shipping and a bench sdkconfig really differ on sleep, and that test-only options are off in shipping. Runs in CI |
+
 Also reusable regardless of hardware: the
-[power budget](docs/power-budget.md) and the firmware policies it forced, and
-the [documented traps](#traps-that-cost-time) below.
+[power budget](docs/power-budget.md) and the firmware policies it forced, the
+[retro](docs/retro.md), and the [documented traps](#traps-that-cost-time)
+below.
 
 ## Features
 
@@ -65,10 +112,17 @@ Firmware capabilities, all implemented in this repo unless noted:
 - **Matter over Thread**, Wi-Fi compiled out. OpenThread MTD, commissioned over
   Bluetooth Low Energy, joins via any OpenThread border router (developed
   against Home Assistant Connect ZBT-2).
-- **Long Idle Time ICD** (Intermittently Connected Device) so the node sleeps
-  between subscription reports instead of polling continuously. Configured for
-  a 30 s slow poll; until a controller registers as an ICD client the stack runs
-  short-idle mode and clamps it to 15 s, which is what Home Assistant gets today.
+- **Short Idle Time ICD** (Intermittently Connected Device): automatic light
+  sleep between 15 s parent polls, and a 600 s idle interval that the device
+  offers as its subscription max interval, so a report with nothing new goes
+  out every 10 min. Long Idle Time was dropped on 2026-10-04: Home Assistant
+  registers no check-in client, so it only added cost
+  ([retro](docs/retro.md) M8).
+- **Unpaired deep sleep**: a unit nobody pairs deep-sleeps at 19.7 µA once
+  its 15-minute commissioning window closes, and a turn of the dial starts a
+  new window ([field-notes](docs/field-notes.md) §27).
+- **Thread Network Diagnostics with counters** (attach attempts, parent
+  changes, MAC retries), readable from the controller at no reporting cost.
 - **Matter clusters**: TemperatureMeasurement, RelativeHumidityMeasurement, and
   PowerSource with battery percentage and voltage.
 - **Delta-gated reporting** — a report is sent on ≥0.2 °C / ≥1 %RH change, with
@@ -91,6 +145,8 @@ Firmware capabilities, all implemented in this repo unless noted:
   calibration, and a scale factor fitted against a metered source to correct the
   ADC input loading the 500 kΩ divider. Open-circuit-voltage lookup table for
   percent.
+- **Dial wakes the chip** from light sleep on a detent (encoder A on an LP
+  GPIO underside pad, level-triggered).
 - **Factory reset** on a 10-second encoder press (turn first: the switch is on
   a pin that cannot wake the chip); commissioning and low-battery states shown
   on a single LED and on the display.
@@ -145,8 +201,9 @@ will show an uncertified-device warning. Per-device factory partitions
 | [docs/assembly.md](docs/assembly.md) | Wiring and build order, battery-polarity warning |
 | [docs/build.md](docs/build.md) | Pinned toolchain SHAs, Docker and native builds, flashing from WSL2 |
 | [docs/commissioning.md](docs/commissioning.md) | Pairing to Home Assistant: the three preconditions, the BLE-proxy workaround, factory reset. Apple Home is not available here and the doc says why |
-| [docs/field-notes.md](docs/field-notes.md) | **Traps that cost real time during bring-up**, ordered by cost. Read before bringing up another unit |
-| [docs/power-budget.md](docs/power-budget.md) | Modeled current draw, battery-life calculator, the policies it forced |
+| [docs/retro.md](docs/retro.md) | **Retrospective of the whole bring-up**: lessons, timeline, every problem with its cause and rule, the checklist for the next unit, open questions |
+| [docs/field-notes.md](docs/field-notes.md) | **Traps that cost real time during bring-up**, one numbered section per incident (cited as §n). Read before bringing up another unit |
+| [docs/power-budget.md](docs/power-budget.md) | Modelled and measured current draw per item, battery-life calculator, the policies it forced |
 | [docs/battery-runbook.md](docs/battery-runbook.md) | Why a pack reads 0 V or a unit resets on battery: protection-board causes, look-alikes, and the test order |
 | [docs/bringup.md](docs/bringup.md) | Hardware verification checklist — every `HW-VERIFY` marker has a row |
 | [docs/diagrams/](docs/diagrams/) | Bench wiring, battery/divider schematic, enclosure internals and the no-solder bring-up ladder (self-contained HTML) |
@@ -191,8 +248,31 @@ pay for them twice. Full list in
 - **Opening `/dev/ttyACM0` with a plain shell read can hard-reset the chip** —
   it pulses the USB-Serial-JTAG control lines. Use `idf.py monitor`.
 - **Seeed's sleep-current figures are for a bare board.** Measured on this build:
-  a 52–59 µA light-sleep floor once the two fixes above were in; 376 µA before
+  a 45–57 µA light-sleep floor once the fixes here were in; 376 µA before
   them ([power budget](docs/power-budget.md)).
+- **Long Idle Time ICD does nothing for you under Home Assistant.** No
+  check-in client registers, so the device runs short-idle mode anyway, while
+  LIT forces a 5 s minimum active period after every exchange and an extra
+  wake a minute. Turning it off and raising the idle interval to 600 s took
+  the average from 307 to 185 µA ([retro](docs/retro.md) M8).
+- **A non-wake GPIO with a level interrupt reads as triggered in light sleep.**
+  With `CONFIG_PM_SLP_DISABLE_GPIO`, pins that are not wake sources are
+  isolated and read low. A push switch on an HP pin with a low-level interrupt
+  raised the floor 16 µA and made every Thread poll 60 % dearer;
+  `gpio_sleep_sel_dis()` fixed it, 185 → 125 µA (§28).
+- **Only LP GPIOs (0–7) wake the C6 from light sleep with peripheral
+  power-down on, and only on a level.** On the XIAO the free LP pins are
+  underside pads (§21, [pinmap](docs/pinmap.md)).
+- **An unpaired Matter device on the C6 never light-sleeps and draws ~28 mA.**
+  `esp_deep_sleep_start()` from the running stack hung or stuck at 20 mA; what
+  worked is restarting and entering deep sleep at the top of the next boot,
+  before Bluetooth, Thread or power management start (§26–§27).
+- **A USB host keeps the C6 out of light sleep**, so a sleep bug can be
+  invisible for weeks on the bench. Test sleep on battery or a PPK2 with USB
+  out (§20).
+- **A breadboard row in the battery path brown-outs the radio.** Thousands of
+  restarts read as a firmware fault; the Matter `bootReason` attribute said
+  brown-out all along ([battery-runbook](docs/battery-runbook.md) B3).
 
 ## Milestones
 
@@ -200,20 +280,22 @@ pay for them twice. Full list in
 |---|---|---|
 | 1 | Repo scaffold, docs, CI compiling an esp-matter skeleton for esp32c6 | done |
 | 2 | Matter temp/humidity over Thread, commissions to HA (TinyENV parity) | **done 2026-08-23** — commissioned to HA over ZBT-2 OTBR, readings live in HA; see `docs/field-notes.md` for the preconditions |
-| 3 | Display driver, view 1 rendering readings, measured refresh cost | display verified on hardware 2026-08-22 (full 1.79s / partial 0.54s BUSY); refresh charge cost still unmeasured |
+| 3 | Display driver, view 1 rendering readings, measured refresh cost | **done** — display verified 2026-08-22 (full 1.79 s / partial 0.54 s BUSY); refresh charge measured 2026-10-05: partial ~6–7.5 mC, full ~19 mC |
 | 4 | Encoder, views, settings, wake behavior | **done 2026-09-28** — a detent wakes the chip from light sleep on battery (encoder A on the MTCK pad); the push switch registers within 2 s of a turn |
-| 5 | ICD tuning, battery reporting, power budget with measured numbers | **done 2026-09-22** — 238 µA average over 12.6 h (budget ≤300 µA), battery voltage within 3 mV; see `docs/power-budget.md` |
+| 5 | ICD tuning, battery reporting, power budget with measured numbers | **done** — 238 µA over 12.6 h (2026-09-22); **125 µA settled** after the ICD and pin fixes (2026-10-05); unpaired deep sleep 19.7 µA; battery voltage within 3 mV. See `docs/power-budget.md` |
 | 6 | Factory reset, low-battery behavior, assembly guide final, v1.0.0 | factory reset + LED + low-bat display done; rest awaits hardware |
 
 ## Repo layout
 
 ```
-docs/               BOM, pin map, assembly, commissioning, power budget, build
+docs/               BOM, pin map, assembly, commissioning, power budget, build,
+                    field notes, retro
 hardware/case/      wall-mount enclosure (veltoc remix, MIT) + engraving artwork
 circuit-board-maker/ custom-PCB evaluation + two unfabricated KiCad designs
 firmware/
   components/       drivers shared across future homecadia devices
   sensor-01/        esp-matter application
+tools/              PPK2 capture analysis, Matter server node reader, profile check
 .github/workflows/  CI: firmware build on push, .bin artifacts
 ```
 
@@ -241,6 +323,11 @@ pinned toolchain and the locked design decisions are unlikely to change. That
 said: **corrections are very welcome**, especially if you've measured something
 this repo only models, or if one of the [traps](#traps-that-cost-time) turns out
 to be wrong on your hardware. Issues and pull requests both fine.
+
+If you are working on Matter or Thread devices on the ESP32-C6 (or H2, or any
+ESP32 with an 802.15.4 radio) and hit something documented here, or something
+that should be, open an issue: comparing measured numbers across boards is
+the fastest way to tell a board quirk from a firmware one.
 
 ## License
 
