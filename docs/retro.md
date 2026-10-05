@@ -647,6 +647,13 @@ it boots.
 - **Bench work and infrastructure share a failure surface.** The border
   router, the matter server and the PC running the PPK2 each produced a
   "device fault" (M5, T1). Check them first.
+- **Pin toolchain images by digest, not tag.** The esp-matter image tag was
+  re-pushed on 2026-09-17; CI pulled the new image while local builds kept the
+  old one, so for nearly three weeks the CI-built binaries and the flashed,
+  measured ones came from different esp-matter commits (`c6607128` against
+  `36c2634`). Found on 2026-10-05 while checking for a newer release; pinned
+  to the measured image's digest and recorded with the decision to stay on
+  v1.6 in [build.md](build.md).
 
 ## 4. Checklist for the next build
 

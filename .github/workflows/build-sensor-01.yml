@@ -24,7 +24,9 @@ jobs:
       # The esp-matter image unpacks to more than the runner's free space
       # (~14GB); a job-level `container:` pulls before any step can clean up,
       # so the build runs via `docker run` instead. Same image as
-      # docs/build.md — keep the two pinned together when upgrading.
+      # docs/build.md — keep the two pinned together when upgrading. Pinned by
+      # digest: Espressif re-pushes the tag (2026-09-17), which silently moved
+      # CI to newer esp-matter than the measured builds (docs/build.md).
       - name: Free runner disk space
         run: |
           sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc \
@@ -35,7 +37,7 @@ jobs:
       - name: Build (esp32c6, shipping profile)
         run: |
           docker run --rm -v "$PWD":/work \
-            espressif/esp-matter:release-v1.6_idf_v5.5.5 \
+            espressif/esp-matter:release-v1.6_idf_v5.5.5@sha256:aabfb665283baf669cd39971763ee1e08788ec876cb4d55c55fa5b125cf8e1d9 \
             bash -c 'cd /work/firmware/sensor-01 && idf.py set-target esp32c6 build'
 
       # sdkconfig.bench turns light sleep off so the USB console survives. It is
@@ -46,7 +48,7 @@ jobs:
       - name: Build (esp32c6, bench profile)
         run: |
           docker run --rm -v "$PWD":/work \
-            espressif/esp-matter:release-v1.6_idf_v5.5.5 \
+            espressif/esp-matter:release-v1.6_idf_v5.5.5@sha256:aabfb665283baf669cd39971763ee1e08788ec876cb4d55c55fa5b125cf8e1d9 \
             bash -c 'cd /work/firmware/sensor-01 && \
               idf.py -B build-bench -DSDKCONFIG=build-bench/sdkconfig \
                      -DSDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.bench" build'

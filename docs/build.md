@@ -4,21 +4,53 @@ Pinned toolchain: **ESP-IDF v5.5.5 + esp-matter release/v1.6** — the same
 combination as the CI image. Don't mix other versions; esp-matter is tightly
 coupled to its bundled connectedhomeip submodule and the IDF minor version.
 
-Exact pins (extracted from the `release-v1.6_idf_v5.5.5` image):
+Exact pins (read from inside the pinned image, 2026-10-05):
 
 | Component | Ref |
 |---|---|
-| esp-matter | `36c2634e99c884830897e2b9501e2d9a6c9d60fd` (head of `release/v1.6`) |
+| esp-matter | `36c2634e99c884830897e2b9501e2d9a6c9d60fd` (head of `release/v1.6` on 2026-08-06) |
 | connectedhomeip submodule | `d46cc8c2886cbefc338544bdb2e2f8128f3e9970` |
 | ESP-IDF | `v5.5.5` |
 | Docker image | `espressif/esp-matter:release-v1.6_idf_v5.5.5` |
+| Image digest | `sha256:aabfb665283baf669cd39971763ee1e08788ec876cb4d55c55fa5b125cf8e1d9` (built 2026-08-06) |
+
+Every command here and in CI names the image as `tag@digest`; Docker uses the
+digest and ignores the tag, which is kept only so the line is readable.
+
+### Toolchain decision (2026-10-05): stay on this image
+
+**Decision:** stay on esp-matter `release/v1.6` at `36c2634` with ESP-IDF
+v5.5.5, pinned by image digest. Do not move to `release/v1.6.1` or to newer
+`release/v1.6` commits without a re-measure.
+
+**Why the digest:** Espressif re-pushes its image tags. On 2026-09-17
+`release-v1.6_idf_v5.5.5` moved to a new image (`sha256:80664fb6…`) carrying
+`release/v1.6` head `c6607128`, 23 commits past the pin. The local image
+stayed at `aabfb665`, so from that date CI built against different esp-matter
+code from the builds that were flashed and measured. All the measurements in
+[power-budget.md](power-budget.md) and field-notes §20–§28 are on `aabfb665`.
+
+**What the alternatives are** (upstream state on 2026-10-05):
+
+| Option | What it brings | Why not now |
+|---|---|---|
+| `release/v1.6` head (`c6607128`, image `sha256:80664fb6…`) | 23 fixes. The one that touches this build: "Fix SetSlowPollingInterval to enable LIT only if slow polling interval is greater the 15000ms" (2026-08-18). This build runs SIT with the slow poll at exactly 15000 ms, so no change is expected — unverified. The rest are scenes, strings, fan control, bitmaps, a Thread border router fix, and the IDF v6 Docker build | Every change to the ICD path needs a PPK2 capture to confirm the 125 µA; nothing in the 23 is needed |
+| `release/v1.6.1` (`717b4bf9`) | 116 commits beyond v1.6: connectedhomeip moved to its v1.6.1 branch, data model regenerated, and "fail loud when setting code-driven cluster attributes" (2026-08-03), which makes the field-notes §9 trap return an error instead of doing nothing silently. It does not fix §9; the workaround stays | Its only image is `release-v1.6.1_idf_v6.0.2`: moving means ESP-IDF 6.0, a major version. Power-management and sleep findings here cite IDF 5.5.5 source by line (`sleep_modes.c`, `ICDManager.cpp`), and the sleep current would have to be re-measured from zero |
+| `main` | Development branch | Not a release |
+
+**When to revisit:** when a fix or feature is needed that only a newer
+esp-matter has, when ESP-IDF 5.5 drops out of support, or between hardware
+revisions. Moving is one change: new digest here and in
+`.github/workflows/build-sensor-01.yml`, rebuild, re-read the cited SDK lines,
+then a 2 h PPK2 capture on a paired unit analysed with `tools/ppk2-events.py`
+against the 125 µA row in power-budget.md.
 
 Assumes Linux. Two paths; Docker is the low-friction one.
 
 ## Path A: Docker (matches CI exactly)
 
 ```sh
-docker pull espressif/esp-matter:release-v1.6_idf_v5.5.5
+docker pull espressif/esp-matter:release-v1.6_idf_v5.5.5@sha256:aabfb665283baf669cd39971763ee1e08788ec876cb4d55c55fa5b125cf8e1d9
 
 # from the repo root
 # (the cd must be inside bash -c: the image's shell init overrides docker's -w
@@ -26,7 +58,7 @@ docker pull espressif/esp-matter:release-v1.6_idf_v5.5.5
 #  The named ccache volume makes rebuilds after fullclean fast.)
 docker run --rm -it -v "$PWD":/work \
   -v homecadia-ccache:/root/.cache/ccache -e IDF_CCACHE_ENABLE=1 \
-  espressif/esp-matter:release-v1.6_idf_v5.5.5 \
+  espressif/esp-matter:release-v1.6_idf_v5.5.5@sha256:aabfb665283baf669cd39971763ee1e08788ec876cb4d55c55fa5b125cf8e1d9 \
   bash -c 'cd /work/firmware/sensor-01 && idf.py set-target esp32c6 build'
 ```
 
@@ -34,7 +66,7 @@ Flashing from inside the container needs the serial device passed through:
 
 ```sh
 docker run --rm -it --device=/dev/ttyACM0 -v "$PWD":/work \
-  espressif/esp-matter:release-v1.6_idf_v5.5.5 \
+  espressif/esp-matter:release-v1.6_idf_v5.5.5@sha256:aabfb665283baf669cd39971763ee1e08788ec876cb4d55c55fa5b125cf8e1d9 \
   bash -c 'cd /work/firmware/sensor-01 && idf.py -p /dev/ttyACM0 flash monitor'
 ```
 
@@ -49,7 +81,7 @@ light-sleep callbacks and `CONFIG_ESP_SLEEP_DEBUG`
 ([field-notes.md](field-notes.md) §21):
 
 ```sh
-docker run --rm -v "$PWD":/work espressif/esp-matter:release-v1.6_idf_v5.5.5 bash -c '
+docker run --rm -v "$PWD":/work espressif/esp-matter:release-v1.6_idf_v5.5.5@sha256:aabfb665283baf669cd39971763ee1e08788ec876cb4d55c55fa5b125cf8e1d9 bash -c '
   cd /work/firmware/sensor-01 && mkdir -p build-diag &&
   cp sdkconfig build-diag/sdkconfig &&
   echo CONFIG_HOMECADIA_SLEEP_DIAG=y >> build-diag/sdkconfig &&
@@ -78,9 +110,10 @@ BLE controller status and the sleep-retention bitmaps.
 git clone -b v5.5.5 --recursive --shallow-submodules https://github.com/espressif/esp-idf.git
 cd esp-idf && ./install.sh esp32c6 && cd ..
 
-# esp-matter v1.6
-git clone -b release/v1.6 --depth 1 https://github.com/espressif/esp-matter.git
+# esp-matter v1.6, at the pinned commit (the branch head has moved past it)
+git clone -b release/v1.6 https://github.com/espressif/esp-matter.git
 cd esp-matter
+git checkout 36c2634e99c884830897e2b9501e2d9a6c9d60fd
 git submodule update --init --depth 1
 ./connectedhomeip/connectedhomeip/scripts/checkout_submodules.py --platform esp32 linux --shallow
 ./install.sh
