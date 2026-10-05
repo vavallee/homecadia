@@ -142,9 +142,11 @@ Stage 2.
 1. Flash the shipping image. Unplug USB.
 2. PPK2 in Source Meter mode at 3700 mV, VOUT to BAT+, GND to GND, then enable
    output.
-3. **Unpaired, expect about 28 mA average** with a 20–40 mA baseline: the unit
-   advertises for pairing and does not sleep (measured 2026-09-28). Do not
-   leave an unpaired unit on a cell.
+3. **Unpaired, expect about 28 mA average** with a 20–40 mA baseline while the
+   15-minute commissioning window is open (measured 2026-09-28), then
+   **~20 µA** about 30 s after it closes: the unit deep-sleeps until a detent
+   starts a new window (field-notes.md §27). Do not leave an unpaired unit on
+   a cell with the window open.
 4. Pair it ([commissioning.md](commissioning.md)). Check the border router is
    up first.
 5. Wait 3 minutes, knob untouched. **Pass:** a 10 s window averages on the
@@ -191,10 +193,11 @@ cell or the stacked header height
 | Press never registers, rotation fine | wire loose in the D9 row |
 | One encoder line dead, which one changes between runs | bare encoder blades in a breadboard |
 | A pin at 0 V under power that reads open unpowered | conductive flux residue |
-| Battery reads the same whatever the source voltage | divider top on the 3V3 rail, not BAT+ |
+| Battery reads the same whatever the source voltage | the source setting did not apply (meter the source first; retro.md T2), or the divider top on the 3V3 rail, not BAT+ |
 | Cell reads 0 V | protection latched, or the probe is on the housing |
 | Console silent after a flash, port present | board left in download mode or wedged by the reset pulse: replug USB |
-| 28 mA average on battery | unit is unpaired |
+| 28 mA average on battery | unit is unpaired with its window open |
+| Paired floor well above ~57 µA, polls above ~0.5 mC, 1 ms wakes with no radio | a non-wake pin with a level interrupt isolated in sleep (field-notes.md §28); bisect the firmware on the same board |
 | Healthy cell, unit resets continuously on it, LED flickers faintly | resistance in the battery path: [battery-runbook.md](battery-runbook.md) B3 |
 
 ### FPC orientation: go by insertion force, not by which way the copper faces

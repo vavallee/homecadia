@@ -17,10 +17,10 @@ meter (e.g. Nordic PPK2 or a µCurrent) between battery and XIAO.
 | Battery divider bleed | 2.1µA | | 4.2V / 2MΩ, continuous |
 | SHT40 single-shot high-precision read | ~0.5ms·mA class, negligible avg | | ~8ms @ ~0.5mA every 120s |
 | ADC battery read (incl. settling) | negligible | | 20 ms settle then 64 one-shot samples, under a no-light-sleep lock (~25 ms awake per 120 s poll). The ADC input loads the 500 kΩ divider ~1.9 %; corrected by `VBAT_SCALE_X1000` in firmware (2026-09-22), not with a stiffer divider |
-| Thread poll (ICD idle-mode poll) | ~10–30µA avg contribution | **~300 µC per poll** | 2026-09-15: 5 ms at 250–330 mA peak, every 5.0 s idle ≈ 60 µA avg; every 0.5 s in active mode ≈ 600 µA while it lasts. | depends on idle interval; radio rx window |
+| Thread poll (ICD idle-mode poll) | ~10–30µA avg contribution | **~300 µC per poll** (2026-09-15), **~480 µC** (2026-10-05) | 2026-09-15: 5 ms at 250–330 mA peak, every 5.0 s idle ≈ 60 µA avg; every 0.5 s in active mode ≈ 600 µA while it lasts. 2026-10-05, node 28, 15 s SIT polls: ~6 ms, median 478 µC, 43 µA; 745 µC before the push-switch pad fix (field-notes.md §28). | depends on idle interval; radio rx window |
 | Matter report (attribute change tx) | spike, small avg | | only on delta ≥0.2°C / ≥1%RH |
-| Display partial refresh | ~? mC per refresh | | measure in M3: charge per refresh event |
-| Display full refresh | ~? mC per refresh | | every N partials for ghosting |
+| Display partial refresh | | **~6–7.5 mC** | 2026-10-04/05, node 28: ~0.5 s at ~13–15 mA while `busy_wait()` polls BUSY in 10 ms `vTaskDelay` steps. A report with its partial refresh is ~10–14 mC in total |
+| Display full refresh | | **~19 mC** | 2026-10-05, node 28: one event of 1.89 s, 19.4 mC, every `DISPLAY_FULL_REFRESH_EVERY_N` (10) refreshes |
 | LED blink | avoided | | commissioning + low-battery only |
 | Inter-pin leakage (post-wash) | <1µA | | flux residue washed 2026-08-31; a 100kΩ path would add ~0.2µA at 0.5% refresh duty — re-scan if refresh behaviour changes |
 | **Average (no display)** | **≤300µA target** | **208 µA settled / 238 µA full run** | 2026-09-17, 12 h 37 min PPK2 soak at 3700 mV with the slow poll at an effective 15 s: **237.7 µA** over the whole run (10.79 C, includes boot, attach and three interviews at ~0.15 C each), **207.8 µA over one settled 120 s cycle** (24.94 mC), floor 59 µA. The day before at 5 s: 288.5 µA / 240.6 µA. Per cycle now: floor ~59 µA, seven parent polls ~35 µA, the active period around each 120 s report ~113 µA (field-notes.md §22). ≈10 months on 1700 mAh, ≈12 on 2000, at the full-run figure. |

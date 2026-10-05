@@ -112,9 +112,10 @@ Bench wiring diagrams and the no-solder connectivity procedure live in
       image on XIAO #4 before commissioning, PPK2 3700 mV, 10 s window:
       baseline 20–40 mA, ~200 mA spikes every 0.5 s (the 500 ms pairing
       advertisement interval). The chip does not enter light sleep while
-      unpaired; probable cause is the OpenThread port's `ot_sleep` lock, held
-      until a Thread network exists (field-notes.md §26; read from the SDK,
-      not confirmed on hardware). Three minutes after
+      unpaired; cause not established. The `ot_sleep` lock first suspected
+      (field-notes.md §26) is `ESP_PM_APB_FREQ_MAX` and does not block light
+      sleep; that explanation was retracted 2026-10-02. Worked around: an
+      unpaired unit deep-sleeps once its window closes (row above). Three minutes after
       commissioning the same unit averaged **91 µA** over a quiet 10 s with
       one parent poll in the window.
 - [x] Light sleep does not hang — **fixed 2026-09-15** by turning off

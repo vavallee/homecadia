@@ -1,7 +1,8 @@
 # Retrospective — sensor-01, unit 1
 
-Written 2026-10-04, for whoever builds units 2 and 3 or rebuilds unit 1. It
-covers 2026-08-08 (first flash) to 2026-10-04 (paired-current analysis): what
+Written 2026-10-04 and updated 2026-10-05, for whoever builds units 2 and 3
+or rebuilds unit 1. It covers 2026-08-08 (first flash) to 2026-10-05 (paired
+current down from 307 to 125 µA): what
 went wrong in firmware and hardware bring-up, why, what it cost, and what to do
 differently. It does not repeat the procedures. [assembly.md](assembly.md) is
 the build procedure, [field-notes.md](field-notes.md) is the incident record
@@ -53,7 +54,19 @@ LED; [battery-runbook.md](battery-runbook.md), "Seen on this bench").
    it.** Long Idle Time (LIT) Intermittently Connected Device (ICD) mode was
    configured before hardware (commit `bd59374`) and never took effect, because
    the Home Assistant Matter server registers no check-in client. It still
-   cost an estimated ~67 µA of a ~307 µA average (section 3.3, M8).
+   cost an estimated ~67 µA of a ~307 µA average (section 3.3, M8); turning
+   it off measured 307 → 185 µA.
+7. **When the current regresses, bisect the firmware on the same board
+   before theorising.** Five hypotheses about a 17 µA floor rise were tested
+   one by one from captures (method, leads, pull-up, power domain,
+   reattachment) and all came out negative. Three app-only flashes of older
+   commits on the same board found it in an hour: a pin moved from an LP to
+   an HP GPIO, with a level interrupt that light sleep turned into a false
+   trigger. It had also made every parent poll 60 % dearer. 185 → 125 µA
+   (section 3.2, S9; §28).
+8. **A pin move is a power change.** LP and HP GPIOs behave differently in
+   light sleep. Re-measure the floor, the poll cost and the stray-wake rate
+   after any pin move, not only after "power" changes (S4, S9).
 
 ## 2. Timeline
 
@@ -72,7 +85,8 @@ LED; [battery-runbook.md](battery-runbook.md), "Seen on this bench").
 | 09-23 → 28 | Dial on battery, XIAOs #3 and #4 | Encoder A to MTCK; XIAO #2 loses its last pads; loose meter lead and encoder wire on the 3V3 pad (XIAO #3); XIAO #4 built with the staged procedure; 28 mA unpaired; 416 restarts on a breadboard battery path | §25, §26; `07457a1`, `611de00` |
 | 09-28 → 29 | First real cell | 21 h on an EEMB pack, no restart | `256ba56` |
 | 09-29 → 10-03 | Unpaired deep sleep | Four designs, a 25 h hung boot, ~6,100 brown-out restarts; restart-then-sleep at 19.7 µA | §27; `068dfc4` |
-| 10-03 → 04 | Paired current | 15.5 h without a restart on a direct PPK2 lead; overnight current lost to PC hibernation; 307 µA measured; LIT turned off in the working tree | section 3.3, M8 |
+| 10-03 → 04 | Paired current | 15.5 h without a restart on a direct PPK2 lead; overnight current lost to PC hibernation; 307 µA measured; first breakdown wrong (M7) | section 3.3, M7 |
+| 10-04 → 05 | Paired current, fixed | LIT off and 600 s idle interval: 185 µA; Thread counters exposed, reattachment ruled out; floor A/B and app-only bisect find the push-switch pad: 125 µA | M8, M9, S9; `f3d7414`, `33c91b1`, `95bd3dc`; §28 |
 
 ## 3. Problems
 
@@ -249,7 +263,8 @@ as recorded in the sources; where none was recorded the entry says so.
   the ADC front end is in the modem power domain
   (`ADC_LL_ADC_FE_ON_MODEM_DOMAIN`, `hal/esp32c6/include/hal/adc_ll.h:41`) and
   only deleting the unit releases it. The pulse train was the SGM6029 buck in
-  power-save mode, not wakes.
+  power-save mode, not wakes. Its pulse rate tracks the 3.3 V load, which
+  made it the visible signature of S9 a month later.
 - Found by: `CONFIG_HOMECADIA_SLEEP_DIAG`, which counts sleeps and records the
   power-down flags, read from the glass.
 - Cost: ~95 µA (376 → 282 µA); same day.
@@ -349,6 +364,39 @@ as recorded in the sources; where none was recorded the entry says so.
   counter.
 - Ref: [bringup.md](bringup.md) Flash & console; `f560723`.
 
+**S9. A level interrupt on a pin that light sleep isolates.**
+- Symptom: paired and settled, the floor read 73–76 µA against 45–59 µA
+  before, each parent poll cost ~0.75 mC against ~0.45, and the chip made
+  1 ms wakes with no radio at 4–120 a minute. The extra floor charge came as
+  ~10 mA × 50 µs buck pulses, ~120 a second on a ~3.1 ms grid.
+- First thought, each tested and ruled out from saved captures, without
+  touching the board: the analysis method; longer BAT leads; encoder A's
+  pull-up against a closed contact (floor flat across detents); the dial's
+  GPIO wake keeping `RTC_PERIPH` on (`sleep_modes.c:2697-2699`; an A/B in one
+  capture with `CONFIG_HOMECADIA_DIAG_DIAL_WAKE_DELAY_S`: ≤3 µA); Thread
+  reattachment (counters flat for 2 h, M9).
+- Cause: `7d25512` moved the push switch from MTDO (LP GPIO7, a wake source)
+  to D9 (HP GPIO20) and kept its `GPIO_INTR_LOW_LEVEL` interrupt. Under
+  `CONFIG_PM_SLP_DISABLE_GPIO` a non-wake pin is isolated in light sleep
+  (input and pull off) and reads low, the level the interrupt waits for. How
+  that became the pulse grid and the dearer polls is inferred (the interrupt
+  firing on each wake and running the switch task's 20 ms debounce), not
+  traced.
+- Found by: app-only flashes of older commits on the same board, 10 min
+  PPK2 each: `f798d25` 49 µA, `07457a1` 45 µA, `58a3cb5` 73 µA. The resolved
+  sdkconfigs differed only in settings already ruled out; one commit in the
+  range touched the paired sleep path.
+- Fix: `gpio_sleep_sel_dis(ENC_PIN_SW)` keeps the pad pulled up through
+  sleep (`ui.cpp`, `push_switch_init()`). Floor 57 µA, 478 µC per poll, 1
+  stray wake in 49 min; the press still registers. 185 → 125 µA.
+- Cost: in the firmware from 2026-09-24 and unnoticed until the 2026-10-04
+  capture, because no settled paired capture was taken in between; about a
+  day of analysis.
+- Rule: an HP pin with a level interrupt needs `gpio_sleep_sel_dis()` (or
+  an edge interrupt) when `CONFIG_PM_SLP_DISABLE_GPIO` is on. Take a settled
+  paired capture after every firmware change that touches pins.
+- Ref: §28; `7d25512`, `95bd3dc`.
+
 ### 3.3 Matter and Thread
 
 **M1. `attribute::update()` silently dropped MeasuredValue.**
@@ -428,8 +476,8 @@ Use `tools/matter-node.py get` or the PPK2 trace for liveness (§22;
 - Cost: one analysis cycle and a withdrawn recommendation; no hardware cost.
 - Rule: classify each event by shape at fine resolution before naming it, and
   say how many instances a figure rests on. One instance is not a rate.
-- Ref: this section; `tools/ppk2-events.py` (untracked as of 2026-10-04). Not
-  yet in [power-budget.md](power-budget.md).
+- Ref: this section; `tools/ppk2-events.py` (`e05c68b`);
+  [power-budget.md](power-budget.md), paired rows.
 
 **M8. LIT mode bought nothing and cost ~67 µA.**
 - Cause: LIT needs a controller that registers as a check-in client; the Home
@@ -438,25 +486,42 @@ Use `tools/matter-node.py get` or the PPK2 trace for liveness (§22;
   ran SIT anyway, while paying LIT's costs: a 5000 ms minimum active-mode
   threshold (`ICDManager.cpp:80-82`), so every report was followed by 5 s of
   500 ms fast polls (~55 µA), and a 60 s short-idle wake per cycle (~12 µA,
-  `ICDConfigurationData.cpp:112-121`). Line references are as cited in the
-  working-tree `sdkconfig.defaults`, not re-read for this file.
-- Status on 2026-10-04: the working tree (uncommitted) turns LIT off, sets the
-  active-mode threshold to 300 ms, the slow poll to 15 s (the SIT maximum) and
-  the idle interval to 600 s. Measured 2026-10-05 on node 28 over 2 h:
-  **307 → 185 µA settled**, then 125 µA once the push-switch pad regression was fixed (field-notes.md §28) (225 µA including a one-off 2 s receive window),
-  [power-budget.md](power-budget.md). Home Assistant kept the node without a
-  re-pair. The 600 s report
-  interval does not depend on the controller (this deployment runs
-  matterjs-server, [commissioning.md](commissioning.md)): the device offers
-  its idle interval and the ceiling is at least 60 min
-  (`ReadHandler.cpp:42-52`, `:777-802`); only a controller min-interval floor
-  above 600 s would change it.
+  `ICDConfigurationData.cpp:110-121`; both read in the esp-matter
+  release-v1.6 image on 2026-10-04).
+- Fix (`f3d7414`): LIT off, active-mode threshold 300 ms (the SDK default),
+  slow poll 15 s (the SIT maximum, `ICDConfigurationData.h:267`), idle
+  interval 600 s. Measured 2026-10-05 on node 28 over 2 h: **307 → 185 µA
+  settled** (225 µA including the one-off receive window, M9); the fast-poll
+  tails and the 60 s wakes are gone from the trace. Home Assistant kept the
+  node without a re-pair. The 600 s report interval does not
+  depend on the controller (this deployment runs matterjs-server,
+  [commissioning.md](commissioning.md)): the device offers its idle interval
+  and the ceiling is at least 60 min (`ReadHandler.cpp:42-52`, `:777-802`);
+  only a controller min-interval floor above 600 s would change it.
 - Earlier, related: raising the slow poll 5 s → 30 s on 2026-09-17 gave an
   effective 15 s (SIT clamp), saving 3.9 mC per cycle, about half the
   prediction; the active period around each report grew, cause not
   established (§22).
 - Rule: read the controller's ICD client table before choosing LIT; a mode the
   controller does not use is pure cost.
+
+**M9. A 2 s receive window about 550 s after every boot.**
+- Symptom: the receiver held on at a flat 139 mA for 2.0 s (~280 mC, as much
+  as twenty reports), at 548, 552 and 546 s after boot in three captures,
+  and never later in a 2 h run.
+- First thought: the sensor losing its parent and reattaching; 2.0 s is
+  exactly OpenThread's parent-request listen time (750 + 1250 ms,
+  `mle.hpp:1294-1295`). Then OpenThread's periodic parent search (9 min).
+- Ruled out: the Thread Network Diagnostics counters, exposed for this
+  (`33c91b1`), showed no attach attempt, parent change or detach over 2 h;
+  parent search is built only for full Thread devices or with
+  `OPENTHREAD_PARENT_SEARCH_MTD`, and this build is a minimal device without
+  it.
+- Cause: not established. As a once-per-boot cost it is negligible for a
+  unit that does not restart.
+- Rule: expose the stack's own counters before theorising about the radio;
+  they are free to read from the controller's cache after one interview.
+- Ref: [power-budget.md](power-budget.md) paired rows.
 
 ### 3.4 Measurement and tooling
 
@@ -473,7 +538,7 @@ intervention:
 | "divider top on the 3V3 rail", 3.36 V regardless of setting | most likely the PPK2 still at 3400 mV because a typed value had not applied (set it with the slider); the two-point sweep showed the divider on BAT+ throughout | [bringup.md](bringup.md) 2026-09-12 rows; §19 |
 | "dead node" | a broken hookup wire; the PPK2 read 1.84 µA, exactly 3.7 V over the 2 MΩ divider | §23 |
 | overnight paired current | the PC running the PPK2 app hibernated; the device's own counters (RebootCount, controller log) were still valid | section 3.3, M7 |
-| a 361 µA "average" | a 60 s selection that happened to hold a report burst | 2026-10-04 bench session; not yet in the docs |
+| a 361 µA "average" | a 60 s selection that happened to hold a report burst | 2026-10-04 bench session (T7) |
 
 Rules that came out of these: check the meter against a known source first;
 measure in-circuit (a 10 MΩ meter disturbs nothing); one physical change, then
@@ -532,6 +597,26 @@ cycles is an average; one-minute averages swing ±100 µA (§21, §22). Save
 digital channels per sample) and a start time that lines up with any log to
 the millisecond (§20).
 
+**T8. Analyse saved captures before asking for another bench step.**
+`tools/ppk2-events.py` splits a `.ppk2` into floor, polls, bursts and
+no-transmit wakes with their charge (`--from/--to` for settled windows,
+`--list` for each event). Reading the same capture at finer resolution
+(20 ms bins for event shape, 10 µs for pulse spacing) settled several
+questions with no hardware touched: the screen-refresh misattribution (M7),
+the floor's pulse grid (S9), and the no-transmit wakes tracking the dial wake
+(S9). Name each event by its shape; count instances before quoting a rate.
+
+**T9. Two zero-touch bisect tools.** (1) A test-only Kconfig delay that
+leaves one setting off for the first N seconds after boot, so a single
+capture holds both halves of an A/B on the same board
+(`CONFIG_HOMECADIA_DIAG_DIAL_WAKE_DELAY_S`, `58a3cb5`; `check-profiles.sh`
+fails a shipping image with it set). (2) App-only flashes of older commits
+built from a `git worktree`: the partition table and the pairing in NVS
+survive, so the unit stays on the network. An image whose dial cannot wake
+the chip is flashed in the boot window instead: with the PPK2 output off,
+plugging in USB powers the board up and esptool's retry loop catches it while
+it boots.
+
 ### 3.5 Process
 
 - **One bench step per message, ending in an explicit "say go".** The builder
@@ -555,6 +640,10 @@ the millisecond (§20).
   scaffold copied esp-matter's `icd_app` defaults; that brought peripheral
   power-down (which hung this build until S1 was found) and a LIT design no
   controller here uses (§20, M8).
+- **Investigate with the board untouched first.** On 2026-10-04/05 every
+  hypothesis that could be tested from a saved capture, the SDK source or the
+  controller's cache was tested that way; bench steps were spent only on
+  flashes and captures. The board was never re-soldered or rewired for this hunt.
 - **Bench work and infrastructure share a failure surface.** The border
   router, the matter server and the PC running the PPK2 each produced a
   "device fault" (M5, T1). Check them first.
@@ -618,20 +707,25 @@ says what to watch for.
     ([pinmap.md](pinmap.md)); check it per unit rather than assume it.
 16. Power acceptance: PC sleep and hibernation off; save a `.ppk2` of at
     least 30 min after the first half hour; split it with
-    `tools/ppk2-events.py`; compare floor, polls and report cost against the
-    figures in section 3.3. A first-half-hour or sub-cycle window does not
-    count.
+    `tools/ppk2-events.py`; compare against node 28 on `95bd3dc`
+    ([power-budget.md](power-budget.md)): floor ~57 µA, parent polls ~0.48 mC
+    each at 15 s, essentially no no-transmit wakes, ~125 µA settled. A
+    first-half-hour or sub-cycle window does not count; the 2 s receive window
+    ~550 s after boot (M9) belongs to the boot, not the steady state.
 17. Liveness and restarts from the device's own counters (`RebootCount`,
-    `bootReason`) and `tools/matter-node.py get`, not `interview_node`.
+    `bootReason`) and `tools/matter-node.py get`, not `interview_node`. One
+    interview at the start and one at the end of an acceptance capture also
+    fetch the Thread counters (attach attempts, parent changes, retries; M9).
 18. Close each unit's rows in [bringup.md](bringup.md) with the date and the
     evidence line.
 
 **Firmware choice for units 2 and 3**
 
-19. Do not flash the SIT / 600 s configuration onto new units until it has been
-    measured on unit 1 and Home Assistant's behaviour after the change is
-    known (M8). Until then the last measured configuration is commit
-    `068dfc4`.
+19. Flash `95bd3dc` or later: SIT with a 600 s idle interval (M8) and the
+    push-switch pad fix (S9), measured at 125 µA on unit 1 with Home Assistant
+    keeping the node.
+20. Any new pin, or a pin moved between LP (GPIO0–7) and HP GPIOs: check its
+    interrupt type against light-sleep isolation (S9), then repeat item 16.
 
 ## 5. Open questions
 
@@ -639,9 +733,10 @@ says what to watch for.
 |---|---|---|
 | Why does an unpaired unit draw 28 mA? | The `ot_sleep` lock does not block light sleep; the cost tracks the window's advertising. Worked around with deep sleep, not explained | §26 |
 | Why is the floor 57 µA on the current build against 45 µA on 07457a1, same board? | The 73 µA regression is found and fixed (field-notes.md §28); ~10 µA remains, and the floor drifted 50 → 58 µA within one 50 min capture. Not investigated | [power-budget.md](power-budget.md) |
-| What is the 240 ms receiver window? | One instance in a 387 s capture, ~18 mC; rate unknown | M7 |
-| What is the 2 s receive window ~550 s after boot? | 139 mA flat for 2.0 s, once per boot in two captures; no attach attempt or parent change in the Thread counters; not OpenThread parent search (FTD-only in this build) | [power-budget.md](power-budget.md) |
-| ~~Why do parent polls cost ~0.76 mC each?~~ | Answered: the push-switch pad (field-notes.md §28); 0.48 mC after the fix. The 4.4/min is 15 s polls plus exchanges around reports | [power-budget.md](power-budget.md) |
+| What is the 2 s receive window ~550 s after boot? | 139 mA flat for 2.0 s, once per boot in three captures; no attach attempt or parent change in the Thread counters; not parent search | M9 |
+| What is the 240 ms receiver window? | One instance in a 387 s capture on the LIT build, ~18 mC; not seen in the 2 h SIT capture | M7 |
+| Exactly how did the isolated switch pin produce the pulse grid and the dearer polls? | Fixed without tracing the path; inferred: the interrupt firing on each wake and the 20 ms debounce | S9 |
+| Would a 10 nF capacitor on encoder A stop glitch wakes? | The no-transmit wakes vanished with the S9 fix; if they return with the dial wake armed, a filter at the MTCK pad is the next step | S9 |
 | Why did deep sleep from the running system stick at ~20 mA on battery only? | Best reading is entry stalling on a powered-down radio; not proven, design 4 avoids it | §27 |
 | Why did the report's active period grow when the slow poll went 5 → 15 s? | ~8.8 → ~13.6 mC per cycle; cause not established | §22 |
 | Why is the first battery report after boot ~80 mV low? | Seen at 3.39 and 3.68 V; cause not established | [bringup.md](bringup.md) 2026-09-22 row |
