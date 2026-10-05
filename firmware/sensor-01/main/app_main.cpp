@@ -382,6 +382,21 @@ extern "C" void app_main()
     node_t *node = node::create(&node_config, app_attribute_update_cb, app_identification_cb);
     ABORT_APP_ON_FAILURE(node != nullptr, ESP_LOGE(TAG, "Failed to create Matter node"));
 
+    /* Thread diagnostics with all counters (attach attempts, parent changes,
+     * MAC retries), so a controller read shows whether the sensor keeps losing
+     * its parent. The SDK accepts only none or all four features
+     * (thread-network-diagnostics-server/CodegenIntegration.cpp:57). Nothing
+     * marks the counters dirty, so they cost no reports; a read (interview)
+     * fetches them. */
+    {
+        cluster_t *tnd = cluster::get(endpoint::get(node, 0), chip::app::Clusters::ThreadNetworkDiagnostics::Id);
+        ABORT_APP_ON_FAILURE(tnd != nullptr, ESP_LOGE(TAG, "No Thread diagnostics cluster on the root endpoint"));
+        cluster::thread_network_diagnostics::feature::packet_counts::add(tnd);
+        cluster::thread_network_diagnostics::feature::error_counts::add(tnd);
+        cluster::thread_network_diagnostics::feature::mle_counts::add(tnd);
+        cluster::thread_network_diagnostics::feature::mac_counts::add(tnd);
+    }
+
     /* Temperature sensor endpoint (MeasuredValue in 0.01°C; SHT40 range) */
     endpoint::temperature_sensor::config_t temp_cfg;
     temp_cfg.temperature_measurement.min_measured_value = nullable<int16_t>(-4000);
