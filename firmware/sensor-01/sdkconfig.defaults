@@ -1,6 +1,6 @@
 # sensor-01: esp32c6, Matter over Thread, sleepy end device.
 # Base: esp-matter v1.6 icd_app example defaults, adapted.
-# LIT ICD tuning happens in milestone 5 against measured current.
+# ICD tuning happens against measured current (docs/power-budget.md).
 
 CONFIG_IDF_TARGET="esp32c6"
 CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
@@ -92,30 +92,37 @@ CONFIG_IEEE802154_SLEEP_ENABLE=y
 # mbedTLS
 CONFIG_MBEDTLS_SSL_PROTO_DTLS=y
 
-# Matter ICD server, LIT (intervals are milestone-5 tuning targets).
-# ENABLE_ICD_LIT selects the check-in protocol and the user-active-mode
-# trigger (the encoder push). Idle interval aligned to the sensor poll.
+# Matter ICD server, SIT (short idle time) only. LIT was on until 2026-10-04 and
+# bought nothing: it needs a controller that registers as a check-in client, and
+# the Home Assistant matter server registers none (ICD RegisteredClients empty on
+# node 28), so the device ran SIT anyway while paying for LIT twice:
+#  - a LIT-capable ICD must keep ActiveModeThreshold >= 5000 ms (VerifyOrDie in
+#    connectedhomeip ICDManager.cpp:80-82), so every report was followed by 5 s
+#    of 500 ms fast polls: ~6.6 mC per 120 s, ~55 uA;
+#  - a LIT-capable ICD in SIT mode idles for ICD_SHORT_IDLE_MODE_DURATION_SEC
+#    (60 s) instead of the idle interval (ICDConfigurationData.cpp:112-121): one
+#    extra wake per cycle, ~12 uA.
+# Capture ppk2-20261004T190206, docs/power-budget.md.
 CONFIG_ENABLE_ICD_SERVER=y
-CONFIG_ENABLE_ICD_LIT=y
+# CONFIG_ENABLE_ICD_LIT is not set
 CONFIG_ICD_FAST_POLL_INTERVAL_MS=500
-CONFIG_ICD_IDLE_MODE_INTERVAL_SEC=120
-CONFIG_ICD_SHORT_IDLE_MODE_DURATION_SEC=60
+# Idle interval 120 -> 600 s. The device offers this as the subscription max
+# interval (connectedhomeip ReadHandler.cpp:777-802), so a report with nothing
+# to say goes out every 10 min instead of every 2. Changed values still report
+# at once. The device's choice holds whatever max interval the controller asks
+# for: the ceiling is at least kSubscriptionMaxIntervalPublisherLimit (60 min,
+# ReadHandler.cpp:42-52), so only a controller min-interval floor above 600 s
+# would change it. Cost: a dead unit takes
+# ~10 min longer to show as unavailable.
+CONFIG_ICD_IDLE_MODE_INTERVAL_SEC=600
 CONFIG_ICD_ACTIVE_MODE_INTERVAL_MS=1000
-# 5000 is the spec minimum for a LIT ICD; anything lower trips the
-# VerifyOrDie in connectedhomeip ICDManager.cpp:82 and the device
-# boot-loops (abort ~1.3s after app_main, found on unit 1's first
-# powered bench test). Threshold only extends awake time after user
-# activity, so the power cost vs 1000 is per-interaction, not per-cycle.
-CONFIG_ICD_ACTIVE_MODE_THRESHOLD_MS=5000
-# Slow poll 5 s -> 30 s. On the 2026-09-16 7.6 h PPK2 soak the 5 s parent polls
-# were ~107 uA of a 240 uA settled cycle, twice the 59 uA sleep floor
-# (docs/field-notes.md section 22). Effective interval is 30 s only while an ICD
-# client is registered (LIT mode); with none the stack runs SIT and clamps to
-# CHIP_DEVICE_CONFIG_ICD_SIT_SLOW_POLL_LIMIT = 15 s (ICDConfigurationData.cpp:25,
-# CHIPDeviceConfig.h:159). Cost: a controller command waits up to one interval.
-# Measured 2026-09-17: polls 15 s apart (SIT, no client registered), settled
-# cycle 240.6 -> 207.8 uA, whole 12.6 h run 237.7 uA.
-CONFIG_ICD_SLOW_POLL_INTERVAL_MS=30000
+# SDK default for a SIT ICD.
+CONFIG_ICD_ACTIVE_MODE_THRESHOLD_MS=300
+# Slow poll: 15 s is the SIT maximum (spec 9.16.1.5, ICDConfigurationData.h:267).
+# 5 s -> 15 s measured 2026-09-17: settled cycle 240.6 -> 207.8 uA
+# (docs/field-notes.md section 22). Cost: a controller command waits up to one
+# interval.
+CONFIG_ICD_SLOW_POLL_INTERVAL_MS=15000
 
 # disable groupcast cluster until verified (upstream icd_app default)
 CONFIG_SUPPORT_GROUPCAST_CLUSTER=n

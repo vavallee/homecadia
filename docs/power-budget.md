@@ -24,6 +24,7 @@ meter (e.g. Nordic PPK2 or a µCurrent) between battery and XIAO.
 | LED blink | avoided | | commissioning + low-battery only |
 | Inter-pin leakage (post-wash) | <1µA | | flux residue washed 2026-08-31; a 100kΩ path would add ~0.2µA at 0.5% refresh duty — re-scan if refresh behaviour changes |
 | **Average (no display)** | **≤300µA target** | **208 µA settled / 238 µA full run** | 2026-09-17, 12 h 37 min PPK2 soak at 3700 mV with the slow poll at an effective 15 s: **237.7 µA** over the whole run (10.79 C, includes boot, attach and three interviews at ~0.15 C each), **207.8 µA over one settled 120 s cycle** (24.94 mC), floor 59 µA. The day before at 5 s: 288.5 µA / 240.6 µA. Per cycle now: floor ~59 µA, seven parent polls ~35 µA, the active period around each 120 s report ~113 µA (field-notes.md §22). ≈10 months on 1700 mAh, ≈12 on 2000, at the full-run figure. |
+| **Average, paired, SIT ICD** | **≤300µA target** | **185 µA settled / 225 µA incl. one 2 s receive window** | 2026-10-05, node 28 (XIAO #4), PPK2 at 3700 mV on the BAT wires, capture `ppk2-20261005T001646` analysed with `tools/ppk2-events.py`, 620–7230 s: floor 73 µA, parent polls 62 µA (4.4/min at ~0.76 mC), reports 40 µA (16 in 110 min, ~14 mC each with the panel refresh), short wakes 6 µA. Same unit on the LIT build 2026-10-04 (`ppk2-20261004T190206`): **307 µA** — floor 76, polls 35, a report every 2 min 69, 5 s of 500 ms fast polls after each 55, a 60 s short-idle wake 12, panel refreshes the rest. The change: LIT off, active-mode threshold 5000 → 300 ms, idle interval 120 → 600 s (`sdkconfig.defaults`). A 2.0 s receive window at 139 mA (282 mC) appeared once, ~550 s after boot, in two captures; with no attach attempt or parent change in the Thread counters. At 185 µA: ≈12.5 months on 2000 mAh at 85 % usable. |
 
 ## Months-of-battery calculator
 
@@ -69,4 +70,6 @@ that has had rework on the header pins.
 - Panel deep sleep between refreshes; refresh only on wake/report/dial input.
 - Full refresh only every N partials.
 - LED only for commissioning state + low battery.
-- LIT ICD: long idle interval, HA subscribes rather than device chattering.
+- SIT ICD, 600 s idle interval: a report with nothing new goes out every 10 min.
+  LIT was dropped 2026-10-04: Home Assistant registers no check-in client, so
+  LIT only added its 5 s minimum active threshold and a 60 s short-idle wake.
