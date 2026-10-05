@@ -281,6 +281,16 @@ static esp_err_t push_switch_init(void)
     if (esp_sleep_is_valid_wakeup_gpio((gpio_num_t)ENC_PIN_SW)) {
         err = esp_deep_sleep_enable_gpio_wakeup(BIT64(ENC_PIN_SW), ESP_GPIO_WAKEUP_GPIO_LOW);
     }
+#if CONFIG_PM_SLP_DISABLE_GPIO
+    else {
+        /* An HP pin is isolated in light sleep (input off, pull off), where
+         * it reads low -- the level this pin's interrupt is armed for. The
+         * floor rose 45 -> 73 uA between 07457a1 (switch on LP GPIO7, a wake
+         * source and so not isolated) and 7d25512 (switch on HP GPIO20).
+         * Keep this pad's awake config through sleep: pulled up, it reads high. */
+        gpio_sleep_sel_dis((gpio_num_t)ENC_PIN_SW);
+    }
+#endif
 #endif
     return err;
 }

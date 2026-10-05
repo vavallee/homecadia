@@ -443,7 +443,7 @@ Use `tools/matter-node.py get` or the PPK2 trace for liveness (§22;
 - Status on 2026-10-04: the working tree (uncommitted) turns LIT off, sets the
   active-mode threshold to 300 ms, the slow poll to 15 s (the SIT maximum) and
   the idle interval to 600 s. Measured 2026-10-05 on node 28 over 2 h:
-  **307 → 185 µA settled** (225 µA including a one-off 2 s receive window),
+  **307 → 185 µA settled**, then 125 µA once the push-switch pad regression was fixed (field-notes.md §28) (225 µA including a one-off 2 s receive window),
   [power-budget.md](power-budget.md). Home Assistant kept the node without a
   re-pair. The 600 s report
   interval does not depend on the controller (this deployment runs
@@ -638,10 +638,10 @@ says what to watch for.
 | Question | What is known | Ref |
 |---|---|---|
 | Why does an unpaired unit draw 28 mA? | The `ot_sleep` lock does not block light sleep; the cost tracks the window's advertising. Worked around with deep sleep, not explained | §26 |
-| Why did the paired sleep floor rise from 59 µA (2026-09-16/17, XIAO #2) to 76 µA (2026-10-04, XIAO #4)? | ~17 µA. Not the encoder pull-up (floor flat across detents) and not the dial's GPIO wake keeping RTC_PERIPH on (A/B with `CONFIG_HOMECADIA_DIAG_DIAL_WAKE_DELAY_S`: ≤3 µA). The extra charge arrives as 10 mA × 50 µs pulses on a ~3.1 ms grid, ~120/s; September's pulses were irregular at ~20/s. Source not found | 2026-10-04 bench session; not yet in the docs |
+| Why is the floor 57 µA on the current build against 45 µA on 07457a1, same board? | The 73 µA regression is found and fixed (field-notes.md §28); ~10 µA remains, and the floor drifted 50 → 58 µA within one 50 min capture. Not investigated | [power-budget.md](power-budget.md) |
 | What is the 240 ms receiver window? | One instance in a 387 s capture, ~18 mC; rate unknown | M7 |
 | What is the 2 s receive window ~550 s after boot? | 139 mA flat for 2.0 s, once per boot in two captures; no attach attempt or parent change in the Thread counters; not OpenThread parent search (FTD-only in this build) | [power-budget.md](power-budget.md) |
-| Why do parent polls cost ~0.76 mC each and run 4.4/min, against ~0.54 mC and 4/min expected? | Measured 2026-10-05; not investigated | [power-budget.md](power-budget.md) |
+| ~~Why do parent polls cost ~0.76 mC each?~~ | Answered: the push-switch pad (field-notes.md §28); 0.48 mC after the fix. The 4.4/min is 15 s polls plus exchanges around reports | [power-budget.md](power-budget.md) |
 | Why did deep sleep from the running system stick at ~20 mA on battery only? | Best reading is entry stalling on a powered-down radio; not proven, design 4 avoids it | §27 |
 | Why did the report's active period grow when the slow poll went 5 → 15 s? | ~8.8 → ~13.6 mC per cycle; cause not established | §22 |
 | Why is the first battery report after boot ~80 mV low? | Seen at 3.39 and 3.68 V; cause not established | [bringup.md](bringup.md) 2026-09-22 row |

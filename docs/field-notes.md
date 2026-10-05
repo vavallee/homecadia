@@ -1329,3 +1329,61 @@ What the debugging tools did, because each one misled at least once:
   options existed** and compile a feature out without an error. The profile
   check now asserts the option is on in shipping.
 
+
+## 28. A level interrupt on a pin that light sleep isolates
+
+**When:** 2026-10-04 → 2026-10-05, XIAO #4 (node 28), PPK2 at 3700 mV.
+
+**Symptom.** Paired, settled, the sleep floor was 73–76 µA against 59 µA in
+September, every parent poll cost ~0.76 mC against ~0.54, and the chip made
+1 ms wakes with no radio activity at 4–120 a minute. The extra floor charge
+arrived as ~10 mA × 50 µs pulses, ~120 a second on a ~3.1 ms grid.
+
+**Ruled out first, from the captures and without touching the board:**
+
+- the measurement method (the same script gives September's capture 59 µA);
+- longer BAT leads (series resistance adds no current; leakage would show in
+  the between-pulse current, which went *down*);
+- the encoder A pull-up against a closed contact (floor flat across detents);
+- the dial's GPIO wake keeping `RTC_PERIPH` on (`sleep_modes.c:2697-2699`):
+  `CONFIG_HOMECADIA_DIAG_DIAL_WAKE_DELAY_S` A/B in one capture, ≤3 µA;
+- Thread reattachment (diagnostics counters: no attach attempt or parent
+  change in 2 h).
+
+**Bisect, app-only flashes on the same board:**
+
+| Image | Floor | Charge per poll | Stray wakes |
+|---|---|---|---|
+| `f798d25` (2026-09-22) | 49 µA | 457 µC | 0.2/min |
+| `07457a1` (2026-09-23, switch on MTDO/GPIO7) | 45 µA | 446 µC | 0.6/min |
+| `58a3cb5` (switch on D9/GPIO20 since `7d25512`) | 73 µA | 745 µC | 4–120/min |
+| `58a3cb5` + fix | 57 µA | 478 µC | 1 in 49 min |
+
+The resolved sdkconfigs of the first and third differ only in ICD settings,
+`CONFIG_ESP_SLEEP_GPIO_ENABLE_INTERNAL_RESISTORS` (deep-sleep wake pins only,
+`esp_hw_support/Kconfig:207-212`) and `CONFIG_MDNS_ENABLE_BROWSE`. Between
+`07457a1` and the regression, only `7d25512` touches the paired sleep path:
+the push switch moved from LP GPIO7 to HP GPIO20, still on a
+`GPIO_INTR_LOW_LEVEL` interrupt.
+
+**Cause, as far as it is established.** A wake-source pin keeps its pad
+config in light sleep; any other pin is isolated by
+`CONFIG_PM_SLP_DISABLE_GPIO` (input and pull off), and an isolated input reads
+low — the level the switch interrupt is armed for. Keeping GPIO20's awake
+config through sleep (`gpio_sleep_sel_dis()`, `ui.cpp` `push_switch_init()`)
+removes all three symptoms; the press still registers. How the false level
+turned into the pulse grid and the heavier polls was not traced (inferred:
+the interrupt fires on each wake and runs the switch task's 20 ms debounce).
+
+**Result:** 185 → 125 µA settled (power-budget.md). ~10 µA of floor above
+`07457a1` remains, unexplained; the floor also drifted 50 → 58 µA within one
+50 min capture.
+
+**Rules:**
+
+- Any HP GPIO with a level interrupt needs `gpio_sleep_sel_dis()` (or an
+  edge interrupt) when `CONFIG_PM_SLP_DISABLE_GPIO` is on.
+- Moving a pin between LP and HP GPIOs changes its sleep behaviour; re-measure
+  the floor after any pin move, not only after "power" changes.
+- An app-only bisect on the same board separates firmware from hardware in
+  one flash; keep the captures and the bisect images.

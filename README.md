@@ -14,7 +14,7 @@ e-ink display and a rotary dial. Built from scratch on the ESP32-C6.**
 
 A room temperature and humidity sensor that reports to Home Assistant over
 Thread, shows its own readings on a 2.9" e-ink panel, takes input from a rotary
-dial, and averages 185 µA measured on the bench — about twelve months on one
+dial, and averages 125 µA measured on the bench — about eighteen months on one
 2000 mAh cell at 85 % usable. No vendor cloud, no hub beyond a Thread border
 router, and no Wi-Fi — the radio is compiled out.
 
@@ -27,7 +27,7 @@ and the reasoning behind each decision.
 > standing in for the cell. Verified there: commissioning to Home Assistant over
 > Thread, display output, battery-voltage reading (within 3 mV of a meter,
 > 3.4–4.0 V), current — 238 µA average over a 12.6 h soak (2026-09-17),
-> 185 µA settled on the short-idle-time build (2026-10-05) — and the dial waking the chip from light sleep on battery power
+> 125 µA settled on the current build (2026-10-05) — and the dial waking the chip from light sleep on battery power
 > (2026-09-28). It has since run 21 h on a real LiPo with no restart
 > (2026-09-29). **Not yet done:** a long battery soak, and the enclosure, which
 > is being redesigned. Open rows are in [docs/bringup.md](docs/bringup.md). Code written
