@@ -749,6 +749,8 @@ says what to watch for.
 | Why is the first battery report after boot ~80 mV low? | Seen at 3.39 and 3.68 V; cause not established | [bringup.md](bringup.md) 2026-09-22 row |
 | What killed panel B? | Failed after a successful refresh; ESD suspected, unproven | [assembly.md](assembly.md) FPC section |
 | Does the Thread router stall again? | Silent once, 7.5 min after first placement; not seen since | [bringup.md](bringup.md) Radio / Matter |
-| What voltage is brown-out level 7? | Unverified | [battery-runbook.md](battery-runbook.md) |
+| What voltage is brown-out level 7? | On the BAT side: runs at 2900 mV, boots fail there and loop at about one a second (2026-10-05); the 3V3-rail figure is unverified. The empty-battery check now stops the loop | [field-notes.md](field-notes.md) §29 |
+| Why does deep sleep cost 298 µA at 2900 mV and 21 µA at 3700 mV? | Same sleep, never woken; inferred to be the 3.3 V regulator out of regulation | §29 |
+| Why does the held LED pulse draw ~51 µA, not ~4 mA? | Visibly lit; not traced | §29 |
 | What are the EEMB pack's protection thresholds? | Specification not retrieved; unverified | [battery-runbook.md](battery-runbook.md) |
 | Still-open bring-up rows | panel deep-sleep current, ghosting policy, over-the-air (OTA) update slot headroom (84 % full on 2026-08-23 and again on 2026-10-05; 300 KiB free), Home Assistant and OTBR restart survival, the enclosure (rev 4 does not fit the cell or the stacked headers) | [bringup.md](bringup.md) |

@@ -43,8 +43,9 @@ Why B3 resets the chip: a boot switches the radio on, which pulls bursts of
 250–330 mA (Measured 2026-09-15, [power-budget.md](power-budget.md)) with a
 424 mA inrush at power-on (Measured 2026-09-09). A fraction of an ohm in the
 path is enough to drop the supply under the brownout detector
-(`CONFIG_ESP_BROWNOUT_DET_LVL=7`; the voltage that level corresponds to is
-unverified). Breadboard springs and thin stranded leads are that fraction of
+(`CONFIG_ESP_BROWNOUT_DET_LVL=7`; the voltage that level corresponds to on
+the 3V3 rail is unverified; on the BAT side a unit runs at 2900 mV and fails
+to boot there, [field-notes.md](field-notes.md) §29). Breadboard springs and thin stranded leads are that fraction of
 an ohm. The PPK2 fed the same row without trouble, which is what pointed at
 the cell's own lead.
 

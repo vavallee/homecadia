@@ -1387,3 +1387,69 @@ the interrupt fires on each wake and runs the switch task's 20 ms debounce).
   the floor after any pin move, not only after "power" changes.
 - An app-only bisect on the same board separates firmware from hardware in
   one flash; keep the captures and the bisect images.
+
+## 29. The bottom of the battery: warning, brown-out, empty
+
+**Setup.** 2026-10-05/06, node 28 (XIAO #4) paired, PPK2 Source Meter on the
+BAT wires, USB out, the supply stepped down by hand. Readings are the
+`3/47/11` reports through the Matter server (`tools/matter-node.py`).
+
+| PPK2 (mV) | Reported (mV) | % | What happened |
+|---|---|---|---|
+| 3700 | 3690 | 40 | |
+| 3553 | 3564 | 14 | |
+| 3500 | 3511 | 8 | low-battery mode on (below `LOW_BATTERY_PCT` 10, i.e. under 3530 mV) |
+| 3400 | 3401 | 2 | |
+| 3300 | 3297 | 1 | no report from the % change: 1 % hysteresis needs a 2-point drop |
+| 3100 | 3099 | 0 | (forced report) |
+| 3000 | — | — | runs |
+| 2900 | — | — | old firmware: `RebootCount` 141 → 639 in ~10 min, panel redrawing |
+
+The reading is within ±11 mV of the source from 3.7 V down to 3.1 V.
+
+**Three defects, fixed:**
+
+1. *The low-battery LED pulse was two ~2.5 ms flashes.* The chip
+   light-sleeps inside the 100 ms pulse; with peripheral power-down the GPIO
+   domain goes down with it. `gpio_sleep_sel_dis()` (the §28 fix) did not
+   help — capture `ppk2-20261006T015052`: wake pairs 100 ms apart every 10 s,
+   under 2 mA between them. The pad hold does: `gpio_hold_en()` keeps a level
+   through "peripheral power-down in Light-sleep" (`driver/gpio.h`, IDF
+   v5.5.5). `led.cpp` `set_led()` re-latches it on every change; now a single
+   full flash. Between the wakes the capture shows ~51 µA, not the ~4 mA a
+   330 Ω LED should take — unexplained, visibly lit.
+2. *Below 2 % Home Assistant stopped seeing the battery fall.* Below
+   `LOW_BATTERY_PCT`, any 1-point drop now reports (`sensor_loop.cpp`).
+3. *A flat cell restarts the unit about once a second*, radio and panel each
+   time — the worst load for a cell at its protection cutoff. A *running*
+   unit rode out 2900 mV on the new firmware (uptime unbroken, 2879 mV
+   reported); the loop is boots failing, which fits about one per second.
+   `empty_battery_on_boot()` (`app_main.cpp`) reads the battery before the
+   radio exists: below 3100 mV (3300 mV after a brown-out, or once an empty
+   spell has begun) it draws one large-text "BATTERY EMPTY" screen, restarts,
+   and deep-sleeps with the dial and an hourly timer as wakes. A running unit
+   reading under 3050 mV restarts into the same check (`sensor_loop.cpp`).
+   Verified: a cold boot at 2900 mV and a running unit taken to 3000 mV both
+   end on the screen and asleep; at 3700 mV a turn of the dial brought the
+   unit back paired.
+
+**The empty sleep costs depend on the supply, not the firmware.** Same deep
+sleep, never woken: **298 µA at 2900 mV** (captures `…T030820`,
+`…T031355`), **21.2 µA at 3700 mV** (`…T031731`, 145 s flat). Drawing,
+restarting and then sleeping (the unpaired path's order, §27) made no
+difference at 2900 mV. Inferred, not checked against the datasheet: the
+XIAO's 3.3 V regulator out of regulation below ~3.3 V input.
+
+**Not settled:** the brown-out level-7 threshold on the 3V3 rail (the BAT
+side runs at 2900 mV and fails to boot there); the ~4 µA sleep floor seen
+while running at 3500 mV against 50–57 µA at 3700 mV on 2026-10-05 (and
+radio peaks of ~650 mA against ~250 mA in the same capture), which may be
+the PPK2's ranging rather than the board.
+
+**Rules:**
+
+- Check every timed output with the chip actually light-sleeping; a bench
+  build that never sleeps (the 2026-08-25 LED check) proves nothing about it.
+- A pin that must hold a level through light sleep with peripheral power-down
+  needs the pad hold, not only `gpio_sleep_sel_dis()`.
+- Decide "empty" before the radio starts, and give it hysteresis.

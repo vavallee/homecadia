@@ -291,7 +291,16 @@ Blocker: **2 of 3 panels are gone and there is no spare.** Reorder Seeed SKU
 - [x] **LED drives — verified 2026-08-25/26** on D7/GPIO16→17 (see below),
       330 Ω, harness-scan drive test `hi=1 lo=0`; the low-battery pulse
       (`firmware/sensor-01/main/led.cpp`, 100 ms on / 10 s gap while the battery
-      reads 0 % with no divider fitted) is visible.
+      reads 0 % with no divider fitted) is visible. **That check ran on a
+      build that never light-slept.** On the sleeping shipping build the pulse
+      was two ~2.5 ms flashes; fixed with the pad hold and re-verified
+      2026-10-06 at 3500 mV as a single full flash
+      ([field-notes.md](field-notes.md) §29).
+- [x] **Low battery and empty battery — verified 2026-10-05/06** on node 28
+      with a PPK2 sweep 3700 → 2900 mV: warning below 3530 mV, every
+      percentage point reported below 10 %, and below 3100 mV a "BATTERY
+      EMPTY" screen and deep sleep instead of a reset loop; the dial brings
+      it back once the supply is restored (field-notes.md §29).
 - [x] **Encoder rotation — verified 2026-08-26.** Clean quadrature on both
       lines (`(1,0)→(0,0)→(0,1)→(1,1)`), 11 decoded events in one back-and-forth
       run, zero phantom events with the knob still. Only after the three encoder
