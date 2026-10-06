@@ -163,7 +163,11 @@ static void poll_cb(void *arg)
                       * hysteresis alone, 2 -> 1 -> 0 % never set off a report
                       * (2026-10-05 sweep) and waited for the forced one. */
                      (bat_pct < LOW_BATTERY_PCT && bat_pct < s_reported_bat_pct);
-    bool force = s_polls_since_report >= FORCE_REPORT_EVERY_N_POLLS;
+    /* Poll 1 runs during Thread attach and has read ~30-80 mV low (retro open
+     * item; load on the cell is the inferred cause). Report poll 2 regardless,
+     * so the low value stands for 2 min, not up to 20. */
+    static unsigned s_polls_total;
+    bool force = s_polls_since_report >= FORCE_REPORT_EVERY_N_POLLS || ++s_polls_total == 2;
 
     if (delta_hit || force) {
         report_matter(temp_c, rh, bat_mv, bat_pct);

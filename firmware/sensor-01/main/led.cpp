@@ -29,9 +29,8 @@ static void set_led(bool on)
 {
     s_on = on;
     gpio_num_t pin = (gpio_num_t)LED_PIN;
-    gpio_set_level(pin, on ? 1 : 0);
-    gpio_set_direction(pin, GPIO_MODE_OUTPUT); /* the hold note: configure before releasing it */
     gpio_hold_dis(pin);
+    gpio_set_level(pin, on ? 1 : 0);
     gpio_hold_en(pin);
 }
 
@@ -67,6 +66,11 @@ esp_err_t led_init(void)
     if (err != ESP_OK) {
         return err;
     }
+#if CONFIG_PM_SLP_DISABLE_GPIO
+    /* For light sleeps that keep the peripheral domain up, where the pad
+     * would switch to its isolated sleep config (sleep_gpio.c). */
+    gpio_sleep_sel_dis((gpio_num_t)LED_PIN);
+#endif
     set_led(false);
 
     const esp_timer_create_args_t targs = {

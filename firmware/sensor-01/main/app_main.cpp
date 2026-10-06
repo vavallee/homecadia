@@ -459,6 +459,17 @@ extern "C" void app_main()
         cluster::thread_network_diagnostics::feature::mac_counts::add(tnd);
     }
 
+    /* BootReason (0/51/4): the legacy data model creates only its event, so a
+     * controller read returned nothing (2026-10-06). The served cluster enables
+     * the attribute when it exists in the store (general_diagnostics
+     * integration.cpp) and reads esp_reset_reason() through the platform's
+     * DiagnosticDataProvider, which maps a brown-out to BrownOutReset. */
+    {
+        cluster_t *gd = cluster::get(endpoint::get(node, 0), chip::app::Clusters::GeneralDiagnostics::Id);
+        ABORT_APP_ON_FAILURE(gd != nullptr, ESP_LOGE(TAG, "No General Diagnostics cluster on the root endpoint"));
+        cluster::general_diagnostics::attribute::create_boot_reason(gd, 0);
+    }
+
     /* Temperature sensor endpoint (MeasuredValue in 0.01°C; SHT40 range) */
     endpoint::temperature_sensor::config_t temp_cfg;
     temp_cfg.temperature_measurement.min_measured_value = nullable<int16_t>(-4000);
