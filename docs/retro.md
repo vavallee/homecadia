@@ -746,11 +746,12 @@ says what to watch for.
 | Would a 10 nF capacitor on encoder A stop glitch wakes? | The no-transmit wakes vanished with the S9 fix; if they return with the dial wake armed, a filter at the MTCK pad is the next step | S9 |
 | Why did deep sleep from the running system stick at ~20 mA on battery only? | Best reading is entry stalling on a powered-down radio; not proven, design 4 avoids it | §27 |
 | Why did the report's active period grow when the slow poll went 5 → 15 s? | ~8.8 → ~13.6 mC per cycle; cause not established | §22 |
-| Why is the first battery report after boot ~80 mV low? | Seen at 3.39 and 3.68 V; cause not established | [bringup.md](bringup.md) 2026-09-22 row |
+| Why is the first battery report after boot ~80 mV low? | Inferred: poll 1 runs during Thread attach, cell under load. Mitigated 2026-10-06: poll 2 always reports. Cause not proven | [field-notes.md](field-notes.md) §29 |
 | What killed panel B? | Failed after a successful refresh; ESD suspected, unproven | [assembly.md](assembly.md) FPC section |
 | Does the Thread router stall again? | Silent once, 7.5 min after first placement; not seen since | [bringup.md](bringup.md) Radio / Matter |
-| What voltage is brown-out level 7? | On the BAT side: runs at 2900 mV, boots fail there and loop at about one a second (2026-10-05); the 3V3-rail figure is unverified. The empty-battery check now stops the loop | [field-notes.md](field-notes.md) §29 |
-| Why does deep sleep cost 298 µA at 2900 mV and 21 µA at 3700 mV? | Same sleep, never woken; inferred to be the 3.3 V regulator out of regulation | §29 |
-| Why does the held LED pulse draw ~51 µA, not ~4 mA? | Visibly lit; not traced | §29 |
+| What voltage is brown-out level 7? | **Answered:** ~2.51 V on the 3V3 rail (IDF Kconfig estimate); ~2.7 V hardware default until the app sets it. Kept | [field-notes.md](field-notes.md) §29 |
+| Why does deep sleep cost 298 µA at 2900 mV and 21 µA at 3700 mV? | Hardware: the SGM6029 at 100 % duty and the C6 below its 3.0 V minimum; GPIO4 isolation ruled out. Which of the two is not separated | §29 |
+| Why does the held LED pulse read ~51 µA, not ~4 mA? | The PPK2 under-read in that capture (refill rate 42–45x, reading 18–20x); estimated 1–2 mA, not measured directly | §29 |
+| Why do 3400–3600 mV cost ~1.8x more asleep than 3700 mV? | Stepped capture 2026-10-06; regulator near dropout with a source that cannot sink is the inference. 125 µA at 3700 mV stands | §29 |
 | What are the EEMB pack's protection thresholds? | Specification not retrieved; unverified | [battery-runbook.md](battery-runbook.md) |
 | Still-open bring-up rows | panel deep-sleep current, ghosting policy, over-the-air (OTA) update slot headroom (84 % full on 2026-08-23 and again on 2026-10-05; 300 KiB free), Home Assistant and OTBR restart survival, the enclosure (rev 4 does not fit the cell or the stacked headers) | [bringup.md](bringup.md) |

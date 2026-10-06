@@ -839,7 +839,7 @@ sat near 376 µA. Espressif's C6 DevKit-C trace for the same stack
 pairs, ~1170 Hz; ~50 µs, 1–14 mA each) with 3–7 µA between them, and the rate
 slid ~10% over the 5 s between polls, jumping back at each poll. That is the
 XIAO's 3.3 V supply: U1 is an SGM6029 buck (XIAO-ESP32-C6_v1.0 schematic,
-sheet 4; L1 0.47 µH). Its VSEL/MODE pin has 249 kΩ to GND, which the datasheet
+sheet 3/5 "03 Power"; L1 0.47 µH). Its VSEL/MODE pin has 249 kΩ to GND, which the datasheet
 (Table 1) reads at startup as 3.3 V; after startup a low on the same pin
 selects power-save mode. In power-save mode a buck draws from the battery in
 bursts whose rate follows the load. Quiescent current is 2.3 µA typ
@@ -1415,9 +1415,14 @@ The reading is within ±11 mV of the source from 3.7 V down to 3.1 V.
    help — capture `ppk2-20261006T015052`: wake pairs 100 ms apart every 10 s,
    under 2 mA between them. The pad hold does: `gpio_hold_en()` keeps a level
    through "peripheral power-down in Light-sleep" (`driver/gpio.h`, IDF
-   v5.5.5). `led.cpp` `set_led()` re-latches it on every change; now a single
-   full flash. Between the wakes the capture shows ~51 µA, not the ~4 mA a
-   330 Ω LED should take — unexplained, visibly lit.
+   v5.5.5); it latches level, output enable and drive strength in the LP_AON
+   domain (`LP_AON.gpio_hold0`, `gpio_ll.h:403-405`). `led.cpp` `set_led()`
+   releases, sets and re-latches it on every change; now a single full flash.
+   The capture showed only ~51 µA extra during the pulse, but in that capture
+   the regulator's refill pulses ran 42–45x faster during the pulse while the
+   reading rose 18–20x and the charge per refill halved: the PPK2 under-read
+   there (the same capture's 3500 mV floor, below). Scaled by the pulse rate
+   the LED takes roughly 1–2 mA; not measured directly.
 2. *Below 2 % Home Assistant stopped seeing the battery fall.* Below
    `LOW_BATTERY_PCT`, any 1-point drop now reports (`sensor_loop.cpp`).
 3. *A flat cell restarts the unit about once a second*, radio and panel each
@@ -1437,14 +1442,52 @@ The reading is within ±11 mV of the source from 3.7 V down to 3.1 V.
 sleep, never woken: **298 µA at 2900 mV** (captures `…T030820`,
 `…T031355`), **21.2 µA at 3700 mV** (`…T031731`, 145 s flat). Drawing,
 restarting and then sleeping (the unpaired path's order, §27) made no
-difference at 2900 mV. Inferred, not checked against the datasheet: the
-XIAO's 3.3 V regulator out of regulation below ~3.3 V input.
+difference at 2900 mV, and neither did isolating the divider pin GPIO4 with
+`rtc_gpio_isolate()` (298.9 µA, capture `…T050631`; tried and removed). Below
+~3.3 V in, the SGM6029 runs at 100 % duty and passes the battery through
+(datasheet, "100% Duty Cycle Operation Mode", p.16; no quiescent figure is
+given for that mode), and the trace is flat DC with no bursts. The rail then
+sits at ~2.9 V, under the C6's 3.0 V minimum (datasheet v1.5, Table 5-2), so
+its 7 µA deep-sleep figure no longer applies. Hardware either way; firmware
+cannot recover it. Not separated: regulator vs chip (feed 3V3 directly at
+2.9 V to tell them apart).
 
-**Not settled:** the brown-out level-7 threshold on the 3V3 rail (the BAT
-side runs at 2900 mV and fails to boot there); the ~4 µA sleep floor seen
-while running at 3500 mV against 50–57 µA at 3700 mV on 2026-10-05 (and
-radio peaks of ~650 mA against ~250 mA in the same capture), which may be
-the PPK2's ranging rather than the board.
+**Brown-out level 7 is ~2.51 V on the 3V3 rail** (IDF v5.5.5
+`esp_hw_support/power_supply/port/esp32c6/Kconfig.power:24-25`, an Espressif
+estimate; the detector watches VDDA3P3/VDDA1/VDDA2, TRM v1.2 §12.4.4). Until
+the app sets it, the detector runs at its hardware default of ~2.7 V with a
+direct reset (TRM §12.4.4; the C6 bootloader does not set it), which fits
+"running survives 2900 mV, boots fail there" — inferred. Level 7 stays: a
+higher level would reset running units on radio peaks; the empty-battery
+check is the control.
+
+**The 3500 mV "4 µA floor" is the regulator, not a lower draw.** One capture
+stepped 3700 → 3600 → 3500 → 3400 → 3700 mV (`ppk2-20261006T220735`, 59 min,
+paired and settled, split with `tools/ppk2-events.py`):
+
+| Supply | Average | Floor | Per poll | Samples at exactly 0 |
+|---|---|---|---|---|
+| 3700 mV | 108 µA | 40.2 µA | 464 µC | 2 % |
+| 3600 mV | 192 µA | 62.9 µA | 789 µC | 31 % |
+| 3500 mV | 109 µA | 5.2 µA | (116 "polls" at 260 µC, 16.6/min) | 33 % |
+| 3400 mV | 204 µA | 63.4 µA | 547 µC | 34 % |
+| 3700 mV again | 136 µA (2 reports in window) | 40.5 µA | 457 µC | 2 % |
+
+At 3500 mV the regulator's bursts grow large and rare enough that the
+splitter counts them as wakes; floor plus "polls" is 109 µA, the same as at
+3700 mV. Below 3700 mV a third of the samples read exactly zero (the PPK2
+cannot read reverse current), which points at the regulator near dropout
+interacting with a source that cannot sink — inferred. At 3600 and 3400 mV
+the sleep costs ~1.8x more. A real cell spends little of its life there;
+the 125 µA figure (3700 mV) stands and today's 3700 mV segments reproduce it
+(polls 457–464 µC against 478 µC on 2026-10-05). A Source-Meter capture
+below ~3.7 V is not a battery-life measurement.
+
+**Also from this round:** the Matter `BootReason` attribute (0/51/4) was
+never created by esp-matter's legacy data model (`esp_matter_cluster.cpp:
+502-534`); `app_main.cpp` now creates it and it reads 6 (software reset)
+after a dial wake. The first battery report after boot (read during Thread
+attach) is now followed by a forced report on the second poll.
 
 **Rules:**
 
