@@ -44,6 +44,10 @@ void display_show_commissioning(const char *qr_payload, const char *manual_code)
  * Returns ESP_ERR_TIMEOUT if the refresh was not seen to finish. */
 esp_err_t display_show_pairing_asleep(const char *qr_payload, const char *manual_code, uint32_t timeout_ms);
 
+/* Full-screen "battery empty" notice in large text, with the reading. Blocks
+ * like display_show_pairing_asleep(): the caller enters deep sleep next. */
+esp_err_t display_show_battery_empty(uint32_t battery_mv, uint32_t timeout_ms);
+
 /* Short text drawn at the top of the onboarding screens; "" for none. Bench
  * aid: the panel is the one console that works whatever the chip's USB does. */
 void display_set_debug_line(const char *text);

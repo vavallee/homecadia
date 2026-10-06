@@ -79,6 +79,19 @@ config HOMECADIA_UNPAIRED_DEEP_SLEEP
         fabric, and a turn of the dial (encoder A, an LP GPIO) reboots it into
         a new window. Off in the bench profile, whose console needs USB.
 
+config HOMECADIA_EMPTY_BATTERY_SLEEP
+    bool "A unit booting on an empty battery deep-sleeps instead of starting the radio"
+    depends on HOMECADIA_UNPAIRED_DEEP_SLEEP
+    default y
+    help
+        At brown-out the unit restarts about once a second, each restart
+        starting the radio and redrawing the panel (2026-10-05, 2900 mV): the
+        worst load for a cell at its protection cutoff. With this on, a boot
+        that reads the battery below EMPTY_BATTERY_MV (app_config.h) draws one
+        "battery empty" screen and deep-sleeps; the dial or an hourly timer
+        re-measures. Shares the unpaired deep-sleep entry, so it is off in the
+        bench profile with it.
+
 config HOMECADIA_UNPAIRED_SLEEP_TEST_S
     int "TEST ONLY: unpaired unit sleeps this many seconds after boot (0 = off)"
     depends on HOMECADIA_UNPAIRED_DEEP_SLEEP

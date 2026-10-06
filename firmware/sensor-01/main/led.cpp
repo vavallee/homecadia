@@ -19,10 +19,20 @@ static void schedule(uint32_t ms)
     esp_timer_start_once(s_timer, (uint64_t)ms * 1000);
 }
 
+/* The chip light-sleeps inside the 100 ms pulse, and with
+ * CONFIG_PM_POWER_DOWN_PERIPHERAL_IN_LIGHT_SLEEP the GPIO's power domain goes
+ * down with it: the LED lit only while the chip was awake, two ~2.5 ms flashes
+ * 100 ms apart (2026-10-05, capture ppk2-20261006T015052; gpio_sleep_sel_dis()
+ * alone did not help). The pad hold keeps the level through that power-down
+ * (gpio_hold_en(), driver/gpio.h, IDF v5.5.5), so each change re-latches it. */
 static void set_led(bool on)
 {
     s_on = on;
-    gpio_set_level((gpio_num_t)LED_PIN, on ? 1 : 0);
+    gpio_num_t pin = (gpio_num_t)LED_PIN;
+    gpio_set_level(pin, on ? 1 : 0);
+    gpio_set_direction(pin, GPIO_MODE_OUTPUT); /* the hold note: configure before releasing it */
+    gpio_hold_dis(pin);
+    gpio_hold_en(pin);
 }
 
 static void tick(void *arg)
@@ -57,7 +67,7 @@ esp_err_t led_init(void)
     if (err != ESP_OK) {
         return err;
     }
-    gpio_set_level((gpio_num_t)LED_PIN, 0);
+    set_led(false);
 
     const esp_timer_create_args_t targs = {
         .callback = tick,

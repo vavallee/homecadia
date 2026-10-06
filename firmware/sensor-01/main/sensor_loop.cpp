@@ -3,6 +3,7 @@
 #include <math.h>
 
 #include "esp_log.h"
+#include "esp_system.h"
 #include "esp_timer.h"
 
 #include <esp_matter.h>
@@ -135,6 +136,17 @@ static void poll_cb(void *arg)
 #endif
     if (err == ESP_OK) {
         bat_pct = battery_percent_from_mv(bat_mv);
+#if CONFIG_HOMECADIA_EMPTY_BATTERY_SLEEP
+        /* A running unit rode out 2900 mV on 2026-10-06; only boots failed
+         * there. So the boot check alone would leave a running unit draining a
+         * flat cell: restart into it (app_main.cpp empty_battery_on_boot()).
+         * 50 mV under its limit, so a cell that reads just above it at boot
+         * does not restart every poll. */
+        if (bat_mv >= EMPTY_BATTERY_NO_READING_MV && bat_mv < EMPTY_BATTERY_MV - 50) {
+            ESP_LOGW(TAG, "battery %lu mV: restarting into the empty-battery check", (unsigned long)bat_mv);
+            esp_restart();
+        }
+#endif
     } else {
         ESP_LOGW(TAG, "battery read failed: %s", esp_err_to_name(err));
     }
@@ -146,7 +158,11 @@ static void poll_cb(void *arg)
     bool delta_hit = isnan(s_reported_temp_c) ||
                      fabsf(temp_c - s_reported_temp_c) >= REPORT_DELTA_TEMP_C ||
                      fabsf(rh - s_reported_rh) >= REPORT_DELTA_RH_PCT ||
-                     (bat_pct + 1 < s_reported_bat_pct); /* battery only falls; 1% hysteresis */
+                     (bat_pct + 1 < s_reported_bat_pct) || /* battery only falls; 1% hysteresis */
+                     /* Below the warning level every point counts: with the
+                      * hysteresis alone, 2 -> 1 -> 0 % never set off a report
+                      * (2026-10-05 sweep) and waited for the forced one. */
+                     (bat_pct < LOW_BATTERY_PCT && bat_pct < s_reported_bat_pct);
     bool force = s_polls_since_report >= FORCE_REPORT_EVERY_N_POLLS;
 
     if (delta_hit || force) {

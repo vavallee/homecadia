@@ -50,6 +50,10 @@ static esp_pm_lock_handle_t s_no_sleep;
  * is only eFuse coefficients and does not need a live unit, so it is kept. */
 esp_err_t battery_init(void)
 {
+    static bool s_ready; /* the empty-battery check at boot initialises first; the sensor loop again */
+    if (s_ready) {
+        return ESP_OK;
+    }
     esp_err_t err = adc_oneshot_io_to_channel(VBAT_ADC_GPIO, &s_unit, &s_channel);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "GPIO%d is not an ADC pin", VBAT_ADC_GPIO);
@@ -75,6 +79,7 @@ esp_err_t battery_init(void)
         ESP_LOGW(TAG, "No ADC calibration (%s); readings will be raw-scaled", esp_err_to_name(err));
         s_cali = nullptr;
     }
+    s_ready = true;
     return ESP_OK;
 }
 

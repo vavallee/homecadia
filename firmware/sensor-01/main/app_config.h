@@ -63,6 +63,17 @@
 
 #define LOW_BATTERY_PCT 10             // below this: LED pulse + display warning
 
+// Empty battery (CONFIG_HOMECADIA_EMPTY_BATTERY_SLEEP). Measured 2026-10-05,
+// node 28 on the PPK2: runs at 3000 mV, resets about once a second at 2900 mV
+// (brown-out level 7, on the 3V3 rail behind the regulator). At boot, below
+// EMPTY_BATTERY_MV -- or below EMPTY_BATTERY_BROWNOUT_MV after a brown-out
+// reset, for a cell that sags under the radio's peaks -- the unit draws one
+// "battery empty" screen and deep-sleeps instead of starting the radio.
+#define EMPTY_BATTERY_MV          3100
+#define EMPTY_BATTERY_BROWNOUT_MV 3300
+#define EMPTY_BATTERY_NO_READING_MV 2000  // below this the divider reads nothing real (no divider, USB only)
+#define EMPTY_BATTERY_RECHECK_S   3600    // deep-sleep timer: re-measure hourly (after a USB charge, say)
+
 // Display refresh policy (every refresh costs battery; see docs/power-budget.md)
 #define DISPLAY_FULL_REFRESH_EVERY_N 10  // full refresh every N-th refresh to clear ghosting
 #define DISPLAY_FLIP_LONG_AXIS  1        // verified on hardware: upright with the FPC at the bottom

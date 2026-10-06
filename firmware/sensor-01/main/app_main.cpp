@@ -26,6 +26,7 @@
 
 #include <common_macros.h>
 #include <app_config.h>
+#include <battery.h>
 #include <bench_selftest.h>
 #include <display.h>
 #include <led.h>
@@ -131,13 +132,16 @@ static RTC_NOINIT_ATTR uint32_t s_wake_magic;
 static RTC_NOINIT_ATTR uint32_t s_wake_count;
 static RTC_NOINIT_ATTR uint32_t s_wake_cause;
 static RTC_NOINIT_ATTR uint32_t s_sleep_request;
+#define EMPTY_DRAWN_MAGIC 0x454D5054u /* "EMPT": the battery-empty screen is already on the panel */
+static RTC_NOINIT_ATTR uint32_t s_empty_drawn;
 
 /* The wake pin keeps a pull-up through deep sleep and wakes on the level it
  * is not at, as in ec11.c arm_wake(). CONFIG_PM_SLP_DISABLE_GPIO has already
  * set every pin to switch to an isolated, floating state in sleep
  * (esp_sleep_startup_init, sleep_gpio.c); left on, the wake pin floated and
- * the unit woke by itself within seconds. Never returns. */
-static void enter_unpaired_deep_sleep(void)
+ * the unit woke by itself within seconds. With timer_s > 0 a timer wakes it
+ * too. Never returns, except when the dial wake cannot be armed. */
+static void enter_deep_sleep(uint32_t timer_s = 0)
 {
 #if CONFIG_PM_SLP_DISABLE_GPIO
     gpio_sleep_sel_dis((gpio_num_t)ENC_PIN_A);
@@ -157,6 +161,9 @@ static void enter_unpaired_deep_sleep(void)
         ESP_LOGE(TAG, "Deep-sleep wake on GPIO%d failed (%s): staying awake", ENC_PIN_A, esp_err_to_name(err));
         return;
     }
+    if (timer_s > 0) {
+        esp_sleep_enable_timer_wakeup((uint64_t)timer_s * 1000000);
+    }
     esp_deep_sleep_start();
 }
 
@@ -168,10 +175,11 @@ static void unpaired_sleep_on_boot(void)
         s_wake_count = 0;
         s_wake_cause = 0;
         s_sleep_request = 0;
+        s_empty_drawn = 0;
     }
     esp_reset_reason_t reason = esp_reset_reason();
     if (reason == ESP_RST_DEEPSLEEP) {
-        /* Woken by the dial. This boot inherits the wake pin's pad hold and
+        /* Woken by the dial (or the empty-battery recheck timer). This boot inherits the wake pin's pad hold and
          * LP wake setting, and on 2026-09-30 such a boot hung in the GPIO
          * interrupt setup at ~20 mA. Undo both and restart cleanly. */
         s_wake_count++;
@@ -184,9 +192,61 @@ static void unpaired_sleep_on_boot(void)
     s_sleep_request = 0; /* one shot: whatever happens next, the following boot is a normal one */
     if (requested && reason == ESP_RST_SW) {
         ESP_LOGW(TAG, "Unpaired: entering deep sleep from early boot; turn the dial to wake");
-        enter_unpaired_deep_sleep();
+        enter_deep_sleep();
     }
 }
+
+#if CONFIG_HOMECADIA_EMPTY_BATTERY_SLEEP
+/* Second thing in app_main(), still before Bluetooth, Thread and the PHY. At
+ * brown-out the unit restarted about once a second, starting the radio and
+ * redrawing the panel each time (2026-10-05, 2900 mV on the PPK2): the worst
+ * load for a cell at its protection cutoff. An empty reading instead draws one
+ * "battery empty" screen and deep-sleeps; the dial or an hourly timer wakes it,
+ * and the wake path above restarts into this check again. The screen is drawn
+ * once per empty spell (s_empty_drawn), so a cell too weak for even the panel
+ * refresh does not restart in a loop on that instead. Whether RTC_NOINIT
+ * survives a brown-out reset is unverified; if it does not, the cost is one
+ * redraw attempt per boot, with the radio still off.
+ *
+ * Draw, restart, then sleep -- the unpaired path's order. Sleeping straight
+ * after the refresh, with the panel's SPI bus and pins configured, sat at
+ * 292 uA (2026-10-06, capture ppk2-20261006T030820) against 19.7 uA for the
+ * unpaired sleep, which enters before the display exists. Once a spell has
+ * begun, resuming needs EMPTY_BATTERY_BROWNOUT_MV: hysteresis, so a cell that
+ * reads 3100-3300 mV after a brown-out stays asleep instead of cycling. */
+static void empty_battery_on_boot(void)
+{
+    if (battery_init() != ESP_OK) {
+        return;
+    }
+    uint32_t mv = 0;
+    if (battery_read_mv(&mv) != ESP_OK || mv < EMPTY_BATTERY_NO_READING_MV) {
+        return; /* no divider reading (USB only, or no divider fitted): nothing to judge */
+    }
+    bool brownout = esp_reset_reason() == ESP_RST_BROWNOUT;
+    bool in_spell = s_empty_drawn == EMPTY_DRAWN_MAGIC;
+    uint32_t limit = (brownout || in_spell) ? EMPTY_BATTERY_BROWNOUT_MV : EMPTY_BATTERY_MV;
+    if (mv >= limit) {
+        s_empty_drawn = 0; /* charged or replaced: the next empty spell draws its screen again */
+        return;
+    }
+    ESP_LOGW(TAG, "Battery empty: %lu mV (limit %lu%s); deep sleep, recheck in %d s", (unsigned long)mv,
+             (unsigned long)limit, brownout ? ", after a brown-out" : "", EMPTY_BATTERY_RECHECK_S);
+    if (!in_spell) {
+        s_empty_drawn = EMPTY_DRAWN_MAGIC; /* set before the refresh: a brown-out mid-refresh must not retry it */
+        if (display_init() == ESP_OK) {
+            esp_err_t err = display_show_battery_empty(mv, k_asleep_screen_timeout_ms);
+            if (err != ESP_OK) {
+                ESP_LOGW(TAG, "Battery-empty screen not confirmed: %s", esp_err_to_name(err));
+            }
+        }
+        esp_restart(); /* the next boot finds the flag and sleeps before any driver exists */
+    }
+    enter_deep_sleep(EMPTY_BATTERY_RECHECK_S);
+}
+#else
+static void empty_battery_on_boot(void) {}
+#endif
 
 static void unpaired_sleep_check(chip::System::Layer *layer, void *);
 
@@ -224,6 +284,7 @@ static void unpaired_sleep_check(chip::System::Layer *, void *forced)
 #else
 static void schedule_unpaired_sleep_check(void) {} /* feature off (bench profile: the console needs USB) */
 static void unpaired_sleep_on_boot(void) {}
+static void empty_battery_on_boot(void) {}
 #endif
 
 static void app_event_cb(const ChipDeviceEvent *event, intptr_t arg)
@@ -344,6 +405,7 @@ extern "C" void app_main()
     vTaskDelay(pdMS_TO_TICKS(3000)); /* let a re-enumerating USB console catch the boot */
 #endif
     unpaired_sleep_on_boot();
+    empty_battery_on_boot();
 #if CONFIG_HOMECADIA_UNPAIRED_SLEEP_TEST_S > 0
     {
         char line[26];

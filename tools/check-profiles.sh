@@ -111,6 +111,16 @@ else
   rc=1
 fi
 printf '  %-38s shipping=%s\n' "CONFIG_HOMECADIA_UNPAIRED_DEEP_SLEEP" "$ship"
+# Empty-battery sleep (2026-10-05): without it a flat cell restarts the unit
+# about once a second, radio and panel each time.
+if grep -qx "CONFIG_HOMECADIA_EMPTY_BATTERY_SLEEP=y" "$SHIPPING"; then
+  ship="on"
+else
+  ship="OFF"
+  echo "::error::CONFIG_HOMECADIA_EMPTY_BATTERY_SLEEP is not enabled in $SHIPPING -- stale sdkconfig? run idf.py reconfigure"
+  rc=1
+fi
+printf '  %-38s shipping=%s\n' "CONFIG_HOMECADIA_EMPTY_BATTERY_SLEEP" "$ship"
 if grep -qx "CONFIG_HOMECADIA_UNPAIRED_SLEEP_TEST_S=0" "$SHIPPING"; then
   ship="0"
 else

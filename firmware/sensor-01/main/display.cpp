@@ -22,7 +22,7 @@ static const char *TAG = "display";
 #define FRAME_BYTES (LAND_W * LAND_H / 8)
 
 typedef struct {
-    enum { MSG_READINGS, MSG_COMMISSIONING, MSG_COMMISSIONED, MSG_DIAG, MSG_SETTINGS, MSG_PAIRING_ASLEEP } type;
+    enum { MSG_READINGS, MSG_COMMISSIONING, MSG_COMMISSIONED, MSG_DIAG, MSG_SETTINGS, MSG_PAIRING_ASLEEP, MSG_BATTERY_EMPTY } type;
     sensor_readings_t readings;
     char qr[128];
     char manual[24];
@@ -36,7 +36,7 @@ static monogfx_t s_gfx;
 static uint8_t s_land[FRAME_BYTES];
 static uint8_t s_native[FRAME_BYTES];
 static QueueHandle_t s_queue;
-static SemaphoreHandle_t s_asleep_drawn; /* given once MSG_PAIRING_ASLEEP is on the panel */
+static SemaphoreHandle_t s_asleep_drawn; /* given once a pre-deep-sleep frame (pairing asleep, battery empty) is on the panel */
 static unsigned s_partials_since_full;
 
 /* Onboarding-screen latch. Until a fabric exists the device cannot be paired
@@ -171,6 +171,22 @@ static void render_pairing_asleep(const char *qr_payload, const char *manual_cod
     monogfx_draw_text(&s_gfx, 140, 114, "to start pairing.", 1);
 }
 
+/* Large text only: the person reading this may not have their glasses on. */
+static void render_battery_empty(uint32_t battery_mv)
+{
+    monogfx_clear(&s_gfx);
+    const char *title = "BATTERY EMPTY";
+    monogfx_draw_text(&s_gfx, (LAND_W - monogfx_text_width(title, 3)) / 2, 10, title, 3);
+    char buf[24];
+    snprintf(buf, sizeof(buf), "%lu.%02lu V", (unsigned long)(battery_mv / 1000),
+             (unsigned long)(battery_mv % 1000) / 10);
+    monogfx_draw_text(&s_gfx, (LAND_W - monogfx_text_width(buf, 2)) / 2, 48, buf, 2);
+    const char *l1 = "Charge or replace";
+    const char *l2 = "Rechecks hourly";
+    monogfx_draw_text(&s_gfx, (LAND_W - monogfx_text_width(l1, 2)) / 2, 78, l1, 2);
+    monogfx_draw_text(&s_gfx, (LAND_W - monogfx_text_width(l2, 2)) / 2, 102, l2, 2);
+}
+
 #if CONFIG_HOMECADIA_SLEEP_DIAG
 static char s_sleep_lines[SLEEP_DIAG_LINES][SLEEP_DIAG_COLS]; /* static: keeps it off the task stack */
 #endif
@@ -250,7 +266,7 @@ static void display_task(void *arg)
         }
 #if CONFIG_HOMECADIA_BENCH_SELFTEST
         static const char *kNames[] = {"READINGS", "COMMISSIONING", "COMMISSIONED", "DIAG",
-                                       "SETTINGS", "PAIRING_ASLEEP"};
+                                       "SETTINGS", "PAIRING_ASLEEP", "BATTERY_EMPTY"};
         ESP_LOGW(TAG, "queued msg: %s", kNames[msg.type]);
 #endif
 
@@ -290,10 +306,14 @@ static void display_task(void *arg)
             render_pairing_asleep(msg.qr, msg.manual);
             s_partials_since_full = DISPLAY_FULL_REFRESH_EVERY_N; /* full: this frame stays for days */
             break;
+        case display_msg_t::MSG_BATTERY_EMPTY:
+            render_battery_empty(msg.readings.battery_mv);
+            s_partials_since_full = DISPLAY_FULL_REFRESH_EVERY_N; /* full: this frame stays until a recharge */
+            break;
         }
         push_frame();
         s_screen = msg.type;
-        if (msg.type == display_msg_t::MSG_PAIRING_ASLEEP) {
+        if (msg.type == display_msg_t::MSG_PAIRING_ASLEEP || msg.type == display_msg_t::MSG_BATTERY_EMPTY) {
             xSemaphoreGive(s_asleep_drawn);
         }
     }
@@ -366,6 +386,21 @@ esp_err_t display_show_pairing_asleep(const char *qr_payload, const char *manual
     msg.type = display_msg_t::MSG_PAIRING_ASLEEP;
     strlcpy(msg.qr, qr_payload, sizeof(msg.qr));
     strlcpy(msg.manual, manual_code, sizeof(msg.manual));
+    xSemaphoreTake(s_asleep_drawn, 0); /* drop a stale give */
+    if (xQueueSend(s_queue, &msg, pdMS_TO_TICKS(timeout_ms)) != pdTRUE) {
+        return ESP_ERR_TIMEOUT;
+    }
+    return xSemaphoreTake(s_asleep_drawn, pdMS_TO_TICKS(timeout_ms)) == pdTRUE ? ESP_OK : ESP_ERR_TIMEOUT;
+}
+
+esp_err_t display_show_battery_empty(uint32_t battery_mv, uint32_t timeout_ms)
+{
+    if (!s_queue) {
+        return ESP_ERR_INVALID_STATE;
+    }
+    display_msg_t msg = {};
+    msg.type = display_msg_t::MSG_BATTERY_EMPTY;
+    msg.readings.battery_mv = battery_mv;
     xSemaphoreTake(s_asleep_drawn, 0); /* drop a stale give */
     if (xQueueSend(s_queue, &msg, pdMS_TO_TICKS(timeout_ms)) != pdTRUE) {
         return ESP_ERR_TIMEOUT;
