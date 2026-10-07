@@ -62,6 +62,7 @@
 #define FORCE_REPORT_EVERY_N_POLLS 10  // report even without delta every N polls (staleness guard)
 
 #define LOW_BATTERY_PCT 10             // below this: LED pulse + display warning
+#define BATTERY_RISE_REPORT_PCT 5      // a rise this large reports at once (charging, new cell)
 
 // Empty battery (CONFIG_HOMECADIA_EMPTY_BATTERY_SLEEP). Measured 2026-10-05,
 // node 28 on the PPK2: runs at 3000 mV, resets about once a second at 2900 mV

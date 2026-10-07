@@ -162,7 +162,11 @@ static void poll_cb(void *arg)
                      /* Below the warning level every point counts: with the
                       * hysteresis alone, 2 -> 1 -> 0 % never set off a report
                       * (2026-10-05 sweep) and waited for the forced one. */
-                     (bat_pct < LOW_BATTERY_PCT && bat_pct < s_reported_bat_pct);
+                     (bat_pct < LOW_BATTERY_PCT && bat_pct < s_reported_bat_pct) ||
+                     /* A charge or a fresh cell: rises otherwise waited for the
+                      * forced report, up to 20 min (2026-10-06, 0 % shown after
+                      * a reconnect). Well above the ~1-point reading noise. */
+                     (s_reported_bat_pct != 0xFF && bat_pct >= s_reported_bat_pct + BATTERY_RISE_REPORT_PCT);
     /* Poll 1 runs during Thread attach and has read ~30-80 mV low (retro open
      * item; load on the cell is the inferred cause). Report poll 2 regardless,
      * so the low value stands for 2 min, not up to 20. */
