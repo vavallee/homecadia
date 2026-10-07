@@ -61,6 +61,12 @@ CONFIG_USE_MINIMAL_MDNS=n
 # Matter OTA requestor: on because the partition layout supports it; HA-side
 # provider support is weak, so nothing in the app depends on it (see README).
 CONFIG_ENABLE_OTA_REQUESTOR=y
+# Also emit build/homecadia-sensor-01-ota.bin: the app with the Matter OTA
+# header, stamped with CONFIG_DEVICE_VENDOR_ID/PRODUCT_ID and the tag-derived
+# PROJECT_VER_NUMBER (connectedhomeip config/esp32/components/chip/
+# ota-image.cmake). The Matter server offers it to the device (docs/build.md,
+# "Over-the-air updates").
+CONFIG_CHIP_OTA_IMAGE_BUILD=y
 
 # BLE modem sleep
 CONFIG_BT_LE_SLEEP_ENABLE=y

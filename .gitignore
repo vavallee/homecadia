@@ -15,7 +15,8 @@ __pycache__/
 
 # Local agent/tooling scratch
 .gastown-ignore
-.claude/
+.claude/*
+!.claude/skills/
 firmware/**/build-bench/
 # one-off test builds (e.g. build-nopd): idf.py -B build-<name>
 firmware/**/build-*/

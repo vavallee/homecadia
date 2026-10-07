@@ -174,6 +174,41 @@ directory), and that the number exceeds the previous tag's.
 **CI needs `fetch-depth: 0`.** A shallow checkout has no tags and would build
 `0.0.0-untagged` without failing.
 
+## Over-the-air updates
+
+The device side is built in: `CONFIG_ENABLE_OTA_REQUESTOR=y` and
+`CONFIG_CHIP_OTA_IMAGE_BUILD=y` (`sdkconfig.defaults`), two 1.9 MB app slots
+(`partitions.csv`, 16 % free at 0.6.0). Every build writes
+`build/homecadia-sensor-01-ota.bin`, the app with the Matter OTA header,
+stamped with vendor 0xFFF1, product 0x8000 and `PROJECT_VER_NUMBER`
+(connectedhomeip `config/esp32/components/chip/ota-image.cmake`). CI uploads
+it as `homecadia-sensor-01-<version>.ota`. Check a header with
+`python3 $ESP_MATTER_PATH/connectedhomeip/connectedhomeip/src/app/ota_image_tool.py show <file>`.
+
+**Home Assistant's firmware card says "Up-to-date" until the Matter server is
+told about local images.** It looks up the device in the CSA's public DCL,
+where the test vendor 0xFFF1 is not. matterjs-server serves local files only
+with both settings ([CLI docs](https://github.com/matter-js/matterjs-server/blob/main/docs/cli.md),
+[home-assistant/addons#4520](https://github.com/home-assistant/addons/issues/4520)):
+
+| Setting | Value |
+|---|---|
+| `ENABLE_TEST_NET_DCL` (`--enable-test-net-dcl`) | `true` |
+| `OTA_PROVIDER_DIR` (`--ota-provider-dir`) | a directory holding the `.ota` files |
+
+With only the directory set, the server ignores the files and logs a warning.
+
+**Releasing an update:**
+
+1. Tag: `git tag v0.7.0` (the number moves only at tags; `v0.7.0` is 700
+   against 600 for every `0.6.0-dev` build). Build from a clean tree, then
+   `tools/check-version.sh`.
+2. Put `homecadia-sensor-01-0.7.0.ota` in the server's `OTA_PROVIDER_DIR`.
+3. The device's firmware card offers the update; install from there.
+
+Not yet measured: how long a transfer takes over Thread to a sleepy end
+device, and what it costs the battery. Run the first one on USB power.
+
 ## Flashing from WSL2
 
 USB devices reach WSL through usbipd-win. Field-tested sequence (unit 1):

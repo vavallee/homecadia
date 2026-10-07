@@ -72,6 +72,10 @@ jobs:
           cp firmware/sensor-01/build/bootloader/bootloader.bin out/
           cp firmware/sensor-01/build/partition_table/partition-table.bin out/
           cp firmware/sensor-01/build/flasher_args.json out/
+          # The Matter OTA image, named the way matterjs-server's OTA provider
+          # directory expects (*.ota), with the version string in the name.
+          ver=$(git describe --tags --match 'v[0-9]*' --dirty | sed 's/^v//')
+          cp firmware/sensor-01/build/homecadia-sensor-01-ota.bin "out/homecadia-sensor-01-${ver}.ota"
 
       - uses: actions/upload-artifact@v4
         with:
