@@ -402,7 +402,7 @@ Blocker: **2 of 3 panels are gone and there is no spare.** Reorder Seeed SKU
       from published dims, not test-fitted).
 - [ ] **rev 5 depth verified in the flesh**: the cell flat on the floor, the
       tray on it, the XIAO stack with the driver-board pins trimmed to ~1.5 mm
-      and the panel — ~30.8 mm of parts in ~31.6 mm — with the lid closing.
+      and the panel — ~30.8 mm of parts in ~33.6 mm — with the lid closing.
       Measure the panel's thickness first; it is the one part not measured.
       (Replaces the rev 2 check, which counted length only.)
 - [ ] Front and back still mate after the stretch: corner screws line up, seam
