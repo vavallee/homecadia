@@ -479,7 +479,8 @@ Blocker: **2 of 3 panels are gone and there is no spare.** Reorder Seeed SKU
       unanswered, `RebootCount` stayed 659 and `UpTime` ran on unbroken (246 s
       at 21:41:43, 741 s at 21:49:56). Limits: a gap under 30 s would be
       missed, and whether the Home Assistant restart also restarted the
-      matter.js server was not checked. The unit's parent is the bare C6
+      matter.js server was not checked. (It did not: the matter-server pod was
+      9 days old on 2026-10-07, so that test restarted HA and OTBR only.) The unit's parent is the bare C6
       router, so an OTBR restart cuts its route out, not its parent.
 - [ ] ICD: HA shows fresh readings at the configured report cadence. Partial
       **2026-08-23**: on the shipping profile (light sleep on) the device stays

@@ -77,10 +77,17 @@ function(homecadia_derive_version out_ver out_num)
     # Quoted: an unmatched -dirty group leaves _dirty unset, and unquoted
     # if(_dirty ...) then compares the literal word "_dirty" -- every build
     # exactly at a tag read "-dev.0" (v0.7.0, 2026-10-07).
+    # The firmware's name leads the string, so Home Assistant shows
+    # "aardvark 0.7.0". The field holds 31 characters: a dirty tree is marked
+    # "*", not "-dirty", so "aardvark 0.7.0-dev.123+4fb2137*" (31) still fits.
     if(_ahead EQUAL 0 AND "${_dirty}" STREQUAL "")
-        set(_ver "${_major}.${_minor}.${_patch}")
+        set(_ver "aardvark ${_major}.${_minor}.${_patch}")
     else()
-        set(_ver "${_major}.${_minor}.${_patch}-dev.${_ahead}+${_sha}${_dirty}")
+        set(_dirty_mark "")
+        if(NOT "${_dirty}" STREQUAL "")
+            set(_dirty_mark "*")
+        endif()
+        set(_ver "aardvark ${_major}.${_minor}.${_patch}-dev.${_ahead}+${_sha}${_dirty_mark}")
     endif()
 
     # esp_app_desc_t.version is a 32-byte field; keep clear of the edge.

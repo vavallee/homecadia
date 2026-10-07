@@ -147,10 +147,15 @@ hand-set once and drifted to `0.1` / `1` while the repo was tagged `v0.6.0`.
 
 Encoding is `MAJOR*10000 + MINOR*100 + PATCH`, so `v1.2.3` is `10203`.
 
+The firmware is called **aardvark**; the name leads the string, so Home
+Assistant's Firmware card shows `aardvark 0.7.0`. The string lives in the
+31-character `esp_app_desc_t.version` field, so a dirty tree is marked `*`
+rather than `-dirty`.
+
 | Tree state | String | Number |
 |---|---|---|
-| exactly at `v0.6.0` | `0.6.0` | 600 |
-| 63 commits past it, dirty | `0.6.0-dev.63+ebc14cd-dirty` | 600 |
+| exactly at `v0.7.0` | `aardvark 0.7.0` | 700 |
+| 12 commits past it, dirty | `aardvark 0.7.0-dev.12+4fb2137*` | 700 |
 | no tags reachable | `0.0.0-untagged` | 0 |
 
 **The number moves only at tags.** Dev builds keep the tag's number because
@@ -179,10 +184,10 @@ directory), and that the number exceeds the previous tag's.
 The device side is built in: `CONFIG_ENABLE_OTA_REQUESTOR=y` and
 `CONFIG_CHIP_OTA_IMAGE_BUILD=y` (`sdkconfig.defaults`), two 1.9 MB app slots
 (`partitions.csv`, 16 % free at 0.6.0). Every build writes
-`build/homecadia-sensor-01-ota.bin`, the app with the Matter OTA header,
+`build/aardvark-ota.bin`, the app with the Matter OTA header,
 stamped with vendor 0xFFF1, product 0x8000 and `PROJECT_VER_NUMBER`
 (connectedhomeip `config/esp32/components/chip/ota-image.cmake`). CI uploads
-it as `homecadia-sensor-01-<version>.ota`. Check a header with
+it as `aardvark-<version>.ota`. Check a header with
 `python3 $ESP_MATTER_PATH/connectedhomeip/connectedhomeip/src/app/ota_image_tool.py show <file>`.
 
 **Home Assistant's firmware card says "Up-to-date" until the Matter server is
@@ -203,7 +208,10 @@ With only the directory set, the server ignores the files and logs a warning.
 1. Tag: `git tag v0.7.0` (the number moves only at tags; `v0.7.0` is 700
    against 600 for every `0.6.0-dev` build). Build from a clean tree, then
    `tools/check-version.sh`.
-2. Put `homecadia-sensor-01-0.7.0.ota` in the server's `OTA_PROVIDER_DIR`.
+2. Copy `aardvark-0.7.0.ota` into the server's `OTA_PROVIDER_DIR` and restart
+   the server; it imports the directory once, at startup (homelab
+   `kubernetes/apps/default/matter-server/README.md`, "OTA updates for
+   homecadia").
 3. The device's firmware card offers the update; install from there.
 
 Not yet measured: how long a transfer takes over Thread to a sleepy end
@@ -234,7 +242,7 @@ WSL:
 cmd.exe /c "cd /d C:\\path\\to\\images && python.exe -m esptool --chip esp32c6 -p COM11 \
   -b 460800 --before default-reset --after hard-reset write-flash --flash-mode dio \
   --flash-freq 80m --flash-size 4MB 0x0 bootloader.bin 0xc000 partition-table.bin \
-  0x1d000 ota_data_initial.bin 0x20000 homecadia-sensor-01.bin"
+  0x1d000 ota_data_initial.bin 0x20000 aardvark.bin"
 ```
 
 NVS survives, so the device keeps its fabric. On a board powered from the

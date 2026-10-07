@@ -40,6 +40,7 @@ turned out wrong.
 | | |
 |---|---|
 | MCU | Seeed XIAO ESP32-C6 (RISC-V, 802.15.4 + BLE; Wi-Fi compiled out) |
+| Firmware | **aardvark** (Matter model name and version string, e.g. `aardvark 0.7.0`; build output `aardvark.bin`, OTA image `aardvark-<version>.ota`) |
 | Stack | [esp-matter](https://github.com/espressif/esp-matter) v1.6 on ESP-IDF v5.5.5, C++ |
 | Network | Matter over Thread, OpenThread minimal device (MTD), commissioned over BLE |
 | Power mode | Intermittently Connected Device (ICD), short idle time: 15 s parent polls, 600 s idle interval, automatic light sleep |

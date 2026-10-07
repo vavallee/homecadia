@@ -121,7 +121,7 @@ else
   rc=1
 fi
 printf '  %-38s shipping=%s\n' "CONFIG_HOMECADIA_EMPTY_BATTERY_SLEEP" "$ship"
-# The Matter OTA image (build/homecadia-sensor-01-ota.bin). A local sdkconfig
+# The Matter OTA image (build/aardvark-ota.bin). A local sdkconfig
 # written before the option existed keeps it off over sdkconfig.defaults.
 if grep -qx "CONFIG_CHIP_OTA_IMAGE_BUILD=y" "$SHIPPING"; then
   ship="on"
@@ -131,6 +131,14 @@ else
   rc=1
 fi
 printf '  %-38s shipping=%s\n' "CONFIG_CHIP_OTA_IMAGE_BUILD" "$ship"
+if grep -qx 'CONFIG_CHIP_PROJECT_CONFIG="main/chip_project_config.h"' "$SHIPPING"; then
+  ship="set"
+else
+  ship="MISSING"
+  echo "::error::CONFIG_CHIP_PROJECT_CONFIG is not main/chip_project_config.h in $SHIPPING (ProductName would be TEST_PRODUCT) -- stale sdkconfig? run idf.py reconfigure"
+  rc=1
+fi
+printf '  %-38s shipping=%s\n' "CONFIG_CHIP_PROJECT_CONFIG" "$ship"
 if grep -qx "CONFIG_HOMECADIA_UNPAIRED_SLEEP_TEST_S=0" "$SHIPPING"; then
   ship="0"
 else

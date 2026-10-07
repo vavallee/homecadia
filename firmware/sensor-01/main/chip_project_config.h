@@ -19,9 +19,11 @@
 #define CHIP_DEVICE_CONFIG_DEVICE_VENDOR_NAME "homecadia"
 
 /* The device *model*, not the individual unit — all three units are the same
- * model and will report this identically. Per-unit naming is NodeLabel, which
+ * model and will report this identically: the firmware is "aardvark", and Home
+ * Assistant may keep the name it read at commissioning until the device is
+ * re-interviewed (docs/field-notes.md section 14). Per-unit naming is NodeLabel, which
  * the controller sets (rename the device in Home Assistant). */
-#define CHIP_DEVICE_CONFIG_DEVICE_PRODUCT_NAME "sensor-01"
+#define CHIP_DEVICE_CONFIG_DEVICE_PRODUCT_NAME "aardvark"
 
 /* Board revision this firmware expects: XIAO ESP32-C6 on the Seeed ePaper
  * driver board V2. Bump if the carrier changes. */

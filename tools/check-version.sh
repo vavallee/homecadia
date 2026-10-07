@@ -10,7 +10,7 @@
 # Run locally after a build:  tools/check-version.sh
 set -euo pipefail
 
-BIN="${1:-firmware/sensor-01/build/homecadia-sensor-01.bin}"
+BIN="${1:-firmware/sensor-01/build/aardvark.bin}"
 
 fail() { echo "::error::$*" >&2; echo "FAIL: $*" >&2; exit 1; }
 
@@ -45,7 +45,10 @@ PY
   [ -n "$built" ] || fail "app_desc.version is empty in $BIN"
   [ "$built" != "0.0.0-untagged" ] \
     || fail "image was built without tags -- version.cmake fell back. Fetch tags before building."
-  [ "${built%%-*}" = "$semver" ] \
+  [ "${built#aardvark }" != "$built" ] \
+    || fail "image version '$built' lacks the firmware name prefix 'aardvark ' -- stale build directory?"
+  built_sem=${built#aardvark }; built_sem=${built_sem%%-*}; built_sem=${built_sem%\*}
+  [ "$built_sem" = "$semver" ] \
     || fail "image version '$built' does not match tag '$semver' -- stale build directory?"
 else
   echo "image version:       (no binary at $BIN, skipping)"
