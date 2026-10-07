@@ -97,3 +97,4 @@ the cell's own lead.
 | 2026-09-28 | — | read 0 V before first connection to XIAO #4 | 3.97 V after about half an hour on the charger; cause not determined |
 | 2026-09-28 | same | unit reset ~84 times on the cell, then ~416 times with USB out | steady after the BAT+ joint was re-seated; DIAG 3.98 V / 82 %, controller 3978 mV at 16:33 |
 | 2026-09-29 | same | 21 h on the cell, paired, USB out | 3978 mV, no restart (`RebootCount` 504 at both ends) |
+| 2026-10-06 | same, 3.98 V open-circuit | back on the cell after the PPK2 work: first boot read 3578 mV with `bootReason` 2 (brown-out) | the breadboard joint again (B3). Cell leads re-made straight to the XIAO's BAT wires; the divider's top then read 0 V because it had shared a breadboard row with the old joint. A short jumper from the BAT+ joint to the divider's row fixed it: DIAG 4.03 V, controller 4035 mV / 88 %, boot reason 1 (power-on) |
