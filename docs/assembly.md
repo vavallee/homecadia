@@ -179,8 +179,20 @@ Reference values: [power-budget.md](power-budget.md).
 7. Connect the 24-pin FPC (orientation rule below), repeat Stage 3 tests 1–5,
    then fit into the case.
 
-The enclosure is being redesigned: the printed case does not take the 2000 mAh
-cell or the stacked header height
+**Case rev 5** ([hardware/case](../hardware/case/README.md)) is built for this
+stack, floor upward: the cell flat on the floor, the tray on the cell, the
+XIAO in its sockets on the driver board, the panel against the front. Two
+things differ from the breadboard build:
+
+- **Trim the pins under the driver board to ~1.5 mm** once the encoder, LED,
+  switch and SHT40 are soldered to it. As built for the breadboard they stand
+  9.0 mm proud, and rev 5's depth assumes they are gone; after trimming the
+  board no longer plugs into a breadboard.
+- The cell's leads (~29 mm) and the USB-C panel connector's long leads coil
+  in the free bay at one end. Foam tape holds the cell to the floor and the
+  tray to the cell (the case has no cradle).
+
+Rev 5 has not been printed; the first set is the test fit
 ([bringup.md](bringup.md), Case & mechanical).
 
 ## Symptom → cause, from this build

@@ -1,11 +1,31 @@
-# Wall-mount case (veltoc remix, rev 4)
+# Wall-mount case (veltoc remix, rev 5)
 
 Remix of [veltoc](https://github.com/danking6/veltoc) 3D models (MIT,
 © 2026 Dan King). `case-back-wallmount.stl` and `case-front.stl` are both
 modified; `insert-tray.stl` and `encoder-knob.stl` print as-is from upstream.
 
-> **⚠️ rev 4 does not fit the parts — found 2026-09-24. Do not print more
-> sets from these files.** Against the STL geometry, the 2000 mAh cell
+> **rev 5 — back 6 mm deeper (2026-10-06); not yet printed.** Only
+> `case-back-wallmount.stl` changed: 23.00 → **29.00 mm** tall, outline and
+> rim unchanged, so the rev 4 front, tray and knob still fit it. The shell was
+> cut at z = 17.74 mm (above the USB-C hole, below the rim fillet), the upper
+> part lifted 6 mm and the cut joined with a vertical band (`deepen.py`, in
+> this directory: `python3 deepen.py IN OUT 17.74 6`). The mesh keeps the
+> same open-edge count as the vendor-printed rev 4 file (33), so the cut added
+> no defects.
+>
+> Layout it is built for, from caliper measurements of the parts as built
+> (2026-10-06), floor upward: the **cell flat on the floor** (56 × 34.2 ×
+> 11 mm, bare leads ~29 mm, no JST), the tray on the cell (1.6 mm plate), the
+> XIAO in its sockets on the driver board (15.5 mm from the USB-C top to the
+> driver board's underside), the **pins under the driver board trimmed to
+> ~1.5 mm** (they are 9.0 mm as built for the breadboard), then the panel
+> (~1.2 mm, not measured) against the front plate: ~30.8 mm against ~31.6 mm
+> of inside depth. The USB-C panel connector's long leads coil in the free
+> bay at one end; its hole does not need to line up with the XIAO's port.
+> SHT40 board: 41.8 × 19.7 × 6.5 mm, ~130–140 mm lead to a 4-pin connector.
+>
+> **rev 4 does not fit the parts — found 2026-09-24.** Kept in git history
+> (commit `4a53b2e`). Against the STL geometry, the 2000 mAh cell
 > (56 × 34.5 × 10.6 mm) does not fit the cavity with the tray and driver board
 > in place; the free bay at the left end is about 35 × 48 × 17 mm and the USB
 > port falls inside it. Against the printed parts in hand: the panel and the
@@ -29,7 +49,7 @@ modified; `insert-tray.stl` and `encoder-knob.stl` print as-is from upstream.
 
 ![assembled render](render-assembled.png)
 
-Assembled view, rev 4. Rendered directly from the STL geometry in this
+Assembled view, rev 4 (the rev 5 back is 6 mm deeper; not re-rendered). Rendered directly from the STL geometry in this
 directory — real part shapes and real relative positions, so the proportions,
 the wordmark placement and the aperture framing are accurate. The wordmark is
 composited at its true size and position, representing the laser engraving.
@@ -45,12 +65,12 @@ part of why the build moved to PLA.
 
 | File | Status | Outer size (mm) | Notes |
 |---|---|---|---|
-| case-back-wallmount.stl | remixed + rev 2 stretch | 116.28 × 59.28 × 23.00 | wall-mount rails, side USB-C, rear port plugged |
+| case-back-wallmount.stl | remixed + rev 2 stretch + **rev 5 deepen** | 116.28 × 59.28 × **29.00** | wall-mount rails, side USB-C, rear port plugged |
 | case-front.stl | rev 2 stretch | 110.60 × 53.60 × 8.20 | EC11 mount (Ø6.8 shaft hole, Ø9.8/Ø14 recess), 3mm LED hole, display aperture; flat face, wordmark laser-engraved after printing |
 | insert-tray.stl | rev 2 thickened | 48.50 × 45.50 × 6.60 | XIAO mount: plate thickened 1.0 → **1.6mm**, four Ø2.4mm pegs on a 17.0 × 21.0mm pattern. **Not** a battery cradle — the cell sits loose beside it |
 | encoder-knob.stl | upstream | 13.50 × 13.50 × 9.50 | fits 20mm flatted D-shaft |
 
-Interior of the assembled back: **106.64 × ~47.9 × ~18.6 mm**, one open cavity
+Interior of the assembled back: **106.64 × ~47.9 × ~24.6 mm** (rev 5; 18.6 in rev 4), one open cavity
 with four corner bosses. No battery compartment and no sensor mount — both are
 open questions for the test fit.
 

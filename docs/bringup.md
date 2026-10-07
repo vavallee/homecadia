@@ -400,9 +400,11 @@ Blocker: **2 of 3 panels are gone and there is no spare.** Reorder Seeed SKU
       pigtail bezel, #6 screw head in keyhole slot
       ([hardware/case](../hardware/case/README.md) tolerances are derived
       from published dims, not test-fitted).
-- [ ] **rev 2 stretch verified in the flesh**: the 56mm LP103454 cell and the
-      48.5mm insert-tray both sit in the 106.64mm interior with the lid closing
-      (2.1mm modelled clearance — confirm nothing else eats it).
+- [ ] **rev 5 depth verified in the flesh**: the cell flat on the floor, the
+      tray on it, the XIAO stack with the driver-board pins trimmed to ~1.5 mm
+      and the panel — ~30.8 mm of parts in ~31.6 mm — with the lid closing.
+      Measure the panel's thickness first; it is the one part not measured.
+      (Replaces the rev 2 check, which counted length only.)
 - [ ] Front and back still mate after the stretch: corner screws line up, seam
       closes, display aperture centres on the panel.
 - [ ] Wall screws drilled at **92mm** centres, not the rev 1 85mm.
