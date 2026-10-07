@@ -460,7 +460,14 @@ Blocker: **2 of 3 panels are gone and there is no spare.** Reorder Seeed SKU
       `remove_node` makes the device reboot itself and re-advertise (2884 FFF6
       reports on the controller's adapter, unattended). Before the fix the same
       operation left it silent, twice ([field-notes.md](field-notes.md) §12).
-- [ ] Survives HA restart / OTBR restart without falling off the fabric.
+- [x] **Survives HA restart / OTBR restart — verified 2026-10-06** on node 28
+      (`0.6.0-dev.116+6a37072`, PPK2 at 3700 mV): Home Assistant and then the
+      OTBR pod restarted at ~21:45; direct reads every 30 s never went
+      unanswered, `RebootCount` stayed 659 and `UpTime` ran on unbroken (246 s
+      at 21:41:43, 741 s at 21:49:56). Limits: a gap under 30 s would be
+      missed, and whether the Home Assistant restart also restarted the
+      matter.js server was not checked. The unit's parent is the bare C6
+      router, so an OTBR restart cuts its route out, not its parent.
 - [ ] ICD: HA shows fresh readings at the configured report cadence. Partial
       **2026-08-23**: on the shipping profile (light sleep on) the device stays
       attached as a sleepy child and serves live reads over Thread 150s+ after

@@ -754,4 +754,4 @@ says what to watch for.
 | Why does the held LED pulse read ~51 µA, not ~4 mA? | The PPK2 under-read in that capture (refill rate 42–45x, reading 18–20x); estimated 1–2 mA, not measured directly | §29 |
 | Why do 3400–3600 mV cost ~1.8x more asleep than 3700 mV? | Stepped capture 2026-10-06; regulator near dropout with a source that cannot sink is the inference. 125 µA at 3700 mV stands | §29 |
 | What are the EEMB pack's protection thresholds? | Specification not retrieved; unverified | [battery-runbook.md](battery-runbook.md) |
-| Still-open bring-up rows | panel deep-sleep current, ghosting policy, over-the-air (OTA) update slot headroom (84 % full on 2026-08-23 and again on 2026-10-05; 300 KiB free), Home Assistant and OTBR restart survival, the enclosure (rev 4 does not fit the cell or the stacked headers) | [bringup.md](bringup.md) |
+| Still-open bring-up rows | panel deep-sleep current, ghosting policy, over-the-air (OTA) update slot headroom (84 % full on 2026-08-23 and again on 2026-10-05; 300 KiB free), the enclosure (rev 4 does not fit the cell or the stacked headers) | [bringup.md](bringup.md) |
