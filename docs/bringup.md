@@ -241,9 +241,20 @@ Bench wiring diagrams and the no-solder connectivity procedure live in
       section 15. `ssd1680_init()` now scans and drive-tests every panel signal
       at boot; `drive hi=1 lo=0 follows the driver` on all five outputs is the
       precondition for anything else being worth investigating.
-- [ ] Panel deep-sleep current measured (panel + driver board leakage).
-- [ ] Partial refresh charge cost measured; full refresh cost measured.
-- [ ] Ghosting acceptable with chosen full-refresh-every-N policy.
+- [x] **Panel deep-sleep current — bounded 2026-10-06, not isolated.** The
+      driver sends the panel to deep sleep (command 0x10, mode 1) after every
+      refresh (`ssd1680.c:201-204`, `:247`). Whole unit in deep sleep at
+      3700 mV: 21.2 µA (field-notes.md §29). Known parts: ESP32-C6 7 µA
+      (datasheet v1.5 Table 5-11), SGM6029 2.3 µA (datasheet p.5), divider
+      1.85 µA. Panel, driver board and SHT40 together: **≤ ~10 µA**. Isolating
+      it needs the XIAO unseated from the driver board's header (3V3 runs
+      through a header pin); not worth it against a 108–125 µA average.
+- [x] **Partial and full refresh charge — measured 2026-10-04/05**, node 28:
+      partial ~6–7.5 mC, full ~19 mC ([power-budget.md](power-budget.md)).
+- [x] **Ghosting acceptable at `DISPLAY_FULL_REFRESH_EVERY_N` 10 — 2026-10-06**,
+      by the builder after weeks on the readings screen: no leftover digits
+      between full refreshes. The brief dark screen on boot and on wake is
+      the full refresh's clearing pass, not a fault.
 
 ### Bring-up post-mortem, 2026-08-18 → 22
 
