@@ -74,7 +74,10 @@ function(homecadia_derive_version out_ver out_num)
 
     math(EXPR _num "${_major} * 10000 + ${_minor} * 100 + ${_patch}")
 
-    if(_ahead EQUAL 0 AND _dirty STREQUAL "")
+    # Quoted: an unmatched -dirty group leaves _dirty unset, and unquoted
+    # if(_dirty ...) then compares the literal word "_dirty" -- every build
+    # exactly at a tag read "-dev.0" (v0.7.0, 2026-10-07).
+    if(_ahead EQUAL 0 AND "${_dirty}" STREQUAL "")
         set(_ver "${_major}.${_minor}.${_patch}")
     else()
         set(_ver "${_major}.${_minor}.${_patch}-dev.${_ahead}+${_sha}${_dirty}")
