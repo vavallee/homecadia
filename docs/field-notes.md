@@ -1496,3 +1496,36 @@ attach) is now followed by a forced report on the second poll.
 - A pin that must hold a level through light sleep with peripheral power-down
   needs the pad hold, not only `gpio_sleep_sel_dis()`.
 - Decide "empty" before the radio starts, and give it hysteresis.
+
+## 30. The first OTA: transferred and applied, then stuck in the restart
+
+**Setup.** 2026-10-07, node 28 on its cell, USB out, `0.6.0-dev.122+551f0fa`
+(SoftwareVersion 600). The Matter server (matterjs-server 1.4.0) held
+`aardvark 0.7.0` (700) from `OTA_PROVIDER_DIR` (`docs/build.md`,
+"Over-the-air updates"); the update was started with the server's
+`update_node` command.
+
+| Time | Event (Matter server log, direct reads) |
+|---|---|
+| 20:28:44 | QueryImage answered, BDX transfer starts (requestor state 2 → 4) |
+| 20:58:09 | Transfer complete, requestor applying (state 4 → 5): **1.66 MB in 29.5 min** over Thread to a sleepy end device |
+| 20:58:34 | Node stops answering |
+| 21:00:56 | Server: "did not re-establish a session after the expected reboot" |
+| 21:13:35 | Server resets the stalled OTA state |
+| ~22:28 | Builder power-cycles (cell off, USB in) |
+| 22:29:43 | Node back: `aardvark 0.7.0`, ProductName `aardvark`, `BootReason` 5 (SoftwareUpdateCompleted), `RebootCount` 670 |
+
+**The restart into the new image hung.** `RebootCount` was 669 before the
+update and 670 at the power-cycle boot, which is also the boot that reported
+SoftwareUpdateCompleted: the new image never started at 20:58. For ~90 min
+the panel kept its last frame and a dial turn did nothing. The image itself
+was good (it booted from `ota_1`, paddr 0x379b40, and rejoined in under a
+minute). Cause not established: the restart is issued by the SDK's OTA
+requestor on a running Matter stack on battery; §27 saw deep-sleep entry
+from a running stack stall on battery only. Unverified that they are the
+same.
+
+**Until it is fixed: run OTA updates with USB plugged in, and power-cycle the
+unit if it has not rejoined 5 minutes after the transfer completes.** A
+PPK2 capture across the next update (current during the hang: stuck awake at
+mA, or off?) is the cheapest next measurement.

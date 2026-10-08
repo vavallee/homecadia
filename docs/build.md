@@ -214,8 +214,12 @@ With only the directory set, the server ignores the files and logs a warning.
    homecadia").
 3. The device's firmware card offers the update; install from there.
 
-Not yet measured: how long a transfer takes over Thread to a sleepy end
-device, and what it costs the battery. Run the first one on USB power.
+First update, 2026-10-07 ([field-notes.md](field-notes.md) §30): 1.66 MB in
+**29.5 min** over Thread to a sleepy end device. The image applied, but **the
+restart into it hung on battery** until a power-cycle. Until that is fixed:
+update with USB plugged in, and power-cycle a unit that has not rejoined
+5 minutes after the transfer completes. Battery cost of a transfer: not yet
+measured.
 
 ## Flashing from WSL2
 
